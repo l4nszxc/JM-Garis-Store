@@ -154,41 +154,7 @@ exports.processPayment = async (req, res) => {
             ['paid', orderId]
         );
 
-        // Format items for email
-        const formattedItems = items.map(item => ({
-            product_id: item.product_id,
-            quantity: item.quantity,
-            price: item.price,
-            name: item.choice_name ? `${item.name} (${item.choice_name})` : item.name,
-            choice_name: item.choice_name,
-            image: item.actual_image || item.image
-        }));
-
-        // Prepare order details for email
-        const emailOrderDetails = {
-            ...orderDetails[0],
-            items: formattedItems,
-            subtotal: orderDetails[0].subtotal,
-            order_id: orderId,
-            total_amount: orderDetails[0].total_amount,
-            discount_amount: parseFloat(orderDetails[0].discount_amount) || 0,
-            email: orderDetails[0].email // Make sure email is included
-        };
-
-        // Send email notification
-        try {
-            await emailService.sendOrderStatusReceipt(
-                orderDetails[0].email,
-                emailOrderDetails,
-                'paid',
-                {
-                    cashAmount,
-                    changeAmount
-                }
-            );
-        } catch (emailError) {
-            console.error('Error sending payment confirmation email:', emailError);
-        }
+        // Email sending is removed
 
         res.json({ message: 'Payment processed successfully' });
     } catch (error) {

@@ -18,6 +18,7 @@ import Rewards from '../views/user/Rewards.vue'
 import SharedCart from '../views/user/SharedCart.vue'
 import RewardsManagement from '../views/admin/RewardsManagement.vue'
 import CreateOrder from '../views/staff/CreateOrder.vue'
+import Notifications from'../views/user/Notifications.vue'
 
 const routes = [
   {
@@ -99,6 +100,23 @@ const routes = [
       redirectParams: true
     }
   },
+  {
+    path: '/notifications',
+    name: 'Notifications',
+    component: Notifications,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/order-details/:id',
+    name: 'OrderDetails',
+    component: () => import('../views/user/OrderDetails.vue'),
+    meta: {
+      requiresAuth: true
+    }
+  },
+
+
+  
   // Admin Routes
   {
     path: '/admin',
