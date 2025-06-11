@@ -26,7 +26,6 @@
         <span>Staff</span>
       </router-link>
 
-      <!-- Add this new router-link for All Products -->
       <router-link to="/admin/products" class="menu-item" active-class="active">
         <i class="fas fa-boxes"></i>
         <span>Manage Products</span>
@@ -35,6 +34,11 @@
       <router-link to="/admin/insert-products" class="menu-item" active-class="active">
         <i class="fas fa-box"></i>
         <span>Insert Products</span>
+      </router-link>
+
+      <router-link to="/admin/forecast" class="menu-item" active-class="active">
+        <i class="fas fa-chart-bar"></i>
+        <span>Sales Forecast</span>
       </router-link>
 
       <router-link to="/admin/recruit-staff" class="menu-item" active-class="active">
@@ -54,6 +58,7 @@
         <i class="fas fa-user-shield"></i>
         <span class="admin-name">{{ username }}</span>
       </div>
+      
       <button @click="$emit('logout')" class="logout-btn">
         <i class="fas fa-sign-out-alt"></i>
         <span>Logout</span>

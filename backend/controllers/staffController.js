@@ -93,15 +93,7 @@ exports.updateOrderStatus = async (req, res) => {
             discount_amount: parseFloat(order.discount_amount) || 0
         };
 
-        // Send email for specific statuses
-        if (['preparing', 'ready for pickup', 'paid'].includes(status.toLowerCase())) {
-            try {
-                console.log('Sending email to:', order.email, 'with discount:', orderDetails.discount_amount); // Debug log
-                await emailService.sendOrderStatusReceipt(order.email, orderDetails, status);
-            } catch (emailError) {
-                console.error('Error sending email:', emailError);
-            }
-        }
+        
 
         res.json({ 
             message: 'Order status updated successfully',
@@ -180,14 +172,6 @@ exports.acceptOrder = async (req, res) => {
             total_amount: order.total_amount,
             discount_amount: parseFloat(order.discount_amount) || 0
         };
-
-        // Send email notification
-        try {
-            console.log('Sending email to:', order.email, 'with discount:', orderDetails.discount_amount); // Debug log
-            await emailService.sendOrderStatusReceipt(order.email, orderDetails, 'preparing');
-        } catch (emailError) {
-            console.error('Error sending email:', emailError);
-        }
 
         res.json({ 
             message: 'Order accepted successfully',

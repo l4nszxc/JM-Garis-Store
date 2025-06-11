@@ -19,6 +19,7 @@ import SharedCart from '../views/user/SharedCart.vue'
 import RewardsManagement from '../views/admin/RewardsManagement.vue'
 import CreateOrder from '../views/staff/CreateOrder.vue'
 import Notifications from'../views/user/Notifications.vue'
+import SalesForecast from '../views/admin/SalesForecast.vue'
 
 const routes = [
   {
@@ -165,6 +166,12 @@ const routes = [
     name: 'RewardsManagement',
     component: RewardsManagement,
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/forecast',
+    name: 'AdminForecast',
+    component: SalesForecast,
+    meta: { requiresAuth: true, adminOnly: true }
   },
   // Staff Routes
   {

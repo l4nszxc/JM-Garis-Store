@@ -4,7 +4,7 @@ const Staff = require('../models/staffModel');
 const User = require('../models/userModel');
 const Reward = require('../models/rewardModel');
 const emailService = require('../services/emailService');
-const forecastService = require('../services/forecastService.js');
+const forecastService = require('../services/forecastService');
 const jwt = require('jsonwebtoken');
 
 exports.getStats = async (req, res) => {
@@ -278,13 +278,20 @@ exports.getRewardsStatistics = async (req, res) => {
 };
 exports.getProductForecasts = async (req, res) => {
     try {
-        const forecasts = await forecastService.updateForecastMetrics();
+        const { type = 'sales', days = 30 } = req.query;
         
-        if (!forecasts) {
-            return res.status(500).json({ message: 'Error generating forecasts' });
+        const forecastResult = await forecastService.updateForecastMetrics({
+            type,
+            days: parseInt(days)
+        });
+        
+        if (forecastResult.status === 'error') {
+            return res.status(500).json({ 
+                message: forecastResult.message || 'Error generating forecasts' 
+            });
         }
         
-        res.json(forecasts);
+        res.json(forecastResult);
     } catch (error) {
         console.error('Error getting forecasts:', error);
         res.status(500).json({ message: 'Error generating forecasts' });
