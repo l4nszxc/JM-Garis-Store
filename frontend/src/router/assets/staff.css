@@ -1,0 +1,20 @@
+/* Global staff styles */
+body.sidebar-collapsed .staff-container {
+  padding-left: 60px;
+  transition: padding-left 0.3s ease;
+}
+
+.staff-container {
+  padding-left: 250px;
+  transition: padding-left 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .staff-container {
+    padding-left: 0;
+  }
+  
+  body.sidebar-collapsed .staff-container {
+    padding-left: 0;
+  }
+}

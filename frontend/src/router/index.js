@@ -1,4 +1,5 @@
 import './assets/admin.css'
+import './assets/staff.css'
 import { createRouter, createWebHistory } from 'vue-router'
 import { checkTokenExpiration } from '../utils/auth.js';
 import Register from '../views/Register.vue'
