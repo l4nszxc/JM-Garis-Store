@@ -173,6 +173,12 @@ const routes = [
     component: SalesForecast,
     meta: { requiresAuth: true, adminOnly: true }
   },
+  {
+    path: '/admin/low-stock',
+    name: 'LowStock',
+    component: () => import('../views/admin/LowStock.vue'),
+    meta: { requiresAuth: true, requiredRole: 'admin' }
+  },
   // Staff Routes
   {
     path: '/staff',

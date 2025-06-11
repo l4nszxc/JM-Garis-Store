@@ -297,3 +297,12 @@ exports.getProductForecasts = async (req, res) => {
         res.status(500).json({ message: 'Error generating forecasts' });
     }
 };
+exports.getLowStockItems = async (req, res) => {
+    try {
+        const lowStockItems = await Admin.getLowStockItems();
+        res.json(lowStockItems);
+    } catch (error) {
+        console.error('Error fetching low stock items:', error);
+        res.status(500).json({ message: 'Failed to fetch low stock items' });
+    }
+};

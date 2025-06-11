@@ -25,10 +25,15 @@
         <i class="fas fa-id-card"></i>
         <span>Staff</span>
       </router-link>
-
+      
       <router-link to="/admin/products" class="menu-item" active-class="active">
         <i class="fas fa-boxes"></i>
         <span>Manage Products</span>
+      </router-link>
+      
+      <router-link to="/admin/low-stock" class="menu-item" active-class="active">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>Low Stock</span>
       </router-link>
 
       <router-link to="/admin/insert-products" class="menu-item" active-class="active">

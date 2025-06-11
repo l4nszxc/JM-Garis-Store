@@ -429,6 +429,52 @@ class Admin {
             connection.release();
         }
     }
+    static async getLowStockItems() {
+        try {
+            // Get products with stock <= 30
+            const [lowStockProducts] = await db.execute(`
+                SELECT 
+                    products_id as id,
+                    'product' as type,
+                    name,
+                    description,
+                    stock_quantity as stock,
+                    price,
+                    category,
+                    image,
+                    NULL as choice_id,
+                    NULL as product_name,
+                    NULL as choice_name
+                FROM products
+                WHERE stock_quantity <= 30
+            `);
+            
+            // Get choices/variants with stock <= 30
+            const [lowStockChoices] = await db.execute(`
+                SELECT 
+                    pc.product_id as id,
+                    'choice' as type,
+                    p.name as product_name,
+                    p.description,
+                    pc.stock as stock,
+                    pc.price,
+                    p.category,
+                    COALESCE(pc.image, p.image) as image,
+                    pc.choice_id,
+                    p.name as product_name,
+                    pc.name as choice_name
+                FROM product_choices pc
+                JOIN products p ON pc.product_id = p.products_id
+                WHERE pc.stock <= 30
+            `);
+            
+            // Combine both results and sort by stock level (lowest first)
+            return [...lowStockProducts, ...lowStockChoices].sort((a, b) => a.stock - b.stock);
+        } catch (error) {
+            console.error('Error in getLowStockItems:', error);
+            throw error;
+        }
+    }
 }
 
 module.exports = Admin;

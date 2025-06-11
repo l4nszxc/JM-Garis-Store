@@ -23,5 +23,6 @@ router.put('/rewards/tiers/:id', authenticate, isAdmin, adminController.updateRe
 router.delete('/rewards/tiers/:id', authenticate, isAdmin, adminController.deleteRewardTier);
 router.get('/rewards/statistics', authenticate, isAdmin, adminController.getRewardsStatistics);
 router.get('/forecasts', adminController.getProductForecasts);
+router.get('/low-stock', authenticate, isAdmin, adminController.getLowStockItems);
 
 module.exports = router;
