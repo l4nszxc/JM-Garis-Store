@@ -258,6 +258,7 @@ export default {
     },
     
     getNotificationIcon(notification) {
+      if (notification.type === 'reward') return 'fas fa-gift';
       if (notification.type !== 'order') return 'fas fa-bell';
       
       const status = notification.status.toLowerCase();
@@ -267,8 +268,9 @@ export default {
       if (status === 'paid') return 'fas fa-money-bill-wave';
       return 'fas fa-bell';
     },
-    
+
     getNotificationIconClass(notification) {
+      if (notification.type === 'reward') return 'reward-icon';
       if (notification.type !== 'order') return '';
       
       const status = notification.status.toLowerCase();
@@ -278,10 +280,13 @@ export default {
       if (status === 'paid') return 'paid-icon';
       return '';
     },
-    
+
     getNotificationTitle(notification) {
       if (notification.type === 'order') {
         return `Order #${notification.orderId}`;
+      }
+      if (notification.type === 'reward') {
+        return 'Reward Redeemed';
       }
       return 'Notification';
     },
@@ -304,6 +309,8 @@ export default {
       // Navigate based on notification type
       if (notification.type === 'order') {
         this.$router.push(`/order-details/${notification.orderId}`);
+      } else if (notification.type === 'reward') {
+        this.$router.push('/rewards');
       } else if (notification.link) {
         this.$router.push(notification.link);
       }
@@ -1005,6 +1012,10 @@ h1 {
 
 .notification-delete-item:hover {
   background-color: #fdf2f2;
+}
+.reward-icon {
+  background-color: #e8f5e9;
+  color: #2e7d32;
 }
 @media (max-width: 768px) {
     .notification-header {

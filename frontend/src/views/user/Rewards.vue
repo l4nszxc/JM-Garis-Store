@@ -272,7 +272,7 @@ export default {
         }
     },
 
-    async redeemReward(reward) {
+   async redeemReward(reward) {
       try {
           if (this.points < reward.points_required) {
               throw new Error('Insufficient points');
@@ -291,13 +291,51 @@ export default {
               this.redeemedPoints = reward.points_required;
               this.redeemedAmount = reward.discount_amount;
               this.showRedeemModal = true;
+              
+              // Create and save a notification for reward redemption
+              this.createRewardRedemptionNotification(reward);
+              
               await this.fetchUserData(); // Refresh all data
           }
       } catch (error) {
           console.error('Redemption error:', error);
           alert(error.message || 'Failed to redeem reward');
       }
-  },
+    },
+    
+    createRewardRedemptionNotification(reward) {
+      try {
+        // Get existing notifications
+        const savedNotifications = localStorage.getItem('userNotifications');
+        let notifications = savedNotifications ? JSON.parse(savedNotifications) : [];
+        
+        // Create new notification
+        const newNotification = {
+          id: Date.now().toString(), // Use timestamp as unique ID
+          type: 'reward',
+          rewardId: reward.id,
+          read: false,
+          timestamp: new Date().toISOString(),
+          message: `You redeemed ${reward.points_required} points for ₱${reward.discount_amount} discount.`
+        };
+        
+        // Add to beginning of array
+        notifications.unshift(newNotification);
+        
+        // Keep only the 20 most recent notifications
+        notifications = notifications.slice(0, 20);
+        
+        // Save to localStorage
+        localStorage.setItem('userNotifications', JSON.stringify(notifications));
+        
+        // Dispatch event to update other components
+        window.dispatchEvent(new CustomEvent('notifications-updated', {
+          detail: { notifications }
+        }));
+      } catch (error) {
+        console.error('Error creating notification:', error);
+      }
+    },
 
     closeRedeemModal() {
       this.showRedeemModal = false;

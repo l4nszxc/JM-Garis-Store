@@ -291,6 +291,7 @@ export default {
       return `Order #${order.order_id} status updated to ${status}.`;
     },
     getNotificationIcon(notification) {
+      if (notification.type === 'reward') return 'fas fa-gift';
       if (notification.type !== 'order') return 'fas fa-bell';
       
       const status = notification.status.toLowerCase();
@@ -300,7 +301,9 @@ export default {
       if (status === 'paid') return 'fas fa-money-bill-wave';
       return 'fas fa-bell';
     },
+
     getNotificationIconClass(notification) {
+      if (notification.type === 'reward') return 'reward-icon';
       if (notification.type !== 'order') return '';
       
       const status = notification.status.toLowerCase();
@@ -848,6 +851,10 @@ button.dropdown-item:hover {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.reward-icon {
+  background-color: #e8f5e9; 
+  color: #2e7d32;
 }
 /* Responsive styles */
 @media (max-width: 768px) {
