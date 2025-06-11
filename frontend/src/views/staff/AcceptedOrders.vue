@@ -39,6 +39,7 @@
                                 <td class="estimated-time">
                                     {{ formatDate(order.estimatedPickupTime) }}
                                     <div class="time-remaining" :class="{'past-due': isPastDue(order.estimatedPickupTime) && order.status !== 'ready for pickup' && order.status !== 'paid'}">
+                                        <i v-if="isPastDue(order.estimatedPickupTime) && order.status !== 'ready for pickup' && order.status !== 'paid'" class="fas fa-exclamation-triangle"></i>
                                         {{ getTimeRemaining(order.estimatedPickupTime, order.status) }}
                                     </div>
                                 </td>
@@ -290,7 +291,15 @@ export default {
             const diff = estimated - now;
 
             if (diff < 0) {
-                return 'Past due';
+                // Calculate how long it's been past due
+                const pastMinutes = Math.floor(Math.abs(diff) / 60000);
+                if (pastMinutes < 60) {
+                    return `Past due by ${pastMinutes} minutes`;
+                }
+
+                const pastHours = Math.floor(pastMinutes / 60);
+                const remainingMinutes = pastMinutes % 60;
+                return `Past due by ${pastHours}h ${remainingMinutes}m`;
             }
 
             const minutes = Math.floor(diff / 60000);
@@ -747,6 +756,44 @@ input[type="checkbox"] {
     width: 18px;
     height: 18px;
     cursor: pointer;
+}
+.past-due-row {
+    background-color: rgba(253, 237, 237, 0.4);
+    position: relative;
+}
+
+.past-due-row::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 4px;
+    background-color: #d32f2f;
+}
+
+.time-remaining.past-due {
+    color: #d32f2f;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.time-remaining.past-due i {
+    animation: pulse 2s infinite;
+    color: #d32f2f;
+}
+@keyframes pulse {
+    0% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.6;
+    }
 }
 @media (max-width: 768px) {
     tfoot tr td {

@@ -14,11 +14,14 @@
                                 <span :class="['status-badge', order.status.toLowerCase()]">
                                     {{ order.status }}
                                 </span>
-                                <div v-if="order.status === 'preparing'" class="estimated-time">
-                                    <i class="fas fa-clock"></i>
+                                <div v-if="order.status === 'preparing'" class="estimated-time" :class="{'delayed': isPastDue(order.estimatedPickupTime)}">
+                                    <i :class="['fas', isPastDue(order.estimatedPickupTime) ? 'fa-exclamation-circle' : 'fa-clock']"></i>
                                     <div class="time-details">
-                                        <span>Estimated ready by:</span>
-                                        <strong>{{ formatDate(order.estimatedPickupTime) }}</strong>
+                                        <span v-if="isPastDue(order.estimatedPickupTime)">
+                                            There's been a delay in your order, please wait
+                                        </span>
+                                        <span v-else>Estimated ready by:</span>
+                                        <strong v-if="!isPastDue(order.estimatedPickupTime)">{{ formatDate(order.estimatedPickupTime) }}</strong>
                                     </div>
                                 </div>
                                 <!-- Add staff info display -->
@@ -171,6 +174,10 @@ export default {
         }
     },
     methods: {
+        isPastDue(estimatedTime) {
+            if (!estimatedTime) return false;
+            return new Date(estimatedTime) < new Date();
+        },
         formatPrice(price) {
             return new Intl.NumberFormat('en-PH', {
                 style: 'currency',
@@ -732,6 +739,15 @@ export default {
     padding: 0.5rem;
     border-radius: 4px;
     width: fit-content;
+}
+.estimated-time.delayed {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.estimated-time.delayed i {
+    color: #e65100;
 }
 @media (max-width: 768px) {
     .order-header {
