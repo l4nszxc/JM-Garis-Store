@@ -119,7 +119,8 @@ export default {
       cartItems: [],
       activeOrders: [],
       notifications: [],
-      notificationCheckInterval: null
+      notificationCheckInterval: null,
+      deletedNotificationIds: new Set(),
     }
   },
   computed: {
@@ -142,6 +143,26 @@ export default {
     }
   },
   methods: {
+    loadDeletedNotificationIds() {
+      try {
+        const saved = localStorage.getItem('deletedNotificationIds');
+        if (saved) {
+          const ids = JSON.parse(saved);
+          this.deletedNotificationIds = new Set(ids);
+        }
+      } catch (error) {
+        console.error('Error loading deleted notification IDs:', error);
+      }
+    },
+
+    saveDeletedNotificationIds() {
+      try {
+        const idsArray = Array.from(this.deletedNotificationIds);
+        localStorage.setItem('deletedNotificationIds', JSON.stringify(idsArray));
+      } catch (error) {
+        console.error('Error saving deleted notification IDs:', error);
+      }
+    },
     handleImageError(e) {
       e.target.src = `https://ui-avatars.com/api/?name=${this.username}&background=random`;
     },
@@ -222,8 +243,18 @@ export default {
       // Create a copy of existing notifications
       let currentNotifications = [...this.notifications];
       
+      // Load deleted notification IDs from localStorage
+      this.loadDeletedNotificationIds();
+      
       // Process orders to create/update notifications
       orders.forEach(order => {
+        const notificationId = `order-${order.order_id}-${order.status}`;
+        
+        // Skip if this notification was previously deleted
+        if (this.deletedNotificationIds.has(notificationId)) {
+          return;
+        }
+        
         // Check if notification already exists for this order status
         const existingNotificationIndex = currentNotifications.findIndex(
           n => n.type === 'order' && n.orderId === order.order_id && n.status === order.status
@@ -232,7 +263,7 @@ export default {
         // If notification doesn't exist for this order status, create it
         if (existingNotificationIndex === -1) {
           const newNotification = {
-            id: `order-${order.order_id}-${order.status}`,
+            id: notificationId,
             type: 'order',
             orderId: order.order_id,
             status: order.status,
@@ -384,11 +415,21 @@ export default {
     window.addEventListener('orders-updated', this.fetchActiveOrders);
     
     // Listen for notification updates with custom event
-    window.addEventListener('notifications-updated', (event) => {
-      if (event.detail && event.detail.notifications) {
+   window.addEventListener('notifications-updated', (event) => {
+      if (event.detail) {
         // Update notifications from the event
-        this.notifications = event.detail.notifications;
-        this.saveNotifications();
+        if (event.detail.notifications) {
+          this.notifications = event.detail.notifications;
+          this.saveNotifications();
+        }
+        
+        // Update deleted notification IDs
+        if (event.detail.deletedIds) {
+          event.detail.deletedIds.forEach(id => {
+            this.deletedNotificationIds.add(id);
+          });
+          this.saveDeletedNotificationIds();
+        }
       } else {
         // Just reload notifications from localStorage
         this.loadNotifications();

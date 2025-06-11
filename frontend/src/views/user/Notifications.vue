@@ -375,32 +375,58 @@ export default {
     },
     
     confirmDelete() {
+      let deletedIds = [];
+      
       if (this.deleteTarget) {
         // Delete single notification
         this.notifications = this.notifications.filter(notification => 
           notification.id !== this.deleteTarget.id
         );
+        deletedIds.push(this.deleteTarget.id);
         this.deleteTarget = null;
       } else {
         // Delete selected notifications
+        const selectedIds = Array.from(this.selectedNotificationIds);
         this.notifications = this.notifications.filter(notification => 
           !this.selectedNotificationIds.has(notification.id)
         );
+        deletedIds = selectedIds;
         this.selectedNotificationIds.clear();
       }
       
       // Save changes
       this.saveNotifications();
       
+      // Update deleted notification IDs in localStorage
+      this.saveDeletedNotificationIds(deletedIds);
+      
       // Notify other components
       window.dispatchEvent(new CustomEvent('notifications-updated', {
-        detail: { notifications: this.notifications }
+        detail: { 
+          notifications: this.notifications,
+          deletedIds: deletedIds
+        }
       }));
       
       // Close modal
       this.showDeleteModal = false;
     },
-    
+    saveDeletedNotificationIds(newDeletedIds) {
+      try {
+        // Get existing deleted IDs
+        const saved = localStorage.getItem('deletedNotificationIds');
+        let deletedIds = saved ? JSON.parse(saved) : [];
+        
+        // Add new deleted IDs
+        deletedIds = [...deletedIds, ...newDeletedIds];
+        
+        // Save back to localStorage
+        localStorage.setItem('deletedNotificationIds', JSON.stringify(deletedIds));
+      } catch (error) {
+        console.error('Error saving deleted notification IDs:', error);
+      }
+    },
+        
     saveNotifications() {
       try {
         localStorage.setItem('userNotifications', JSON.stringify(this.notifications));
