@@ -830,7 +830,7 @@ button.dropdown-item:hover {
   min-width: 18px;
   border-radius: 9px;
   padding: 0 6px;
-  margin-left: auto;
+  margin-left:  2rem;
 }
 
 .navbar-end {
