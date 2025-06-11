@@ -1,5 +1,5 @@
 <template>
-    <div class="insert-products-container">
+    <div class="products-container"> 
         <AdminNavbar :username="username" @logout="showLogoutModal = true" />
 
         <div class="insert-products-content">
@@ -424,7 +424,7 @@ export default {
 </script>
 
 <style scoped>
-.insert-products-container {
+.products-container {
     font-family: Arial, sans-serif;
     min-height: 100vh;
     background-color: #f5f5f5;

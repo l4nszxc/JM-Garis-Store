@@ -383,7 +383,7 @@ export default {
 }
 
 input, select {
-  width: 100%;
+  width: 97%;
   padding: 0.75rem 1rem;
   border: 1px solid #e2e8f0;
   border-radius: 6px;

@@ -1,0 +1,45 @@
+/* Global admin styles */
+body.sidebar-collapsed .admin-container {
+  padding-left: 60px;
+  transition: padding-left 0.3s ease;
+}
+
+.admin-container {
+  padding-left: 250px;
+  transition: padding-left 0.3s ease;
+}
+
+/* Also target staff-list-container and other admin specific container classes */
+body.sidebar-collapsed .staff-list-container,
+body.sidebar-collapsed .users-list-container,
+body.sidebar-collapsed .products-container,
+body.sidebar-collapsed .recruit-container {
+  padding-left: 60px;
+  transition: padding-left 0.3s ease;
+}
+
+.staff-list-container,
+.users-list-container,
+.products-container,
+.recruit-container {
+  padding-left: 250px;
+  transition: padding-left 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .admin-container,
+  .staff-list-container,
+  .users-list-container,
+  .products-container,
+  .recruit-container {
+    padding-left: 0;
+  }
+  
+  body.sidebar-collapsed .admin-container,
+  body.sidebar-collapsed .staff-list-container,
+  body.sidebar-collapsed .users-list-container,
+  body.sidebar-collapsed .products-container,
+  body.sidebar-collapsed .recruit-container {
+    padding-left: 0;
+  }
+}
