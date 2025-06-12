@@ -296,3 +296,24 @@ exports.hasChoices = async (req, res) => {
         res.status(500).json({ message: 'Error checking product choices' });
     }
 };
+exports.getProductRatings = async (req, res) => {
+  try {
+    // Query that joins order_reviews with order_items to get product ratings
+    const [ratings] = await db.execute(`
+      SELECT 
+        oi.product_id, 
+        AVG(r.rating) AS avg_rating, 
+        COUNT(r.id) AS review_count
+      FROM order_reviews r
+      JOIN orders o ON r.order_id = o.order_id
+      JOIN order_items oi ON o.order_id = oi.order_id
+      GROUP BY oi.product_id
+      HAVING COUNT(r.id) > 0
+    `);
+
+    res.json(ratings);
+  } catch (error) {
+    console.error('Error fetching product ratings:', error);
+    res.status(500).json({ message: 'Error fetching product ratings' });
+  }
+};

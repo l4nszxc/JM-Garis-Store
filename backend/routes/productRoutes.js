@@ -13,5 +13,5 @@ router.post('/', productController.uploadMiddleware, productController.insertPro
 router.put('/:id', productController.uploadMiddleware, productController.updateProduct);
 router.delete('/:id', productController.deleteProduct);
 router.get('/:id/has-choices', authenticate, productController.hasChoices);
-
+router.get('/ratings', productController.getProductRatings);
 module.exports = router;

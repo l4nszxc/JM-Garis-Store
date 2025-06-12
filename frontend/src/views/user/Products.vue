@@ -51,6 +51,17 @@
                     </div>
                     <div class="product-details">
                         <h3>{{ product.name }}</h3>
+                        <!-- Product Rating Stars -->
+                        <div class="product-rating">
+                            <div class="star-rating">
+                                <i v-for="i in 5" :key="i" class="fas fa-star" 
+                                   :class="{ 'filled': i <= (product.rating || 0) }"></i>
+                            </div>
+                            <span v-if="product.rating" class="rating-count">
+                                {{ product.rating.toFixed(1) }} ({{ product.review_count || 0 }})
+                            </span>
+                            <span v-else class="rating-count">No reviews yet</span>
+                        </div>
                         <p class="product-description">{{ product.description }}</p>
                         <div class="product-info">
                             <p class="product-price">
@@ -125,7 +136,7 @@ export default {
             cart: [],
             showModal: false,
             selectedProduct: null,
-                categories: [
+            categories: [
                 { label: 'All', value: '' },
                 { label: 'Beverages', value: 'Beverages' },
                 { label: 'Milk & Chocolate', value: 'Milk and Chocolate Drink' },
@@ -159,7 +170,7 @@ export default {
                 filtered = filtered.filter(product => product.price <= this.maxPrice);
             }
 
-            return filtered; // Removed console.log
+            return filtered;
         }
     },
     methods: {
@@ -214,7 +225,7 @@ export default {
             return totalStock;
         },
         handleImageError(e) {
-        e.target.src = '/img/placeholder.jpg'
+            e.target.src = '/img/placeholder.jpg'
         },
         formatPrice(price) {
             return new Intl.NumberFormat('en-PH', {
@@ -276,49 +287,49 @@ export default {
                 this.selectedProduct = null;
             }
         },
-    async fetchCart() {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:7904/api/cart', {  // Updated endpoint
-                headers: {
-                    'Authorization': `Bearer ${token}`
+        async fetchCart() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:7904/api/cart', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (response.ok) {
+                    this.cart = await response.json();
+                } else {
+                    console.error('Failed to fetch cart');
+                    this.cart = [];
                 }
-            });
-            if (response.ok) {
-                this.cart = await response.json();
-            } else {
-                console.error('Failed to fetch cart');
+            } catch (error) {
+                console.error('Error fetching cart:', error);
                 this.cart = [];
             }
-        } catch (error) {
-            console.error('Error fetching cart:', error);
-            this.cart = [];
-        }
-    },
-    async handleLogout() {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:7904/api/users/logout', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-            });
+        },
+        async handleLogout() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:7904/api/users/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
 
-            if (response.ok) {
-                localStorage.removeItem('token');
-                this.$router.push('/login');
-            } else {
-                throw new Error('Logout failed');
+                if (response.ok) {
+                    localStorage.removeItem('token');
+                    this.$router.push('/login');
+                } else {
+                    throw new Error('Logout failed');
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+            } finally {
+                this.showLogoutModal = false;
             }
-        } catch (error) {
-            console.error('Error during logout:', error);
-        } finally {
-            this.showLogoutModal = false;
-        }
-    },
+        },
         async getUserData() {
             try {
                 const token = localStorage.getItem('token');
@@ -364,6 +375,10 @@ export default {
                         ...product,
                         total_sold: parseInt(product.total_sold) || 0
                     }));
+                    
+                    // Fetch product ratings after getting products
+                    await this.fetchProductRatings();
+                    
                 } else {
                     if (response.status === 401) {
                         // Handle unauthorized access
@@ -378,6 +393,37 @@ export default {
                 this.loading = false;
             }
         },
+        
+        async fetchProductRatings() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:7904/api/products/ratings', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const ratingsData = await response.json();
+                    
+                    // Map ratings data to products
+                    this.products = this.products.map(product => {
+                        const productRating = ratingsData.find(r => r.product_id === product.products_id);
+                        if (productRating) {
+                            return {
+                                ...product,
+                                rating: parseFloat(productRating.avg_rating) || 0,
+                                review_count: parseInt(productRating.review_count) || 0
+                            };
+                        }
+                        return product;
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching product ratings:', error);
+            }
+        },
+        
         resetFilters() {
             this.searchQuery = '';
             this.minPrice = null;
@@ -409,7 +455,6 @@ export default {
 
 <style scoped>
 .product-container {
-    
     font-family: Arial, sans-serif;
     min-height: 100vh;
     background-color: #f5f5f5;
@@ -426,6 +471,33 @@ export default {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+}
+
+/* Product Rating Styles */
+.product-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.star-rating {
+    display: flex;
+    gap: 0.15rem;
+}
+
+.star-rating .fa-star {
+    color: #e0e0e0;
+    font-size: 0.9rem;
+}
+
+.star-rating .fa-star.filled {
+    color: #ffca28;
+}
+
+.rating-count {
+    font-size: 0.8rem;
+    color: #64748b;
 }
 
 /* Filters Section */
