@@ -443,7 +443,7 @@ export default {
                 this.checkedItems.add(itemId);
             }
         },
-        async handlePlaceOrder({ items, discountId }) {
+       async handlePlaceOrder({ items, discountId }) {
             try {
                 const token = localStorage.getItem('token');
                 
@@ -482,13 +482,16 @@ export default {
 
                 const { orderId, finalAmount, appliedDiscount, pointsEarned } = await response.json();
 
+                // Instead of trying to delete from server again, just update local UI
+                // since the items are already processed in the order
+                this.cartItems = this.cartItems.filter(cartItem => 
+                    !items.some(item => item.id === cartItem.id)
+                );
+                
                 // Clear selected items
-                for (const item of items) {
-                    await this.removeFromCart(item.id);
-                }
-
                 this.checkedItems.clear();
-                await this.fetchCart();
+                
+                // Update available discounts
                 await this.fetchAvailableDiscounts();
 
                 // Check if cart was being shared and notify user
@@ -500,6 +503,9 @@ export default {
 
                 this.showOrdersModal = false;
                 this.$router.push('/view-orders');
+                
+                // Dispatch cart update event
+                window.dispatchEvent(new CustomEvent('cart-updated'));
 
             } catch (error) {
                 console.error('Error placing order:', error);
@@ -592,10 +598,13 @@ export default {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-
+                
                 if (response.ok) {
+                    // Remove item from local array and checked items
                     this.cartItems = this.cartItems.filter(item => item.id !== itemId);
-                    this.checkedItems.delete(itemId);
+                    if (this.checkedItems.has(itemId)) {
+                        this.checkedItems.delete(itemId);
+                    }
                     window.dispatchEvent(new CustomEvent('cart-updated'));
                 }
             } catch (error) {

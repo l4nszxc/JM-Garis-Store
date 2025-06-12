@@ -88,7 +88,7 @@
 
         <div class="order-actions">
           <button 
-            v-if="['pending', 'preparing'].includes(order.status.toLowerCase())" 
+            v-if="order.status.toLowerCase() === 'pending'" 
             @click="confirmCancelOrder"
             class="cancel-button"
           >
@@ -336,11 +336,14 @@ export default {
       try {
         const token = localStorage.getItem('token');
         const response = await fetch(`http://localhost:7904/api/orders/${this.orderId}/cancel`, {
-          method: 'PUT',
+          method: 'POST',  // Changed from PUT to POST based on your API endpoint structure
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
-          }
+          },
+          body: JSON.stringify({
+            reason: 'Customer cancelled'  // Adding a default reason
+          })
         });
 
         if (!response.ok) {
