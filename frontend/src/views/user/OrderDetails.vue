@@ -96,14 +96,6 @@
           </button>
           
           <button 
-            v-if="order.status.toLowerCase() === 'ready for pickup'" 
-            @click="confirmPickupOrder"
-            class="pickup-button"
-          >
-            <i class="fas fa-check-circle"></i> Confirm Pickup
-          </button>
-          
-          <button 
             @click="reportIssue"
             class="report-button"
           >
@@ -128,18 +120,6 @@
         <div class="modal-actions">
           <button @click="showCancelModal = false" class="cancel-action">No, Keep Order</button>
           <button @click="cancelOrder" class="confirm-action">Yes, Cancel Order</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Pickup Confirmation Modal -->
-    <div v-if="showPickupModal" class="modal-overlay">
-      <div class="modal-content">
-        <h3>Confirm Pickup</h3>
-        <p>By confirming pickup, you acknowledge that you've received your order.</p>
-        <div class="modal-actions">
-          <button @click="showPickupModal = false" class="cancel-action">Not Yet</button>
-          <button @click="confirmPickup" class="confirm-action">Confirm Pickup</button>
         </div>
       </div>
     </div>
@@ -200,7 +180,6 @@ export default {
       order: null,
       showLogoutModal: false,
       showCancelModal: false,
-      showPickupModal: false,
       showReportModal: false,
       reportData: {
         issueType: 'missing-items',
@@ -361,37 +340,6 @@ export default {
       } catch (error) {
         console.error('Error cancelling order:', error);
         alert('Failed to cancel the order. Please try again.');
-      }
-    },
-    confirmPickupOrder() {
-      this.showPickupModal = true;
-    },
-    async confirmPickup() {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/orders/${this.orderId}/pickup`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to confirm pickup');
-        }
-
-        // Update the order status locally
-        this.order.status = 'Paid';
-        
-        // Dispatch event to refresh orders in other components
-        window.dispatchEvent(new Event('orders-updated'));
-        
-        // Hide the modal
-        this.showPickupModal = false;
-      } catch (error) {
-        console.error('Error confirming pickup:', error);
-        alert('Failed to confirm pickup. Please try again.');
       }
     },
     reportIssue() {
@@ -764,7 +712,7 @@ export default {
   justify-content: flex-end;
 }
 
-.cancel-button, .pickup-button, .report-button {
+.cancel-button, .report-button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -783,15 +731,6 @@ export default {
 
 .cancel-button:hover {
   background-color: #f5c6cb;
-}
-
-.pickup-button {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.pickup-button:hover {
-  background-color: #c3e6cb;
 }
 
 .report-button {
@@ -950,7 +889,7 @@ textarea.form-input {
     flex-direction: column;
   }
   
-  .cancel-button, .pickup-button, .report-button {
+  .cancel-button, .report-button {
     width: 100%;
     justify-content: center;
   }
