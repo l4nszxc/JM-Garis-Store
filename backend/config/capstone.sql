@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jun 11, 2025 at 03:25 PM
+-- Generation Time: Jun 12, 2025 at 09:38 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -296,8 +296,8 @@ CREATE TABLE `available_discounts` (
 INSERT INTO `available_discounts` (`id`, `user_id`, `amount`, `created_at`, `expires_at`, `used`, `order_id`) VALUES
 (50, 58, 50.00, '2025-05-09 13:35:21', '2025-06-08 13:35:21', 1, '5229682'),
 (51, 58, 50.00, '2025-05-19 06:25:15', '2025-06-18 06:25:15', 1, '7576385'),
-(52, 58, 100.00, '2025-06-11 12:44:07', '2025-07-11 12:44:07', 0, NULL),
-(53, 58, 50.00, '2025-06-11 12:49:02', '2025-07-11 12:49:02', 0, NULL),
+(52, 58, 100.00, '2025-06-11 12:44:07', '2025-07-11 12:44:07', 1, '4970734'),
+(53, 58, 50.00, '2025-06-11 12:49:02', '2025-07-11 12:49:02', 1, '8634793'),
 (54, 58, 250.00, '2025-06-11 12:49:16', '2025-07-11 12:49:16', 1, '0479798');
 
 -- --------------------------------------------------------
@@ -355,9 +355,10 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('0320939', 56, 51.00, 'paid', '2025-05-15 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('0355902', 56, 567.00, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('0370997', 56, 1223.00, 'paid', '2025-05-20 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0479798', 58, 0.00, 'pending', '2025-06-11 12:49:43', '2025-06-11 12:49:43', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('0479798', 58, 0.00, 'preparing', '2025-06-11 12:49:43', '2025-06-11 17:09:58', NULL, 23, '2025-06-12 01:09:58', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('0748472', 56, 378.00, 'paid', '2025-05-18 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('0881007', 56, 370.00, 'paid', '2025-05-27 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('0907455', 58, 1170.00, 'cancelled', '2025-06-11 21:49:58', '2025-06-11 21:50:03', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('1042234', 56, 2554.00, 'paid', '2025-06-01 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('1094201', 56, 165.00, 'paid', '2025-05-27 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('1251674', 56, 270.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -371,6 +372,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('1917367', 56, 55.00, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('2132346', 56, 423.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('2165407', 56, 189.00, 'paid', '2025-05-16 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('2173189', 58, 617.00, 'paid', '2025-06-12 09:26:02', '2025-06-12 09:31:39', NULL, 23, '2025-06-12 17:26:17', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('2225484', 56, 91.00, 'paid', '2025-05-15 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('2388558', 56, 378.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('2474222', 56, 38.00, 'paid', '2025-06-04 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -378,7 +380,6 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('2486554', 56, 423.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('2657847', 56, 49.00, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('2734169', 56, 94.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('2761636', 58, 378.00, 'pending', '2025-06-11 12:49:29', '2025-06-11 12:49:29', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('3049944', 56, 171.00, 'paid', '2025-06-02 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('3152531', 56, 189.00, 'paid', '2025-05-24 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('3226219', 56, 468.00, 'paid', '2025-05-26 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -388,12 +389,14 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('3851076', 56, 111.00, 'paid', '2025-05-28 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('3871827', 56, 216.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4023658', 56, 19.00, 'paid', '2025-06-09 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('4151897', 58, 140.00, 'preparing', '2025-06-12 08:17:29', '2025-06-12 08:17:41', NULL, 23, '2025-06-12 16:17:41', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4217171', 56, 1291.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4226170', 56, 378.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4234665', 56, 189.00, 'paid', '2025-05-22 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4379664', 56, 282.00, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4406490', 56, 189.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4429183', 56, 189.00, 'paid', '2025-05-27 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('4527232', 58, 1359.00, 'ready for pickup', '2025-06-12 08:11:45', '2025-06-12 08:12:00', NULL, 23, '2025-06-12 16:11:56', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4547246', 56, 74.00, 'paid', '2025-06-04 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4564808', 56, 378.00, 'paid', '2025-06-04 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4672841', 56, 378.00, 'paid', '2025-05-20 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -402,6 +405,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('5120226', 56, 140.00, 'paid', '2025-05-28 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('5219639', 56, 29.50, 'paid', '2025-06-01 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('5385274', 56, 564.00, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('5682030', 58, 3305.00, 'paid', '2025-06-11 15:29:15', '2025-06-11 15:29:41', NULL, 23, '2025-06-11 23:29:22', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('5954237', 56, 378.00, 'paid', '2025-06-02 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('6031901', 56, 937.00, 'paid', '2025-05-20 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('6069629', 56, 78.50, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -413,6 +417,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('6780150', 56, 151.75, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('6837166', 56, 282.00, 'paid', '2025-06-01 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('7070479', 56, 189.00, 'paid', '2025-05-17 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('7194326', 58, 141.00, 'cancelled', '2025-06-12 08:27:16', '2025-06-12 08:27:29', 'Customer cancelled', NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('7280722', 56, 141.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('7339968', 56, 106.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('7687088', 56, 189.00, 'paid', '2025-05-28 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -424,12 +429,15 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('8135598', 56, 423.00, 'paid', '2025-06-09 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('8176548', 56, 1266.00, 'paid', '2025-06-06 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('8298188', 56, 605.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('8436968', 58, 23.00, 'preparing', '2025-06-11 17:20:10', '2025-06-11 17:20:28', NULL, 23, '2025-06-12 01:20:28', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('8448674', 56, 378.00, 'paid', '2025-05-23 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('8540515', 56, 72.00, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('8634793', 58, 510.00, 'preparing', '2025-06-11 15:32:15', '2025-06-11 19:32:17', NULL, 23, '2025-06-11 23:32:36', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('8843835', 58, 189.00, 'cancelled', '2025-06-10 22:27:22', '2025-06-11 12:17:44', 'Ordered by mistake', NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('9056126', 56, 378.00, 'paid', '2025-05-26 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('9099822', 56, 564.00, 'paid', '2025-06-08 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('9325414', 56, 378.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('9344479', 58, 185.00, 'cancelled', '2025-06-12 08:45:37', '2025-06-12 08:45:48', 'Customer cancelled', NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('9360203', 58, 17.50, 'paid', '2025-06-10 21:46:41', '2025-06-11 12:41:28', NULL, 23, '2025-06-11 05:47:05', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('9396606', 58, 141.00, 'paid', '2025-06-10 21:47:26', '2025-06-10 21:48:11', NULL, 23, '2025-06-11 05:47:36', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('9525472', 56, 1252.00, 'paid', '2025-05-22 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -595,7 +603,36 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (1711, '0748472', 37, 2, 189.00, NULL),
 (1712, '2165407', 37, 1, 189.00, NULL),
 (1713, '4406490', 37, 1, 189.00, NULL),
-(1714, '4234665', 37, 1, 189.00, NULL);
+(1714, '4234665', 37, 1, 189.00, NULL),
+(1715, '5682030', 75, 10, 54.00, NULL),
+(1716, '5682030', 74, 5, 93.00, NULL),
+(1717, '5682030', 63, 100, 23.00, NULL),
+(1718, '8634793', 85, 20, 20.00, NULL),
+(1719, '8634793', 82, 20, 8.00, NULL),
+(1720, '8436968', 63, 1, 23.00, NULL),
+(1721, '4970734', 50, 3, 185.00, NULL),
+(1722, '0907455', 32, 5, 234.00, NULL),
+(1723, '4527232', 35, 1, 189.00, NULL),
+(1724, '4527232', 32, 5, 234.00, NULL),
+(1725, '4151897', 36, 1, 140.00, NULL),
+(1726, '7194326', 34, 1, 141.00, NULL),
+(1727, '6668658', 45, 1, 15.00, NULL),
+(1728, '8148803', 45, 1, 15.00, NULL),
+(1729, '9245709', 45, 1, 15.00, NULL),
+(1730, '4326455', 45, 1, 15.00, NULL),
+(1731, '7853300', 52, 1, 270.00, NULL),
+(1732, '5695988', 35, 1, 189.00, NULL),
+(1733, '0491522', 35, 1, 189.00, NULL),
+(1734, '2252374', 35, 1, 189.00, NULL),
+(1735, '6545693', 35, 1, 189.00, NULL),
+(1736, '1075232', 45, 1, 15.00, NULL),
+(1737, '5813781', 52, 1, 270.00, NULL),
+(1738, '0848012', 52, 1, 270.00, NULL),
+(1739, '0978768', 52, 1, 270.00, NULL),
+(1740, '1414253', 52, 1, 270.00, NULL),
+(1741, '3039234', 38, 1, 17.50, NULL),
+(1742, '9344479', 57, 1, 185.00, NULL),
+(1743, '2173189', 58, 1, 617.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -621,31 +658,31 @@ CREATE TABLE `products` (
 
 INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_quantity`, `category`, `image`, `created_at`, `updated_at`) VALUES
 (31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 999, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-04-01 07:21:29', '2025-04-24 11:27:31'),
-(32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 0.00, 999, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-04-01 07:22:15', '2025-04-24 16:43:32'),
+(32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 994, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-04-01 07:22:15', '2025-06-12 08:11:45'),
 (33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 988, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-05-19 06:30:30'),
-(34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 79, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-06-11 12:17:48'),
-(35, 'GSM Mojito 1L', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 189.00, 982, 'Beverages', 'https://i.ibb.co/vvP01sRS/00058af3eb33.png', '2025-04-01 07:28:48', '2025-06-11 12:49:29'),
-(36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 81, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-04-01 07:34:49', '2025-06-11 12:49:43'),
+(34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 79, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-06-12 08:27:29'),
+(35, 'GSM Mojito 1L', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 189.00, 977, 'Beverages', 'https://i.ibb.co/vvP01sRS/00058af3eb33.png', '2025-04-01 07:28:48', '2025-06-12 08:35:52'),
+(36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 80, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-04-01 07:34:49', '2025-06-12 08:17:29'),
 (37, 'Primera Light 1Liter', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 189.00, 95, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 07:35:27', '2025-05-09 13:17:45'),
-(38, 'Lucky 7 Corned Beef ', 'organic-free corned beef multipack', 17.50, 197, 'Canned Goods', 'https://i.ibb.co/MD9MDJ5q/d66d18901a73.png', '2025-04-01 07:37:33', '2025-06-10 21:46:41'),
+(38, 'Lucky 7 Corned Beef ', 'organic-free corned beef multipack', 17.50, 196, 'Canned Goods', 'https://i.ibb.co/MD9MDJ5q/d66d18901a73.png', '2025-04-01 07:37:33', '2025-06-12 08:43:21'),
 (41, 'Lucky 7 Meat Loaf 100g', 'organic-free corned beef multipack', 23.00, 48, 'Canned Goods', 'https://i.ibb.co/tTMm9hg9/bf73f6e95a5d.png', '2025-04-01 07:42:51', '2025-04-24 16:44:33'),
-(45, 'Datu Patis ', '#1 fish sauce in the Philippines.', 15.00, 100, 'Condiments', 'https://i.ibb.co/0Ry6CFm6/51d8ce58dd9f.png', '2025-04-01 09:25:10', '2025-04-17 10:43:28'),
+(45, 'Datu Patis ', '#1 fish sauce in the Philippines.', 15.00, 95, 'Condiments', 'https://i.ibb.co/0Ry6CFm6/51d8ce58dd9f.png', '2025-04-01 09:25:10', '2025-06-12 08:36:27'),
 (47, 'UFC Ketchup', 'unique blend of fresh spices and select bananas that provide the tamis anghang (sweet and spicy) flavor. ', 11.75, 100, 'Condiments', 'https://i.ibb.co/j9gnXrxH/cecb6672ce73.png', '2025-04-01 09:27:23', '2025-04-09 06:24:47'),
 (48, 'Argentina Corned Beef', 'No. 1 corned beef brand that has the food qualities consumer most value', 27.50, 100, 'Canned Goods', 'https://i.ibb.co/W46GfnGB/d19d7b986670.png', '2025-04-01 09:32:37', '2025-04-08 21:09:32'),
-(50, 'Primera Light 1Liter', 'a unique 55-proof brandy liqueur masterpiece', 185.00, 20, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 09:41:56', '2025-04-01 17:15:38'),
+(50, 'Primera Light 1Liter', 'a unique 55-proof brandy liqueur masterpiece', 185.00, 17, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 09:41:56', '2025-06-11 19:20:28'),
 (51, 'May Sparkle Red', 'A non-alcoholic beverage from freshly-pressed and carefully-selected Belgium Grapes.', 0.00, 6, 'Beverages', 'https://i.ibb.co/Wv5gFDjr/d75fc84e5138.png', '2025-04-01 09:43:28', '2025-04-01 17:04:28'),
-(52, 'Novellino 750mL', 'Novellino Wild Blackberry is a casual wine vinified from choice vitis vinifera grapes in the tradition of fine Italian winemaking', 270.00, 10, 'Beverages', 'https://i.ibb.co/278v021y/05b8707b2772.png', '2025-04-01 09:45:11', '2025-04-01 17:16:56'),
+(52, 'Novellino 750mL', 'Novellino Wild Blackberry is a casual wine vinified from choice vitis vinifera grapes in the tradition of fine Italian winemaking', 270.00, 5, 'Beverages', 'https://i.ibb.co/278v021y/05b8707b2772.png', '2025-04-01 09:45:11', '2025-06-12 08:43:06'),
 (53, 'The Bar Dry Gin 335mL ', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 6, 'Beverages', 'https://i.ibb.co/jkNpPRn2/4cd7e58417a4.png', '2025-04-01 09:46:37', '2025-04-17 07:31:00'),
 (54, 'The Bar Pink 335mL', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 58, 'Beverages', 'https://i.ibb.co/hxGrvfmq/a6f137b5983c.png', '2025-04-01 09:47:16', '2025-05-19 06:14:33'),
 (55, 'The Bar Lime 335mL', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 6, 'Beverages', 'https://i.ibb.co/8gggkGVx/49ad7f791839.png', '2025-04-01 09:47:46', '2025-04-01 17:18:04'),
 (56, 'Emperador 750mL', ' brand of cut brandy and brandy produced by Emperador Inc.', 142.00, 50, 'Beverages', 'https://i.ibb.co/mrbVVg4L/daf1bf6947ad.png', '2025-04-01 09:51:17', '2025-04-01 17:18:46'),
-(57, 'Emperador 1Liter', ' brand of cut brandy and brandy produced by Emperador Inc.', 185.00, 49, 'Beverages', 'https://i.ibb.co/VckXJTFG/ecd6f3d61a21.png', '2025-04-01 09:52:01', '2025-04-20 17:03:16'),
-(58, 'Red Horse Beer per Case', 'beer', 617.00, 80, 'Beverages', 'https://i.ibb.co/F4fd74z2/2843dba65b63.png', '2025-04-01 17:27:22', '2025-04-08 21:03:44'),
+(57, 'Emperador 1Liter', ' brand of cut brandy and brandy produced by Emperador Inc.', 185.00, 49, 'Beverages', 'https://i.ibb.co/VckXJTFG/ecd6f3d61a21.png', '2025-04-01 09:52:01', '2025-06-12 08:45:48'),
+(58, 'Red Horse Beer per Case', 'beer', 617.00, 79, 'Beverages', 'https://i.ibb.co/F4fd74z2/2843dba65b63.png', '2025-04-01 17:27:22', '2025-06-12 09:26:02'),
 (59, 'San Mig Light || Apple per Case', 'flavored beer', 835.00, 52, 'Beverages', 'https://i.ibb.co/dwTNCfJV/b0926c017020.png', '2025-04-08 20:30:05', '2025-04-08 21:03:32'),
 (60, 'Ginebra per Case', 'delivers a clean, juniper-forward taste, complemented by subtle hints of citrus and spice', 1554.00, 200, 'Beverages', 'https://i.ibb.co/C3MZ5YvK/0b2cffba62af.png', '2025-04-08 20:59:46', '2025-04-08 20:59:46'),
 (61, 'San Miguel Beer per case', 'full-flavored taste complements its pleasant aroma, making it a perfectly balanced beer', 599.00, 29, 'Beverages', 'https://i.ibb.co/FqyQ2D5Z/2b8cb868bbda.png', '2025-04-08 21:03:06', '2025-04-20 17:00:51'),
 (62, 'Argentina Meat Loaf', 'made from quality meat that\'s seasoned with the most flavorful yet kid-friendly spices', 16.00, 99, 'Canned Goods', 'https://i.ibb.co/zTRL3z2K/67acda401865.png', '2025-04-08 21:13:02', '2025-04-20 17:03:04'),
-(63, 'Wow Ulam', 'brand of canned and fresh processed meat products from Century Pacific Food Inc.', 23.00, 200, 'Canned Goods', 'https://i.ibb.co/nNMdv4zm/8eaa96b1b065.png', '2025-04-08 22:09:14', '2025-04-08 22:09:14'),
+(63, 'Wow Ulam', 'brand of canned and fresh processed meat products from Century Pacific Food Inc.', 23.00, 99, 'Canned Goods', 'https://i.ibb.co/nNMdv4zm/8eaa96b1b065.png', '2025-04-08 22:09:14', '2025-06-11 17:20:10'),
 (64, 'Century Tuna', 'a leading canned tuna brand in the Philippines, known for its healthy, delicious, and convenient options,', 27.50, 100, 'Canned Goods', 'https://i.ibb.co/FbXNJm1m/c00050cbdeba.png', '2025-04-08 22:14:26', '2025-04-08 22:14:26'),
 (65, 'Blue Bay', 'Manamis-namis. Deliciously irresistible. Unmistakably fresh. The sea`s bounty and farm`s harvest make one delightful feast.', 29.75, 200, 'Canned Goods', 'https://i.ibb.co/vxtvqDpM/cc9c981cfeb3.png', '2025-04-08 22:18:53', '2025-04-08 22:18:53'),
 (66, '555 Tuna', 'the “Super Ulam Pinoy” because it is rich in calcium for stronger bones, protein for muscle building, lycopene for cancer prevention', 26.00, 49, 'Canned Goods', 'https://i.ibb.co/Y7jbJpZ9/0f06ee53e48d.png', '2025-04-08 22:21:01', '2025-04-20 17:03:16'),
@@ -656,25 +693,25 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (71, 'Hunts Pork and Beans', '#1 brand of Pork & Beans in the Philippines. It is made from high quality Great Northern Beans and real pork bits covered in rich, thick, sweet tomato sauce.', 25.00, 50, 'Canned Goods', 'https://i.ibb.co/rGVdMcgd/716c7cd11ed1.png', '2025-04-08 22:39:42', '2025-04-08 22:40:04'),
 (72, 'Bear Brand', ' a Nestlé-owned milk brand, particularly popular in the Philippines, offering both sterilized milk and fortified powdered milk drinks, known for providing essential nutrients and supporting overall health and well-being. ', 37.00, 50, 'Milk and Chocolate Drink', 'https://i.ibb.co/1fKNBZTT/b2969e594b9d.png', '2025-04-08 22:52:24', '2025-04-08 22:52:24'),
 (73, 'Bear Brand Adult', 'a powdered milk drink specially formulated for adults aged 19-29, designed to provide essential nutrients, including calcium, vitamin D, and B-vitamins, to support energy and immunity, and help close daily nutrition gaps. ', 98.00, 14, 'Milk and Chocolate Drink', 'https://i.ibb.co/3mr1fM35/60153400556e.png', '2025-04-08 22:58:08', '2025-04-20 17:00:51'),
-(74, 'Bear Brand Choco', ' a chocolate-flavored powdered milk drink fortified with essential nutrients like iron, zinc, and vitamin C, designed for individuals aged 3 and up to support strong immunity and overall well-being', 93.00, 5, 'Milk and Chocolate Drink', 'https://i.ibb.co/nMPC557v/b9527d3d54b3.png', '2025-04-08 23:00:50', '2025-04-08 23:00:50'),
-(75, 'Milo', 'a chocolate-flavored malted beverage powder created by Nestlé, known for its unique choco-malty flavor and often mixed with milk or water to create a nutritious and delicious drink, especially popular among children and those seeking an energy boost. ', 54.00, 15, 'Milk and Chocolate Drink', 'https://i.ibb.co/7NrmLyxz/6d157cac0a1f.png', '2025-04-08 23:05:20', '2025-04-08 23:05:20'),
+(74, 'Bear Brand Choco', ' a chocolate-flavored powdered milk drink fortified with essential nutrients like iron, zinc, and vitamin C, designed for individuals aged 3 and up to support strong immunity and overall well-being', 93.00, 20, 'Milk and Chocolate Drink', 'https://i.ibb.co/nMPC557v/b9527d3d54b3.png', '2025-04-08 23:00:50', '2025-06-11 16:38:11'),
+(75, 'Milo', 'a chocolate-flavored malted beverage powder created by Nestlé, known for its unique choco-malty flavor and often mixed with milk or water to create a nutritious and delicious drink, especially popular among children and those seeking an energy boost. ', 54.00, 5, 'Milk and Chocolate Drink', 'https://i.ibb.co/7NrmLyxz/6d157cac0a1f.png', '2025-04-08 23:05:20', '2025-06-11 15:29:15'),
 (76, 'Birch Tree', ' known for its affordable price and high-quality nutrition, with a focus on fortified milk for children and adults. ', 51.00, 22, 'Milk and Chocolate Drink', 'https://i.ibb.co/xK9CjyBV/e407420a9dcb.png', '2025-04-08 23:10:11', '2025-04-20 17:03:16'),
 (77, 'Del Monte Ketchup', 'made from real, high-quality tomatoes, naturally contains lycopene, and is guaranteed to have no preservatives, offering a rich tomato flavor and a sweet-sour taste for delicious dips and meals', 49.00, 19, 'Condiments', 'https://i.ibb.co/jmzv3ZM/728ac9940fe7.png', '2025-04-09 06:48:17', '2025-04-20 17:03:04'),
 (78, 'Lorins Patis', 'a popular, tangy Filipino fish sauce, ideal as a dipping sauce or cooking ingredient for a wide variety of dishes, including seafood, meat, poultry, vegetables, and Filipino favorites like sinigang and nilaga. ', 27.00, 20, 'Condiments', 'https://i.ibb.co/3yZ5qszC/df3e929a28ec.png', '2025-04-09 07:02:19', '2025-04-09 07:03:39'),
 (79, 'Sugar per kg', 'brown and white refined', 72.00, 300, 'Condiments', 'https://i.ibb.co/xK5TGqzf/2eb5e49aefb7.png', '2025-04-09 07:06:43', '2025-04-09 07:12:13'),
 (80, 'Salt per kg', 'sea salt', 12.00, 200, 'Condiments', 'https://i.ibb.co/j9LdB8xH/50a57d229f22.png', '2025-04-09 07:08:19', '2025-04-09 07:08:19'),
 (81, 'Paminta per Tie', 'whole and ground black pepper', 8.00, 100, 'Condiments', 'https://i.ibb.co/N6RqFRg8/3912cb5cc3e9.png', '2025-04-09 07:10:07', '2025-04-09 07:10:07'),
-(82, 'Laurel per Tie', 'is an evergreen plant used to add flavor to dishes. It is used in cuisines all over the world for flavoring especially stews and broths, marinades, meat and fish dishes, gravies, and game.', 8.00, 50, 'Condiments', 'https://i.ibb.co/1Gg3Rqmt/c68fa580806f.png', '2025-04-09 07:11:30', '2025-04-09 07:11:30'),
+(82, 'Laurel per Tie', 'is an evergreen plant used to add flavor to dishes. It is used in cuisines all over the world for flavoring especially stews and broths, marinades, meat and fish dishes, gravies, and game.', 8.00, 30, 'Condiments', 'https://i.ibb.co/1Gg3Rqmt/c68fa580806f.png', '2025-04-09 07:11:30', '2025-06-11 15:32:15'),
 (83, 'Mafran Banana Catsup', 'formulated from choice spices, natural flavor and aroma of banana', 95.00, 12, 'Condiments', 'https://i.ibb.co/jP5X36rq/dc20ac6e0fce.png', '2025-04-09 07:13:42', '2025-04-09 07:13:42'),
 (84, 'Dip Catsup Gallon', 'often used as a dip or a topping for various dishes, characterized by its sweet and tangy flavor', 99.00, 12, 'Condiments', 'https://i.ibb.co/KjDjv9WP/00bb85cf904b.png', '2025-04-09 07:15:01', '2025-04-09 07:15:01'),
-(85, '555 Karne Norte', ' a locally manufactured corned beef, known for its quality and affordability, made with selected beef, hashed, and hygienically processed under international standards, ready to eat. ', 20.00, 50, 'Canned Goods', 'https://i.ibb.co/xtWHP4pc/d786693a1768.png', '2025-04-09 07:17:10', '2025-04-09 07:17:10'),
+(85, '555 Karne Norte', ' a locally manufactured corned beef, known for its quality and affordability, made with selected beef, hashed, and hygienically processed under international standards, ready to eat. ', 20.00, 30, 'Canned Goods', 'https://i.ibb.co/xtWHP4pc/d786693a1768.png', '2025-04-09 07:17:10', '2025-06-11 15:32:15'),
 (86, '555 Tausi', 'a popular Filipino canned food featuring fried sardines in a savory-sweet sauce with the distinct flavor of fermented black beans (tausi)', 33.00, 10, 'Canned Goods', 'https://i.ibb.co/B5zmwwY5/47dcc1b0cebc.png', '2025-04-09 07:18:12', '2025-04-09 07:18:12'),
 (87, 'Mega Sardines', 'the number one sardines brand in the Philippines, are known for their freshness, caught and canned within 12 hours', 25.00, 1000, 'Canned Goods', 'https://i.ibb.co/G4ZDkXmq/afdc08c9788a.png', '2025-04-09 07:22:00', '2025-04-09 07:22:00'),
 (88, 'Ligo Sardines', 'well-known for its excellent taste worldwide', 26.50, 200, 'Canned Goods', 'https://i.ibb.co/hJpmZjDM/09da9c6b37b1.png', '2025-04-09 07:23:47', '2025-04-09 07:23:47'),
 (89, 'Lucky 7 Sardines', ' a budget-friendly, canned sardine option in tomato sauce, known for their savory taste and affordability, making them a popular choice for daily meals. ', 21.50, 45, 'Canned Goods', 'https://i.ibb.co/JRzY9m7R/054a358ac5dc.png', '2025-04-09 07:26:01', '2025-04-22 06:34:17'),
 (90, 'Atami Sardines', 'A delightful and flavorful seafood choice that combines the natural goodness of sardines', 23.00, 50, 'Canned Goods', 'https://i.ibb.co/sdNR2j4f/0f5b60542f2a.png', '2025-04-09 07:28:21', '2025-04-09 07:28:21'),
 (91, 'Master Sardines', 'known for their premium quality, sourced from the depths of the ocean and expertly preserved to retain natural flavors and nutritional goodness, with a focus on a quick catch-to-can process. ', 25.50, 100, 'Canned Goods', 'https://i.ibb.co/ksGrTmWD/8c3590d7e350.png', '2025-04-09 07:31:56', '2025-04-09 07:31:56'),
-(92, 'trytry test', 'jm garis', 100.00, 0, 'Beverages', 'https://i.ibb.co/pjrnNm07/59cc32c572c3.jpg', '2025-05-19 07:05:23', '2025-05-19 07:05:23');
+(92, 'trytry test', 'jm garis', 100.00, 20, 'Beverages', 'https://i.ibb.co/pjrnNm07/59cc32c572c3.jpg', '2025-05-19 07:05:23', '2025-06-11 16:38:19');
 
 -- --------------------------------------------------------
 
@@ -891,7 +928,25 @@ INSERT INTO `user_rewards` (`id`, `user_id`, `order_id`, `points`, `description`
 (352, 56, '0748472', 1, 'Earned points from order #0748472', '2025-06-11 13:39:44'),
 (353, 56, '2165407', 1, 'Earned points from order #2165407', '2025-06-11 13:39:44'),
 (354, 56, '4406490', 1, 'Earned points from order #4406490', '2025-06-11 13:39:44'),
-(355, 56, '4234665', 1, 'Earned points from order #4234665', '2025-06-11 13:39:44');
+(355, 56, '4234665', 1, 'Earned points from order #4234665', '2025-06-11 13:39:44'),
+(356, 58, '5682030', 33, 'Earned points from order #5682030', '2025-06-11 15:29:15'),
+(357, 58, '8634793', 5, 'Earned points from order #8634793', '2025-06-11 15:32:15'),
+(358, 58, '4970734', 4, 'Earned points from order #4970734', '2025-06-11 19:20:28'),
+(359, 58, '0907455', 11, 'Earned points from order #0907455', '2025-06-11 21:49:58'),
+(360, 58, '4527232', 13, 'Earned points from order #4527232', '2025-06-12 08:11:45'),
+(361, 58, '4151897', 1, 'Earned points from order #4151897', '2025-06-12 08:17:29'),
+(362, 58, '7194326', 1, 'Earned points from order #7194326', '2025-06-12 08:27:16'),
+(363, 58, '7853300', 2, 'Earned points from order #7853300', '2025-06-12 08:33:50'),
+(364, 58, '5695988', 1, 'Earned points from order #5695988', '2025-06-12 08:34:12'),
+(365, 58, '0491522', 1, 'Earned points from order #0491522', '2025-06-12 08:34:30'),
+(366, 58, '2252374', 1, 'Earned points from order #2252374', '2025-06-12 08:35:32'),
+(367, 58, '6545693', 1, 'Earned points from order #6545693', '2025-06-12 08:35:52'),
+(368, 58, '5813781', 2, 'Earned points from order #5813781', '2025-06-12 08:38:13'),
+(369, 58, '0848012', 2, 'Earned points from order #0848012', '2025-06-12 08:38:38'),
+(370, 58, '0978768', 2, 'Earned points from order #0978768', '2025-06-12 08:41:07'),
+(371, 58, '1414253', 2, 'Earned points from order #1414253', '2025-06-12 08:43:06'),
+(372, 58, '9344479', 1, 'Earned points from order #9344479', '2025-06-12 08:45:37'),
+(373, 58, '2173189', 6, 'Earned points from order #2173189', '2025-06-12 09:26:02');
 
 --
 -- Indexes for dumped tables
@@ -987,13 +1042,13 @@ ALTER TABLE `available_discounts`
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491616;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491646;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1715;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1744;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -1023,7 +1078,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_rewards`
 --
 ALTER TABLE `user_rewards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=356;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=374;
 
 --
 -- Constraints for dumped tables

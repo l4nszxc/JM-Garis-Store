@@ -127,3 +127,188 @@ exports.cancelOrder = async (req, res) => {
         res.status(500).json({ message: 'Error canceling order' });
     }
 };
+exports.submitOrderReport = async (req, res) => {
+  try {
+    const { id: orderId } = req.params;
+    const userId = req.user.id;
+    const { issue_type, description } = req.body;
+    
+    // Validate input
+    if (!issue_type || !description) {
+      return res.status(400).json({ message: 'Issue type and description are required' });
+    }
+    
+    // Check if order exists and belongs to the user
+    const [orderExists] = await db.execute(
+      'SELECT order_id FROM orders WHERE order_id = ? AND user_id = ?',
+      [orderId, userId]
+    );
+    
+    if (orderExists.length === 0) {
+      return res.status(404).json({ message: 'Order not found or you don\'t have permission to report this order' });
+    }
+    
+    // Insert the report
+    const [result] = await db.execute(
+      'INSERT INTO order_reports (order_id, user_id, issue_type, description) VALUES (?, ?, ?, ?)',
+      [orderId, userId, issue_type, description]
+    );
+    
+    res.status(201).json({ 
+      message: 'Order report submitted successfully',
+      reportId: result.insertId
+    });
+  } catch (error) {
+    console.error('Error submitting order report:', error);
+    res.status(500).json({ message: 'Error submitting order report' });
+  }
+};
+
+exports.getOrderReports = async (req, res) => {
+  try {
+    const { id: orderId } = req.params;
+    const userId = req.user.id;
+    
+    // Check if the order belongs to the user or if the user is admin/staff
+    if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+      const [orderCheck] = await db.execute(
+        'SELECT order_id FROM orders WHERE order_id = ? AND user_id = ?',
+        [orderId, userId]
+      );
+      
+      if (orderCheck.length === 0) {
+        return res.status(403).json({ message: 'You don\'t have permission to view these reports' });
+      }
+    }
+    
+    // Get the reports
+    const [reports] = await db.execute(
+      `SELECT r.*, u.username 
+       FROM order_reports r
+       JOIN users u ON r.user_id = u.id
+       WHERE r.order_id = ?
+       ORDER BY r.created_at DESC`,
+      [orderId]
+    );
+    
+    res.json(reports);
+  } catch (error) {
+    console.error('Error getting order reports:', error);
+    res.status(500).json({ message: 'Error getting order reports' });
+  }
+};
+
+exports.submitOrderReview = async (req, res) => {
+  try {
+    const { id: orderId } = req.params;
+    const userId = req.user.id;
+    const { rating, comment } = req.body;
+    
+    // Validate input
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'Rating is required and must be between 1 and 5' });
+    }
+    
+    // Check if the order exists, belongs to the user, and is in 'paid' status
+    const [orderCheck] = await db.execute(
+      'SELECT order_id FROM orders WHERE order_id = ? AND user_id = ? AND status = "paid"',
+      [orderId, userId]
+    );
+    
+    if (orderCheck.length === 0) {
+      return res.status(400).json({ 
+        message: 'Order not found, not owned by you, or not in paid status' 
+      });
+    }
+    
+    // Check if a review already exists
+    const [existingReview] = await db.execute(
+      'SELECT id FROM order_reviews WHERE order_id = ? AND user_id = ?',
+      [orderId, userId]
+    );
+    
+    if (existingReview.length > 0) {
+      return res.status(400).json({ message: 'You have already reviewed this order' });
+    }
+    
+    // Insert the review
+    const [result] = await db.execute(
+      'INSERT INTO order_reviews (order_id, user_id, rating, comment) VALUES (?, ?, ?, ?)',
+      [orderId, userId, rating, comment || null]
+    );
+    
+    res.status(201).json({ 
+      message: 'Order review submitted successfully',
+      reviewId: result.insertId
+    });
+  } catch (error) {
+    console.error('Error submitting order review:', error);
+    res.status(500).json({ message: 'Error submitting order review' });
+  }
+};
+
+exports.updateOrderReview = async (req, res) => {
+  try {
+    const { id: orderId } = req.params;
+    const userId = req.user.id;
+    const { rating, comment } = req.body;
+    
+    // Validate input
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'Rating is required and must be between 1 and 5' });
+    }
+    
+    // Check if the review exists and belongs to the user
+    const [reviewCheck] = await db.execute(
+      'SELECT id FROM order_reviews WHERE order_id = ? AND user_id = ?',
+      [orderId, userId]
+    );
+    
+    if (reviewCheck.length === 0) {
+      return res.status(404).json({ message: 'Review not found or you don\'t have permission to update it' });
+    }
+    
+    // Update the review
+    await db.execute(
+      'UPDATE order_reviews SET rating = ?, comment = ? WHERE order_id = ? AND user_id = ?',
+      [rating, comment || null, orderId, userId]
+    );
+    
+    res.json({ message: 'Review updated successfully' });
+  } catch (error) {
+    console.error('Error updating order review:', error);
+    res.status(500).json({ message: 'Error updating order review' });
+  }
+};
+
+exports.getOrderReview = async (req, res) => {
+  try {
+    const { id: orderId } = req.params;
+    const userId = req.user.id;
+    
+    // Check if order belongs to the user
+    const [orderCheck] = await db.execute(
+      'SELECT order_id FROM orders WHERE order_id = ? AND user_id = ?',
+      [orderId, userId]
+    );
+    
+    if (orderCheck.length === 0) {
+      return res.status(403).json({ message: 'You don\'t have permission to view this review' });
+    }
+    
+    // Get the review
+    const [reviews] = await db.execute(
+      `SELECT * FROM order_reviews WHERE order_id = ? AND user_id = ?`,
+      [orderId, userId]
+    );
+    
+    if (reviews.length === 0) {
+      return res.json({ review: null });
+    }
+    
+    res.json({ review: reviews[0] });
+  } catch (error) {
+    console.error('Error getting order review:', error);
+    res.status(500).json({ message: 'Error getting order review' });
+  }
+};
