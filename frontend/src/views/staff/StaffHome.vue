@@ -68,7 +68,7 @@
                                 <td>{{ order.order_id }}</td>
                                 <td>{{ order.customer_name }}</td>
                                 <td>
-                                    <span :class="['status-badge', order.status]">
+                                    <span :class="['status-badge', order.status.replace(/ /g, '-')]">
                                         {{ order.status }}
                                     </span>
                                     <div v-if="order.staff_name" class="staff-info">
@@ -214,6 +214,7 @@ export default {
             statusFilter: 'pending',
             defaultStatusFilter: 'pending',
             statusFilters: [
+                { label: 'All Status', value: '' },
                 { label: 'Pending', value: 'pending' },
                 { label: 'Preparing', value: 'preparing' },
                 { label: 'Ready for Pickup', value: 'ready for pickup' },
@@ -236,7 +237,8 @@ export default {
                     order.order_id.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
                     order.customer_name.toLowerCase().includes(this.searchQuery.toLowerCase());
                 
-                const statusMatch = order.status === this.statusFilter;
+                // If statusFilter is empty, show all statuses
+                const statusMatch = !this.statusFilter || order.status === this.statusFilter;
                 
                 // Date filter
                 let dateMatch = true;
@@ -609,12 +611,12 @@ export default {
 }
 
 .filter-btn.ready-for-pickup {
-    background-color: #d4edda;
-    color: #155724;
+    background-color: #e3f5e9;
+    color: #0f7840;
 }
 
 .filter-btn.ready-for-pickup.active {
-    background-color: #198754;
+    background-color: #38a169;
     color: white;
 }
 
@@ -679,8 +681,8 @@ th {
 }
 
 .ready-for-pickup {
-    background-color: #d4edda;
-    color: #155724;
+    background-color: #e3f5e9;
+    color: #0f7840;
 }
 
 .paid {

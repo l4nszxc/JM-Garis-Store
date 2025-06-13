@@ -315,6 +315,7 @@ export default {
             selectedStatus: 'ready for pickup',
             defaultStatusFilter: 'ready for pickup',
             statusFilters: [
+                { label: 'All Status', value: '' },
                 { label: 'Pending', value: 'pending' },
                 { label: 'Preparing', value: 'preparing' },
                 { label: 'Ready for Pickup', value: 'ready for pickup' },
@@ -825,10 +826,6 @@ export default {
     text-align: center;
 }
 
-.filter-btn.active {
-    transform: scale(1.05);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
 
 .filter-btn.pending {
     background-color: #fef3c7;
@@ -851,12 +848,12 @@ export default {
 }
 
 .filter-btn.ready-for-pickup {
-    background-color: #d4edda;
-    color: #155724;
+    background-color: #e3f5e9;
+    color: #0f7840;
 }
 
 .filter-btn.ready-for-pickup.active {
-    background-color: #198754;
+    background-color: #38a169;
     color: white;
 }
 
@@ -880,14 +877,9 @@ export default {
     color: white;
 }
 
-.filter-btn {
-    background-color: #f8f9fa;
-    color: #6c757d;
-}
-
 .filter-btn.active {
-    background-color: #6c757d;
-    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(5, 139, 16, 0.1);
 }
 
 .table-container {
@@ -931,8 +923,8 @@ th {
 }
 
 .ready-for-pickup {
-    background-color: #d4edda;
-    color: #155724;
+    background-color: #e3f5e9;
+    color: #0f7840;
 }
 
 .paid {
