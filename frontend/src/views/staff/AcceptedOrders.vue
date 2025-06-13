@@ -2,9 +2,51 @@
     <div class="staff-container">
         <StaffNavbar :username="username" @logout="showLogoutModal = true" />
         <div class="staff-content">
-            <h1><i class="fas fa-tasks"></i>Accepted Orders</h1>
+            <h1><i class="fas fa-tasks"></i> Accepted Orders</h1>
 
             <div class="orders-section">
+                <div class="search-filter">
+                    <div class="status-filters">
+                        <button 
+                            v-for="status in statusFilters" 
+                            :key="status.value"
+                            @click="selectedStatus = status.value"
+                            :class="['filter-btn', selectedStatus === status.value ? 'active' : '', status.value.replace(/ /g, '-')]"
+                        >
+                            {{ status.label }}
+                        </button>
+                    </div>
+                    
+                    <div class="filters-right">
+                        <div class="date-filter">
+                            <i class="fas fa-calendar"></i>
+                            <input 
+                                type="date" 
+                                v-model="dateFilter"
+                                @change="handleDateFilterChange"
+                                class="date-input"
+                            >
+                        </div>
+                        
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input 
+                                type="text" 
+                                v-model="searchQuery" 
+                                placeholder="Search by order ID or customer..."
+                            >
+                        </div>
+                        
+                        <button 
+                            @click="resetFilters" 
+                            class="reset-filters-btn"
+                            v-if="hasActiveFilters"
+                        >
+                            <i class="fas fa-redo-alt"></i> Reset Filters
+                        </button>
+                    </div>
+                </div>
+
                 <div class="table-container">
                     <table>
                         <thead>
@@ -19,14 +61,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="order in acceptedOrders" :key="order.order_id">
+                            <tr v-for="order in filteredOrders" :key="order.order_id" 
+                                :class="{ 'past-due-row': isPastDue(order.estimatedPickupTime) && order.status !== 'ready for pickup' && order.status !== 'paid' }">
                                 <td>{{ order.order_id }}</td>
                                 <td>{{ order.customer_name }}</td>
                                 <td>
                                     <select 
                                         v-model="order.status"
                                         @change="updateOrderStatus(order.order_id, order.status)"
-                                        :class="['status-select', order.status]"
+                                        :class="['status-select', order.status.replace(/ /g, '-')]"
                                     >
                                         <option value="pending" disabled>Pending</option>
                                         <option value="preparing">Preparing</option>
@@ -49,6 +92,11 @@
                                     </button>
                                 </td>
                             </tr>
+                            <tr v-if="filteredOrders.length === 0">
+                                <td colspan="7" class="no-data">
+                                    No orders found for the selected filters
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -64,7 +112,7 @@
                         <p><strong>Order ID:</strong> {{ selectedOrder.order_id }}</p>
                         <p><strong>Customer:</strong> {{ selectedOrder.customer_name }}</p>
                         <p><strong>Status:</strong> 
-                            <span :class="['status-badge', selectedOrder.status]">
+                            <span :class="['status-badge', selectedOrder.status.replace(/ /g, '-')]">
                                 {{ selectedOrder.status }}
                             </span>
                         </p>
@@ -176,7 +224,18 @@ export default {
             showLogoutModal: false,
             acceptedOrders: [],
             selectedOrder: null,
-            checkedProducts: []
+            checkedProducts: [],
+            searchQuery: '',
+            dateFilter: '',
+            selectedStatus: 'preparing',
+            defaultStatusFilter: 'preparing',
+            statusFilters: [
+                { label: 'All Status', value: '' },
+                { label: 'Preparing', value: 'preparing' },
+                { label: 'Ready for Pickup', value: 'ready for pickup' },
+                { label: 'Complete', value: 'paid' },
+                { label: 'Past Due', value: 'past-due' }
+            ]
         }
     },
     computed: {
@@ -192,13 +251,60 @@ export default {
         },
         isAllChecked() {
             return this.allChecked;
+        },
+        hasActiveFilters() {
+            return this.searchQuery !== '' || 
+                  this.dateFilter !== '' || 
+                  this.selectedStatus !== this.defaultStatusFilter;
+        },
+        filteredOrders() {
+            return this.acceptedOrders.filter(order => {
+                // Search filter
+                const searchMatch = !this.searchQuery || 
+                    order.order_id.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    order.customer_name.toLowerCase().includes(this.searchQuery.toLowerCase());
+                
+                // Date filter
+                let dateMatch = true;
+                if (this.dateFilter) {
+                    const orderDate = new Date(order.accepted_at);
+                    const filterDate = new Date(this.dateFilter);
+                    
+                    dateMatch = orderDate.getFullYear() === filterDate.getFullYear() && 
+                              orderDate.getMonth() === filterDate.getMonth() && 
+                              orderDate.getDate() === filterDate.getDate();
+                }
+                
+                // Status filter
+                let statusMatch = true;
+                if (this.selectedStatus) {
+                    if (this.selectedStatus === 'past-due') {
+                        // Past due logic: check if it's past due and not ready or paid
+                        statusMatch = this.isPastDue(order.estimatedPickupTime) && 
+                                    order.status !== 'ready for pickup' && 
+                                    order.status !== 'paid';
+                    } else {
+                        // Regular status matching
+                        statusMatch = order.status === this.selectedStatus;
+                    }
+                }
+                
+                return searchMatch && dateMatch && statusMatch;
+            });
         }
     },
     methods: {
-        toggleAllProducts(e) {
-        this.allChecked = e.target.checked;
+        resetFilters() {
+            this.searchQuery = '';
+            this.dateFilter = '';
+            this.selectedStatus = this.defaultStatusFilter;
         },
-        
+        handleDateFilterChange() {
+            // Additional handling if needed
+        },
+        toggleAllProducts(e) {
+            this.allChecked = e.target.checked;
+        },
         async markAsReady() {
             if (!this.isAllChecked) return;
             
@@ -208,14 +314,6 @@ export default {
                 this.checkedProducts = [];
             } catch (error) {
                 console.error('Error marking order as ready:', error);
-            }
-        },
-        async viewOrderDetails(order) {
-            try {
-                // ...existing viewOrderDetails code...
-                this.checkedProducts = []; // Reset checkboxes
-            } catch (error) {
-                console.error('Error fetching order details:', error);
             }
         },
         isOptionDisabled(currentStatus, optionValue) {
@@ -368,6 +466,7 @@ export default {
                         ...orderData,
                         estimatedPickupTime: this.calculateEstimatedTime(orderData)
                     };
+                    this.checkedProducts = []; // Reset checkboxes
                 }
             } catch (error) {
                 console.error('Error fetching order details:', error);
@@ -433,6 +532,154 @@ export default {
     padding: 1.5rem;
 }
 
+/* Search and filter styles */
+.search-filter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.filters-right {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.date-filter {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 160px;
+}
+
+.date-filter i {
+    position: absolute;
+    left: 10px;
+    color: #a0aec0;
+    z-index: 1;
+}
+
+.date-input {
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: #2c3e50;
+    width: 100%;
+    cursor: pointer;
+}
+
+.reset-filters-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.reset-filters-btn:hover {
+    background-color: #5a6268;
+    transform: translateY(-1px);
+}
+
+.reset-filters-btn i {
+    font-size: 0.8rem;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    min-width: 250px;
+    max-width: 300px;
+}
+
+.search-box input {
+    width: 80%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.search-box i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a0aec0;
+}
+
+.status-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: left;
+    flex: 2;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    background-color: #f8f9fa;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.filter-btn.active {
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.filter-btn.preparing {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.filter-btn.preparing.active {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.filter-btn.ready-for-pickup {
+    background-color: #e3f5e9;
+    color: #0f7840;
+}
+
+.filter-btn.ready-for-pickup.active {
+    background-color: #38a169;
+    color: white;
+}
+
+.filter-btn.paid {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.filter-btn.paid.active {
+    background-color: #20c997;
+    color: white;
+}
+
+.filter-btn.past-due {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
+.filter-btn.past-due.active {
+    background-color: #dc3545;
+    color: white;
+}
+
 .table-container {
     overflow-x: auto;
 }
@@ -469,9 +716,9 @@ th {
     color: #004085;
 }
 
-.ready {
-    background-color: #d4edda;
-    color: #155724;
+.ready-for-pickup {
+    background-color: #e3f5e9;
+    color: #0f7840;
 }
 
 .paid {
@@ -496,6 +743,12 @@ th {
 .view-btn:hover {
     background-color: #2980b9;
     transform: translateY(-1px);
+}
+
+.no-data {
+    text-align: center;
+    padding: 2rem;
+    color: #718096;
 }
 
 .estimated-time {
@@ -542,13 +795,13 @@ th {
 }
 
 .order-info {
-    margin-bottom: 1rem; /* Reduce from 2rem */
+    margin-bottom: 1rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid #eee;
 }
 
 .order-details h2 {
-    margin: 0 0 1rem 0; /* Reduce from 1.5rem */
+    margin: 0 0 1rem 0;
 }
 
 /* Add a container for the scrollable content */
@@ -557,6 +810,7 @@ th {
     flex: 1;
     padding-right: 0.5rem; /* Add some padding for the scrollbar */
 }
+
 .order-info p {
     margin: 0.5rem 0;
 }
@@ -575,6 +829,7 @@ th {
     object-fit: cover;
     border-radius: 8px;
 }
+
 tfoot {
     border-top: 2px solid #eee;
 }
@@ -583,10 +838,12 @@ tfoot tr td {
     padding: 1rem;
     font-weight: 600;
 }
+
 .total-label {
     text-align: right;
     color: #2c3e50;
 }
+
 .price-breakdown {
     margin-top: 1rem;
     padding-top: 1rem;
@@ -622,19 +879,19 @@ tfoot tr td {
     border-radius: 8px;
     max-height: 380px;
     overflow-y: auto;
-    flex: 1; /* Add this */
+    flex: 1;
 }
 
 .modal-actions {
-    margin-top: 1rem; /* Reduce from 2rem */
+    margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid #dee2e6;
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
-    background: white; /* Add this */
-    position: sticky; /* Add this */
-    bottom: 0; /* Add this */
+    background: white;
+    position: sticky;
+    bottom: 0;
 }
 
 .close-btn {
@@ -650,6 +907,7 @@ tfoot tr td {
     font-size: 0.95rem;
     transition: all 0.3s ease;
 }
+
 .time-remaining:not(.past-due) {
     color: #2e7d32;
 }
@@ -658,9 +916,11 @@ tfoot tr td {
     color: #1565c0;
     font-weight: 600;
 }
+
 .close-btn:hover {
     background-color: #5a6268;
 }
+
 .logout-modal {
     background: white;
     padding: 2rem;
@@ -712,6 +972,7 @@ tfoot tr td {
 .cancel-btn:hover {
     background-color: #5a6268;
 }
+
 .ready-btn {
     background-color: #4CAF50;
     color: white;
@@ -741,6 +1002,7 @@ tfoot tr td {
     justify-content: flex-end;
     gap: 1rem;
 }
+
 .modal-content.order-details {
     background: white;
     border-radius: 12px;
@@ -748,28 +1010,20 @@ tfoot tr td {
     width: 90%;
     max-width: 800px;
     max-height: 90vh;
-    overflow-y: hidden; /* Change from auto to hidden */
+    overflow-y: hidden;
     display: flex;
     flex-direction: column;
 }
+
 input[type="checkbox"] {
     width: 18px;
     height: 18px;
     cursor: pointer;
 }
+
 .past-due-row {
     background-color: rgba(253, 237, 237, 0.4);
     position: relative;
-}
-
-.past-due-row::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 4px;
-    background-color: #d32f2f;
 }
 
 .time-remaining.past-due {
@@ -780,10 +1034,7 @@ input[type="checkbox"] {
     gap: 0.5rem;
 }
 
-.time-remaining.past-due i {
-    animation: pulse 2s infinite;
-    color: #d32f2f;
-}
+
 @keyframes pulse {
     0% {
         opacity: 0.6;
@@ -795,6 +1046,7 @@ input[type="checkbox"] {
         opacity: 0.6;
     }
 }
+
 @media (max-width: 768px) {
     tfoot tr td {
         padding: 0.75rem;
@@ -814,6 +1066,36 @@ input[type="checkbox"] {
 
     .status-select {
         width: 120px;
+    }
+    
+    .search-filter {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filters-right {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .search-box, .date-filter {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .date-input {
+        width: 100%;
+    }
+    
+    .status-filters {
+        order: 2;
+        justify-content: center;
+    }
+    
+    .reset-filters-btn {
+        width: 100%;
+        justify-content: center;
+        margin-top: 0.5rem;
     }
 }
 </style>
