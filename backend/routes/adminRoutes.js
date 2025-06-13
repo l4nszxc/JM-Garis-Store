@@ -24,5 +24,8 @@ router.delete('/rewards/tiers/:id', authenticate, isAdmin, adminController.delet
 router.get('/rewards/statistics', authenticate, isAdmin, adminController.getRewardsStatistics);
 router.get('/forecasts', adminController.getProductForecasts);
 router.get('/low-stock', authenticate, isAdmin, adminController.getLowStockItems);
+router.get('/receipt-settings', authenticate, isAdmin, adminController.getReceiptSettings);
+router.post('/receipt-settings', authenticate, isAdmin, adminController.saveReceiptSettings);
+
 
 module.exports = router;

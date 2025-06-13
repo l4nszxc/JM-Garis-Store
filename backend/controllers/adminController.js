@@ -306,3 +306,68 @@ exports.getLowStockItems = async (req, res) => {
         res.status(500).json({ message: 'Failed to fetch low stock items' });
     }
 };
+exports.getReceiptSettings = async (req, res) => {
+    try {
+        // Check if receipt settings exist in the database
+        const [settings] = await db.query('SELECT * FROM receipt_settings LIMIT 1');
+        
+        if (settings && settings.length > 0) {
+            res.json(settings[0]);
+        } else {
+            // Return default settings if none exist
+            res.json({
+                storeName: 'JM Garis Store',
+                storeTagline: 'Official Receipt',
+                storeAddress: '',
+                contactNumber: '',
+                thankyouMessage: 'Thank you for your purchase!\nPlease come again!',
+                footerText: ''
+            });
+        }
+    } catch (error) {
+        console.error('Error getting receipt settings:', error);
+        res.status(500).json({ message: 'Error getting receipt settings' });
+    }
+};
+
+// Save receipt settings
+exports.saveReceiptSettings = async (req, res) => {
+    try {
+        const { 
+            storeName, 
+            storeTagline, 
+            storeAddress, 
+            contactNumber, 
+            thankyouMessage, 
+            footerText 
+        } = req.body;
+        
+        // Check if settings already exist
+        const [existingSettings] = await db.query('SELECT id FROM receipt_settings LIMIT 1');
+        
+        if (existingSettings && existingSettings.length > 0) {
+            // Update existing settings
+            await db.execute(
+                `UPDATE receipt_settings 
+                SET storeName = ?, storeTagline = ?, storeAddress = ?, 
+                    contactNumber = ?, thankyouMessage = ?, footerText = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?`,
+                [storeName, storeTagline, storeAddress, contactNumber, thankyouMessage, footerText, existingSettings[0].id]
+            );
+        } else {
+            // Create new settings
+            await db.execute(
+                `INSERT INTO receipt_settings 
+                (storeName, storeTagline, storeAddress, contactNumber, thankyouMessage, footerText)
+                VALUES (?, ?, ?, ?, ?, ?)`,
+                [storeName, storeTagline, storeAddress, contactNumber, thankyouMessage, footerText]
+            );
+        }
+        
+        res.json({ message: 'Receipt settings saved successfully' });
+    } catch (error) {
+        console.error('Error saving receipt settings:', error);
+        res.status(500).json({ message: 'Error saving receipt settings' });
+    }
+};

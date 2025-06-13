@@ -442,9 +442,11 @@ export default {
                 console.error('Error processing payment:', error);
             }
         },
-        printReceipt() {
+        async printReceipt() {
             try {
-                const receipt = this.generateReceiptContent();
+                // Use await to resolve the Promise
+                const receipt = await this.generateReceiptContent();
+                
                 const printWindow = window.open('', '', 'width=300,height=600');
                 
                 if (!printWindow) {
@@ -466,180 +468,246 @@ export default {
                 console.error('Error printing receipt:', error);
             }
         },
-        generateReceiptContent() {
-            const date = new Date().toLocaleString();
-            const items = this.selectedOrder.items
-                .map(item => {
-                    const displayName = item.choice_name 
-                        ? `${item.original_name || item.name} (${item.choice_name})`
-                        : item.name;
-                        
-                    return `
-                        <tr>
-                            <td style="font-size: 12px; padding: 2px 0;">${displayName}</td>
-                        </tr>
-                        <tr>
-                            <td style="font-size: 12px; text-align: right; padding: 2px 0;">
-                                ${item.quantity} x ${this.formatPrice(item.price)} = ${this.formatPrice(item.price * item.quantity)}
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
+        async generateReceiptContent() {
+            try {
+                // Fetch receipt settings
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:7904/api/admin/receipt-settings', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                let receiptSettings = {
+                    storeName: 'JM Garis Store',
+                    storeTagline: 'Official Receipt',
+                    storeAddress: '',
+                    contactNumber: '',
+                    thankyouMessage: 'Thank you for your purchase!\nPlease come again!',
+                    footerText: ''
+                };
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && Object.keys(data).length > 0) {
+                        receiptSettings = { ...receiptSettings, ...data };
+                    }
+                }
+                
+                const date = new Date().toLocaleString();
+                const items = this.selectedOrder.items
+                    .map(item => {
+                        const displayName = item.choice_name 
+                            ? `${item.original_name || item.name} (${item.choice_name})`
+                            : item.name;
+                            
+                        return `
+                            <tr>
+                                <td style="font-size: 12px; padding: 2px 0;">${displayName}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 12px; text-align: right; padding: 2px 0;">
+                                    ${item.quantity} x ${this.formatPrice(item.price)} = ${this.formatPrice(item.price * item.quantity)}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
 
-            return `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title></title>
-                    <style>
-                        @media print {
-                            @page {
-                                margin: 0;
-                                size: 58mm auto;
+                // Format the thank you message with line breaks
+                const thankyouMessage = receiptSettings.thankyouMessage
+                    ? receiptSettings.thankyouMessage.replace(/\n/g, '<br>')
+                    : 'Thank you for your purchase!<br>Please come again!';
+
+                return `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="utf-8">
+                        <title>${receiptSettings.storeName}</title>
+                        <style>
+                            @media print {
+                                @page {
+                                    margin: 0;
+                                    size: 58mm auto;
+                                }
                             }
-                        }
-                        body {
-                            font-family: Arial, sans-serif;
-                            width: 58mm;
-                            margin: 0;
-                            padding: 2mm;
-                            font-size: 12px;
-                        }
-                        .header {
-                            text-align: center;
-                            margin-bottom: 3px;
-                            border-bottom: 1px dashed black;
-                            padding-bottom: 3px;
-                        }
-                        .header h2 {
-                            font-size: 16px;
-                            margin: 0;
-                            padding: 0;
-                            font-weight: bold;
-                        }
-                        .header p {
-                            font-size: 14px;
-                            margin: 2px 0;
-                        }
-                        .details {
-                            margin: 3px 0;
-                            border-bottom: 1px dashed black;
-                            padding-bottom: 3px;
-                        }
-                        .details p {
-                            margin: 1px 0;
-                            font-size: 12px;
-                            line-height: 1.2;
-                        }
-                        table {
-                            width: 100%;
-                            border-collapse: collapse;
-                            margin: 4px 0;
-                        }
-                        tr {
-                            line-height: 1.2;
-                        }
-                        td {
-                            padding: 1px 0;
-                        }
-                        .items-section {
-                            border-bottom: 1px dashed black;
-                            margin-bottom: 4px;
-                            padding-bottom: 4px;
-                        }
-                        .total-section {
-                            text-align: right;
-                            font-size: 12px;
-                            margin: 4px 0;
-                        }
-                        .subtotal, .discount, .total {
-                            margin: 2px 0;
-                        }
-                        .total {
-                            font-weight: bold;
-                            font-size: 14px;
-                            margin-top: 4px;
-                            padding-top: 2px;
-                            border-top: 1px dashed black;
-                        }
-                        .footer {
-                            text-align: center;
-                            font-size: 12px;
-                            margin-top: 6px;
-                        }
-                        .footer p {
-                            margin: 2px 0;
-                        }
-                        .spacing {
-                            height: 48px;
-                        }
-                        .cut-line {
-                            text-align: center;
-                            font-size: 12px;
-                            border-top: 1px dashed black;
-                            margin-top: 4px;
-                            padding-top: 4px;
-                        }
-                        .payment-details {
-                            margin-top: 8px;
-                            padding-top: 8px;
-                            border-top: 1px dashed black;
-                            font-size: 13px;
-                            line-height: 1.5;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
+                            body {
+                                font-family: Arial, sans-serif;
+                                width: 58mm;
+                                margin: 0;
+                                padding: 2mm;
+                                font-size: 12px;
+                            }
+                            .header {
+                                text-align: center;
+                                margin-bottom: 3px;
+                                border-bottom: 1px dashed black;
+                                padding-bottom: 3px;
+                            }
+                            .header h2 {
+                                font-size: 16px;
+                                margin: 0;
+                                padding: 0;
+                                font-weight: bold;
+                            }
+                            .header p {
+                                font-size: 14px;
+                                margin: 2px 0;
+                            }
+                            .details {
+                                margin: 3px 0;
+                                border-bottom: 1px dashed black;
+                                padding-bottom: 3px;
+                            }
+                            .details p {
+                                margin: 1px 0;
+                                font-size: 12px;
+                                line-height: 1.2;
+                            }
+                            table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin: 4px 0;
+                            }
+                            tr {
+                                line-height: 1.2;
+                            }
+                            td {
+                                padding: 1px 0;
+                            }
+                            .items-section {
+                                border-bottom: 1px dashed black;
+                                margin-bottom: 4px;
+                                padding-bottom: 4px;
+                            }
+                            .total-section {
+                                text-align: right;
+                                font-size: 12px;
+                                margin: 4px 0;
+                            }
+                            .subtotal, .discount, .total {
+                                margin: 2px 0;
+                            }
+                            .total {
+                                font-weight: bold;
+                                font-size: 14px;
+                                margin-top: 4px;
+                                padding-top: 2px;
+                                border-top: 1px dashed black;
+                            }
+                            .footer {
+                                text-align: center;
+                                font-size: 12px;
+                                margin-top: 6px;
+                            }
+                            .footer p {
+                                margin: 2px 0;
+                            }
+                            .spacing {
+                                height: 48px;
+                            }
+                            .cut-line {
+                                text-align: center;
+                                font-size: 12px;
+                                border-top: 1px dashed black;
+                                margin-top: 4px;
+                                padding-top: 4px;
+                            }
+                            .payment-details {
+                                margin-top: 8px;
+                                padding-top: 8px;
+                                border-top: 1px dashed black;
+                                font-size: 13px;
+                                line-height: 1.5;
+                            }
+                            .store-address {
+                                font-size: 11px;
+                                margin: 2px 0;
+                            }
+                            .contact-number {
+                                font-size: 11px;
+                                margin: 2px 0;
+                            }
+                            .footer-text {
+                                font-size: 10px;
+                                margin-top: 4px;
+                                color: #666;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h2>${receiptSettings.storeName}</h2>
+                            <p>${receiptSettings.storeTagline}</p>
+                            ${receiptSettings.storeAddress ? `<p class="store-address">${receiptSettings.storeAddress}</p>` : ''}
+                            ${receiptSettings.contactNumber ? `<p class="contact-number">${receiptSettings.contactNumber}</p>` : ''}
+                        </div>
+                        
+                        <div class="details">
+                            <p><strong>Order #:</strong> ${this.selectedOrder.order_id}</p>
+                            <p><strong>Date:</strong> ${date}</p>
+                            <p><strong>Customer:</strong> ${this.selectedOrder.customer_name}</p>
+                        </div>
+                        
+                        <div class="items-section">
+                            <table>
+                                <tbody>
+                                    ${items}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="total-section">
+                            <div class="subtotal">
+                                Subtotal: ${this.formatPrice(this.selectedOrder.subtotal)}
+                            </div>
+                            ${this.selectedOrder.discount_amount > 0 ? `
+                            <div class="discount">
+                                Discount: -${this.formatPrice(this.selectedOrder.discount_amount)}
+                            </div>
+                            ` : ''}
+                            <div class="total">
+                                Total Amount: ${this.formatPrice(this.selectedOrder.total_amount)}
+                            </div>
+                            <div class="payment-details">
+                                Cash Amount: ${this.formatPrice(this.cashAmount)}
+                                <br>
+                                Change: ${this.formatPrice(this.changeAmount)}
+                            </div>
+                        </div>
+                        
+                        <div class="footer">
+                            <p>${thankyouMessage}</p>
+                            ${receiptSettings.footerText ? `<p class="footer-text">${receiptSettings.footerText}</p>` : ''}
+                        </div>
+                        
+                        <div class="cut-line">
+                            --------------------------------
+                        </div>
+                    </body>
+                    </html>
+                `;
+            } catch (error) {
+                console.error('Error generating receipt:', error);
+                
+                // Return a basic receipt if there's an error
+                return `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="utf-8">
+                        <title>Receipt</title>
+                        <style>/* Basic styles */</style>
+                    </head>
+                    <body>
                         <h2>JM Garis Store</h2>
-                        <p>Official Receipt</p>
-                    </div>
-                    
-                    <div class="details">
-                        <p><strong>Order #:</strong> ${this.selectedOrder.order_id}</p>
-                        <p><strong>Date:</strong> ${date}</p>
-                        <p><strong>Customer:</strong> ${this.selectedOrder.customer_name}</p>
-                    </div>
-                    
-                    <div class="items-section">
-                        <table>
-                            <tbody>
-                                ${items}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="total-section">
-                        <div class="subtotal">
-                            Subtotal: ${this.formatPrice(this.selectedOrder.subtotal)}
-                        </div>
-                        ${this.selectedOrder.discount_amount > 0 ? `
-                        <div class="discount">
-                            Discount: -${this.formatPrice(this.selectedOrder.discount_amount)}
-                        </div>
-                        ` : ''}
-                        <div class="total">
-                            Total Amount: ${this.formatPrice(this.selectedOrder.total_amount)}
-                        </div>
-                        <div class="payment-details">
-                            Cash Amount: ${this.formatPrice(this.cashAmount)}
-                            <br>
-                            Change: ${this.formatPrice(this.changeAmount)}
-                        </div>
-                    </div>
-                    
-                    <div class="footer">
+                        <p>Order #: ${this.selectedOrder.order_id}</p>
+                        <p>Total: ${this.formatPrice(this.selectedOrder.total_amount)}</p>
                         <p>Thank you for your purchase!</p>
-                        <p>Please come again!</p>
-                    </div>
-                    
-                    <div class="cut-line">
-                        --------------------------------
-                    </div>
-                </body>
-                </html>
-            `;
+                    </body>
+                    </html>
+                `;
+            }
         },
         formatPrice(price) {
             return new Intl.NumberFormat('en-PH', {

@@ -22,6 +22,7 @@ import RewardsManagement from '../views/admin/RewardsManagement.vue'
 import CreateOrder from '../views/staff/CreateOrder.vue'
 import Notifications from'../views/user/Notifications.vue'
 import SalesForecast from '../views/admin/SalesForecast.vue'
+import AdminReceiptSettings from '../views/admin/ReceiptSettings.vue'
 
 const routes = [
   {
@@ -180,6 +181,12 @@ const routes = [
     name: 'LowStock',
     component: () => import('../views/admin/LowStock.vue'),
     meta: { requiresAuth: true, requiredRole: 'admin' }
+  },
+  {
+    path: '/admin/receipt-settings',
+    name: 'AdminReceiptSettings',
+    component: AdminReceiptSettings,
+    meta: { requiresAuth: true, role: 'admin' }
   },
   // Staff Routes
   {

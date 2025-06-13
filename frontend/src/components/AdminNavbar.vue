@@ -20,6 +20,11 @@
           <i class="fas fa-shopping-cart"></i>
           <span>All Orders</span>
         </router-link>
+        
+        <router-link to="/admin/receipt-settings" class="menu-item" active-class="active">
+          <i class="fas fa-receipt"></i>
+          <span>Receipt Settings</span>
+        </router-link>
 
         <router-link to="/admin/users" class="menu-item" active-class="active">
           <i class="fas fa-users"></i>
