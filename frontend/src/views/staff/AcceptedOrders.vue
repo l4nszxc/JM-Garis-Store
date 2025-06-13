@@ -18,6 +18,20 @@
                     </div>
                     
                     <div class="filters-right">
+                        <div class="sort-filter">
+                            <select 
+                                v-model="sortOption" 
+                                @change="handleSortChange"
+                                class="sort-select"
+                            >
+                                <option value="">Sort by</option>
+                                <option value="amount_asc">Amount: Low to High</option>
+                                <option value="amount_desc">Amount: High to Low</option>
+                                <option value="date_desc">Accepted: Newest First</option>
+                                <option value="date_asc">Accepted: Oldest First</option>
+                            </select>
+                            <i class="fas fa-sort"></i>
+                        </div>
                         <div class="date-filter">
                             <i class="fas fa-calendar"></i>
                             <input 
@@ -227,6 +241,8 @@ export default {
             checkedProducts: [],
             searchQuery: '',
             dateFilter: '',
+            sortOption: '',
+            defaultSortOption: '',
             selectedStatus: 'preparing',
             defaultStatusFilter: 'preparing',
             statusFilters: [
@@ -255,10 +271,12 @@ export default {
         hasActiveFilters() {
             return this.searchQuery !== '' || 
                   this.dateFilter !== '' || 
-                  this.selectedStatus !== this.defaultStatusFilter;
+                  this.selectedStatus !== this.defaultStatusFilter ||
+                  this.sortOption !== this.defaultSortOption;
         },
         filteredOrders() {
-            return this.acceptedOrders.filter(order => {
+            // First apply all the filters
+            let filtered = this.acceptedOrders.filter(order => {
                 // Search filter
                 const searchMatch = !this.searchQuery || 
                     order.order_id.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -291,6 +309,27 @@ export default {
                 
                 return searchMatch && dateMatch && statusMatch;
             });
+            
+            // Then sort the filtered results
+            if (this.sortOption) {
+                filtered = [...filtered].sort((a, b) => {
+                    if (this.sortOption === 'amount_asc') {
+                        return a.total_amount - b.total_amount;
+                    } 
+                    else if (this.sortOption === 'amount_desc') {
+                        return b.total_amount - a.total_amount;
+                    }
+                    else if (this.sortOption === 'date_desc') {
+                        return new Date(b.accepted_at) - new Date(a.accepted_at);
+                    }
+                    else if (this.sortOption === 'date_asc') {
+                        return new Date(a.accepted_at) - new Date(b.accepted_at);
+                    }
+                    return 0;
+                });
+            }
+            
+            return filtered;
         }
     },
     methods: {
@@ -298,6 +337,7 @@ export default {
             this.searchQuery = '';
             this.dateFilter = '';
             this.selectedStatus = this.defaultStatusFilter;
+            this.sortOption = this.defaultSortOption;
         },
         handleDateFilterChange() {
             // Additional handling if needed
@@ -1034,7 +1074,37 @@ input[type="checkbox"] {
     gap: 0.5rem;
 }
 
+.sort-filter {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
 
+.sort-select {
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background-color: white;
+    appearance: none;
+    font-size: 0.9rem;
+    color: #334155;
+    cursor: pointer;
+    width: 180px;
+    transition: all 0.2s;
+}
+
+.sort-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.sort-filter i {
+    position: absolute;
+    right: 1rem;
+    pointer-events: none;
+    color: #64748b;
+}
 @keyframes pulse {
     0% {
         opacity: 0.6;
@@ -1048,6 +1118,13 @@ input[type="checkbox"] {
 }
 
 @media (max-width: 768px) {
+     .sort-filter {
+        width: 100%;
+    }
+    
+    .sort-select {
+        width: 100%;
+    }
     tfoot tr td {
         padding: 0.75rem;
     }
