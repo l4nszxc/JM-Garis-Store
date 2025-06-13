@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jun 12, 2025 at 09:38 AM
+-- Generation Time: Jun 13, 2025 at 06:05 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -362,6 +362,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('1042234', 56, 2554.00, 'paid', '2025-06-01 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('1094201', 56, 165.00, 'paid', '2025-05-27 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('1251674', 56, 270.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('1288891', 58, 3019.00, 'paid', '2025-06-12 10:37:08', '2025-06-12 10:37:36', NULL, 23, '2025-06-12 18:37:19', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('1310914', 56, 27.00, 'paid', '2025-05-26 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('1419916', 56, 911.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('1625405', 56, 477.00, 'paid', '2025-05-17 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -433,6 +434,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('8448674', 56, 378.00, 'paid', '2025-05-23 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('8540515', 56, 72.00, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('8634793', 58, 510.00, 'preparing', '2025-06-11 15:32:15', '2025-06-11 19:32:17', NULL, 23, '2025-06-11 23:32:36', NULL, NULL, NULL, NULL, 0, 0, NULL),
+('8653905', 58, 2897.00, 'paid', '2025-06-12 10:36:15', '2025-06-12 10:36:38', NULL, 23, '2025-06-12 18:36:22', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('8843835', 58, 189.00, 'cancelled', '2025-06-10 22:27:22', '2025-06-11 12:17:44', 'Ordered by mistake', NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('9056126', 56, 378.00, 'paid', '2025-05-26 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('9099822', 56, 564.00, 'paid', '2025-06-08 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -632,7 +634,62 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (1740, '1414253', 52, 1, 270.00, NULL),
 (1741, '3039234', 38, 1, 17.50, NULL),
 (1742, '9344479', 57, 1, 185.00, NULL),
-(1743, '2173189', 58, 1, 617.00, NULL);
+(1743, '2173189', 58, 1, 617.00, NULL),
+(1744, '8653905', 31, 1, 301.00, NULL),
+(1745, '8653905', 33, 4, 649.00, NULL),
+(1746, '1288891', 34, 3, 141.00, NULL),
+(1747, '1288891', 33, 4, 649.00, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `order_reports`
+--
+
+CREATE TABLE `order_reports` (
+  `id` int NOT NULL,
+  `order_id` char(7) NOT NULL,
+  `user_id` int NOT NULL,
+  `issue_type` varchar(50) NOT NULL,
+  `description` text NOT NULL,
+  `status` enum('pending','in_progress','resolved','rejected') DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `admin_response` text,
+  `resolved_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `order_reports`
+--
+
+INSERT INTO `order_reports` (`id`, `order_id`, `user_id`, `issue_type`, `description`, `status`, `created_at`, `updated_at`, `admin_response`, `resolved_at`) VALUES
+(1, '2173189', 58, 'wrong-order', 'zxc', 'pending', '2025-06-12 09:48:07', '2025-06-12 09:48:07', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `order_reviews`
+--
+
+CREATE TABLE `order_reviews` (
+  `id` int NOT NULL,
+  `order_id` char(7) NOT NULL,
+  `user_id` int NOT NULL,
+  `rating` int NOT NULL,
+  `comment` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `order_reviews`
+--
+
+INSERT INTO `order_reviews` (`id`, `order_id`, `user_id`, `rating`, `comment`, `created_at`, `updated_at`) VALUES
+(1, '2173189', 58, 5, NULL, '2025-06-12 09:48:35', '2025-06-12 09:48:35'),
+(2, '8653905', 58, 5, NULL, '2025-06-12 10:36:50', '2025-06-12 10:36:50'),
+(3, '1288891', 58, 3, NULL, '2025-06-12 10:37:47', '2025-06-12 10:37:47');
 
 -- --------------------------------------------------------
 
@@ -657,10 +714,10 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_quantity`, `category`, `image`, `created_at`, `updated_at`) VALUES
-(31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 999, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-04-01 07:21:29', '2025-04-24 11:27:31'),
+(31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 998, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-04-01 07:21:29', '2025-06-12 10:36:15'),
 (32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 994, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-04-01 07:22:15', '2025-06-12 08:11:45'),
-(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 988, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-05-19 06:30:30'),
-(34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 79, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-06-12 08:27:29'),
+(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 980, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-06-12 10:37:08'),
+(34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 76, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-06-12 10:37:08'),
 (35, 'GSM Mojito 1L', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 189.00, 977, 'Beverages', 'https://i.ibb.co/vvP01sRS/00058af3eb33.png', '2025-04-01 07:28:48', '2025-06-12 08:35:52'),
 (36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 80, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-04-01 07:34:49', '2025-06-12 08:17:29'),
 (37, 'Primera Light 1Liter', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 189.00, 95, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 07:35:27', '2025-05-09 13:17:45'),
@@ -946,7 +1003,9 @@ INSERT INTO `user_rewards` (`id`, `user_id`, `order_id`, `points`, `description`
 (370, 58, '0978768', 2, 'Earned points from order #0978768', '2025-06-12 08:41:07'),
 (371, 58, '1414253', 2, 'Earned points from order #1414253', '2025-06-12 08:43:06'),
 (372, 58, '9344479', 1, 'Earned points from order #9344479', '2025-06-12 08:45:37'),
-(373, 58, '2173189', 6, 'Earned points from order #2173189', '2025-06-12 09:26:02');
+(373, 58, '2173189', 6, 'Earned points from order #2173189', '2025-06-12 09:26:02'),
+(374, 58, '8653905', 28, 'Earned points from order #8653905', '2025-06-12 10:36:15'),
+(375, 58, '1288891', 30, 'Earned points from order #1288891', '2025-06-12 10:37:08');
 
 --
 -- Indexes for dumped tables
@@ -986,6 +1045,22 @@ ALTER TABLE `order_items`
   ADD PRIMARY KEY (`id`),
   ADD KEY `order_id` (`order_id`),
   ADD KEY `product_id` (`product_id`);
+
+--
+-- Indexes for table `order_reports`
+--
+ALTER TABLE `order_reports`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `order_id` (`order_id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `order_reviews`
+--
+ALTER TABLE `order_reviews`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_order_review` (`order_id`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `products`
@@ -1042,13 +1117,25 @@ ALTER TABLE `available_discounts`
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491646;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491650;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1744;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1748;
+
+--
+-- AUTO_INCREMENT for table `order_reports`
+--
+ALTER TABLE `order_reports`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `order_reviews`
+--
+ALTER TABLE `order_reviews`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -1078,7 +1165,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_rewards`
 --
 ALTER TABLE `user_rewards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=374;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=376;
 
 --
 -- Constraints for dumped tables
@@ -1112,6 +1199,20 @@ ALTER TABLE `orders`
 ALTER TABLE `order_items`
   ADD CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
   ADD CONSTRAINT `order_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`products_id`);
+
+--
+-- Constraints for table `order_reports`
+--
+ALTER TABLE `order_reports`
+  ADD CONSTRAINT `order_reports_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
+  ADD CONSTRAINT `order_reports_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `order_reviews`
+--
+ALTER TABLE `order_reviews`
+  ADD CONSTRAINT `order_reviews_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
+  ADD CONSTRAINT `order_reviews_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 --
 -- Constraints for table `product_choices`

@@ -29,7 +29,7 @@ exports.register = async (req, res) => {
             middlename, 
             lastname, 
             gender, 
-            civilStatus, // Add this line
+            civilStatus, 
             phoneNumber, 
             address, 
             birthdate,
@@ -37,9 +37,9 @@ exports.register = async (req, res) => {
             password 
         } = req.body;
 
-        // Validation
-        if (!username || !firstname || !lastname || !gender || !civilStatus || 
-            !phoneNumber || !address || !birthdate || !email || !password) {
+        // Validation - only check required fields
+        if (!username || !firstname || !lastname || 
+            !phoneNumber || !address || !email || !password) {
             return res.status(400).json({ message: 'All required fields must be filled' });
         }
 
@@ -53,13 +53,13 @@ exports.register = async (req, res) => {
         await User.create(
             username, 
             firstname, 
-            middlename, 
+            middlename || null, 
             lastname, 
-            gender,
-            civilStatus, // Add this line
+            gender || null,     // Use null if gender is not provided
+            civilStatus || null, // Use null if civilStatus is not provided
             phoneNumber, 
             address, 
-            birthdate,
+            birthdate || null,  // Use null if birthdate is not provided
             email, 
             password
         );

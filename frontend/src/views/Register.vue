@@ -72,13 +72,12 @@
 
         <!-- Gender field -->
         <div class="form-group">
-          <label for="gender">Gender</label>
+          <label for="gender">Gender (optional)</label>
           <div class="input-group">
             <i class="fas fa-venus-mars input-icon"></i>
             <select
               id="gender"
               v-model="formData.gender"
-              required
               class="select-input"
             >
               <option value="">Select gender</option>
@@ -91,14 +90,13 @@
 
         <!-- Birthdate field -->
         <div class="form-group">
-          <label for="birthdate">Birthdate</label>
+          <label for="birthdate">Birthdate (optional)</label>
           <div class="input-group">
             <i class="fas fa-calendar input-icon"></i>
             <input
               type="date"
               id="birthdate"
               v-model="formData.birthdate"
-              required
             />
           </div>
         </div>
@@ -136,13 +134,12 @@
           </div>
         </div>
         <div class="form-group">
-          <label for="civilStatus">Civil Status</label>
+          <label for="civilStatus">Civil Status (optional)</label>
           <div class="input-group">
             <i class="fas fa-heart input-icon"></i>
             <select
               id="civilStatus"
               v-model="formData.civilStatus"
-              required
               class="select-input"
             >
               <option value="">Select civil status</option>
@@ -256,6 +253,12 @@ export default {
         // Create a copy of formData without confirmPassword
         const registrationData = { ...this.formData };
         delete registrationData.confirmPassword;
+        
+        // Handle empty optional fields
+        if (!registrationData.gender) delete registrationData.gender;
+        if (!registrationData.birthdate) delete registrationData.birthdate;
+        if (!registrationData.civilStatus) delete registrationData.civilStatus;
+        if (!registrationData.middlename) delete registrationData.middlename;
 
         const response = await fetch('http://localhost:7904/api/users/register', {
           method: 'POST',
