@@ -226,19 +226,22 @@
 
                             <!-- Choices Preview Section -->
                             <div v-if="choices.length > 0" class="choices-preview">
-                                <h4>Available Options:</h4>
-                                <div class="choice-chips">
-                                    <div v-for="(choice, idx) in choices" :key="idx" class="choice-chip">
-                                        <div class="choice-chip-header">
-                                            <span class="choice-name">{{ choice.name || 'Option Name' }}</span>
-                                            <span class="choice-price">{{ formatPrice(choice.price || 0) }}</span>
-                                        </div>
-                                        <div class="choice-chip-stock">
-                                            <i class="fas fa-box"></i> {{ choice.stock || 0 }} in stock
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                              <h4>Available Options:</h4>
+                              <div class="choice-chips">
+                                  <div v-for="(choice, idx) in choices" :key="idx" class="choice-chip">
+                                      <div class="choice-image-container" v-if="choiceImagePreviews && choiceImagePreviews[idx]">
+                                          <img :src="choiceImagePreviews[idx]" alt="Choice Preview" class="choice-preview-image">
+                                      </div>
+                                      <div class="choice-chip-header">
+                                          <span class="choice-name">{{ choice.name || 'Option Name' }}</span>
+                                          <span class="choice-price">{{ formatPrice(choice.price || 0) }}</span>
+                                      </div>
+                                      <div class="choice-chip-stock">
+                                          <i class="fas fa-box"></i> {{ choice.stock || 0 }} in stock
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
                         </div>
                     </div>
                     
@@ -287,7 +290,7 @@ export default {
         AdminNavbar,
         LogoutModal
     },
-    data() {
+      data() {
         return {
             username: '',
             showLogoutModal: false,
@@ -313,6 +316,7 @@ export default {
             previewImage: null,
             choices: [],
             choiceImages: [],
+            choiceImagePreviews: [], 
             suggestedChoicesVisible: false,
             suggestedChoices: [],
             notification: {
@@ -508,6 +512,8 @@ export default {
                 stock: null
             });
             this.choiceImages.push(null);
+            this.choiceImagePreviews.push(null); // Add preview placeholder
+            
             // Reset main product price and stock to 0 when adding first choice
             if (this.choices.length === 1) {
                 this.product.stock_quantity = 0;
@@ -516,12 +522,18 @@ export default {
         },
 
         removeChoice(index) {
+            // Release URL object to prevent memory leaks
+            if (this.choiceImagePreviews[index]) {
+                URL.revokeObjectURL(this.choiceImagePreviews[index]);
+            }
+            
             this.choices.splice(index, 1);
             this.choiceImages.splice(index, 1);
+            this.choiceImagePreviews.splice(index, 1);
+            
             // Reset main product stock and enable price input when removing last choice
             if (this.choices.length === 0) {
                 this.product.stock_quantity = null;
-                // Keep product price at whatever the user already entered
             }
         },
         
@@ -535,12 +547,16 @@ export default {
             }
         },
         
-        handleChoiceImageUpload(event, index) {
-            const file = event.target.files[0];
-            if (file) {
-                this.choiceImages[index] = file;
-            }
-        },
+       handleChoiceImageUpload(event, index) {
+          const file = event.target.files[0];
+          if (file) {
+              this.choiceImages[index] = file;
+              
+              // Create and store preview URL for the selected choice image
+              if (!this.choiceImagePreviews) this.choiceImagePreviews = [];
+              this.choiceImagePreviews[index] = URL.createObjectURL(file);
+          }
+      },
         
         resetForm() {
             this.showResetModal = true;
@@ -1297,7 +1313,20 @@ input:disabled,
   color: #856404;
   border-left: 4px solid #ffc107;
 }
+.choice-image-container {
+  width: 100%;
+  height: 80px;
+  overflow: hidden;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
 
+.choice-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+}
 @keyframes slide-in {
   from {
     transform: translateX(100%);
