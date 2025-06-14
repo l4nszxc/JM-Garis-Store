@@ -12,24 +12,32 @@
 
             <div class="sidebar-menu">
                 <router-link to="/staff" class="menu-item" exact-active-class="active">
-                    <i class="fas fa-clipboard-list"></i>
+                    <div class="icon-container all-orders-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
                     <span>All Orders</span>
                 </router-link>
                 
                 <router-link to="/staff/accepted-orders" class="menu-item" exact-active-class="active">
-                    <i class="fas fa-tasks"></i>
+                    <div class="icon-container accepted-orders-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
                     <span>Accepted Orders</span>
                 </router-link>
 
                 <router-link to="/staff/orders/create" class="menu-item" exact-active-class="active">
-                    <i class="fas fa-cash-register"></i>
+                    <div class="icon-container create-order-icon">
+                        <i class="fas fa-cash-register"></i>
+                    </div>
                     <span>Create Order</span>
                 </router-link>
             </div>
 
             <div class="sidebar-footer">
                 <div class="staff-profile">
-                    <i class="fas fa-user"></i>
+                    <div class="icon-container profile-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
                     <span class="staff-name">{{ username }}</span>
                 </div>
                 <button @click="$emit('logout')" class="logout-btn">
@@ -194,10 +202,45 @@ export default {
     overflow: hidden;
 }
 
-.menu-item i {
-    width: 20px;
-    text-align: center;
+/* Colorful icon containers */
+.icon-container {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
+    transition: transform 0.2s;
+}
+
+.menu-item:hover .icon-container {
+    transform: scale(1.1);
+}
+
+.all-orders-icon {
+    background-color: #3498db;
+    color: white;
+}
+
+.accepted-orders-icon {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.create-order-icon {
+    background-color: #f39c12;
+    color: white;
+}
+
+.profile-icon {
+    background-color: #9b59b6;
+    color: white;
+}
+
+.menu-item i {
+    text-align: center;
+    font-size: 0.95rem;
 }
 
 .menu-item span {
@@ -302,9 +345,8 @@ export default {
     padding: 0.75rem;
 }
 
-.staff-sidebar.collapsed .menu-item i {
-    width: auto;
-    font-size: 1.2rem;
+.staff-sidebar.collapsed .menu-item .icon-container {
+    margin: 0 auto;
 }
 
 .staff-sidebar.collapsed .staff-profile {
