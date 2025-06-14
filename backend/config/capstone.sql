@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jun 14, 2025 at 01:05 AM
+-- Generation Time: Jun 14, 2025 at 07:47 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -347,7 +347,7 @@ CREATE TABLE `orders` (
 --
 
 INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_at`, `updated_at`, `cancel_reason`, `accepted_by`, `accepted_at`, `shared_by`, `shared_with`, `shared_cart_id`, `shared_with_id`, `is_shared_cart_owner`, `is_physical_order`, `customer_name`) VALUES
-('0049544', 56, 378.00, 'paid', '2025-06-07 13:39:44', '2025-06-14 01:01:14', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('0049544', 56, 378.00, 'paid', '2025-06-07 13:39:44', '2025-06-14 01:20:39', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('0062958', 56, 320.50, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('0078361', 56, 60.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('0166286', 56, 141.00, 'paid', '2025-06-06 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -437,6 +437,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('8298188', 56, 605.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('8436968', 58, 23.00, 'preparing', '2025-06-11 17:20:10', '2025-06-11 17:20:28', NULL, 23, '2025-06-12 01:20:28', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('8448674', 56, 378.00, 'paid', '2025-05-23 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('8510875', 58, 49.00, 'paid', '2025-06-14 01:16:24', '2025-06-14 01:16:53', NULL, 23, '2025-06-14 09:16:36', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('8540515', 56, 72.00, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('8634793', 58, 510.00, 'preparing', '2025-06-11 15:32:15', '2025-06-11 19:32:17', NULL, 23, '2025-06-11 23:32:36', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('8653905', 58, 2897.00, 'paid', '2025-06-12 10:36:15', '2025-06-12 10:36:38', NULL, 23, '2025-06-12 18:36:22', NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -646,7 +647,8 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (1747, '1288891', 33, 4, 649.00, NULL),
 (1748, '4562216', 36, 1, 140.00, NULL),
 (1749, '7826305', 67, 1, 20.50, NULL),
-(1750, '3661468', 91, 1, 25.50, NULL);
+(1750, '3661468', 91, 1, 25.50, NULL),
+(1751, '8510875', 77, 1, 49.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -701,7 +703,8 @@ INSERT INTO `order_reviews` (`id`, `order_id`, `user_id`, `rating`, `comment`, `
 (4, '4527232', 58, 5, NULL, '2025-06-13 18:36:01', '2025-06-13 18:36:01'),
 (5, '4562216', 58, 4, NULL, '2025-06-13 18:36:09', '2025-06-13 18:36:09'),
 (6, '3661468', 58, 5, NULL, '2025-06-13 22:14:04', '2025-06-13 22:14:04'),
-(7, '7826305', 58, 5, NULL, '2025-06-14 00:17:58', '2025-06-14 00:17:58');
+(7, '7826305', 58, 5, NULL, '2025-06-14 00:17:58', '2025-06-14 00:17:58'),
+(8, '8510875', 58, 5, NULL, '2025-06-14 02:09:08', '2025-06-14 02:09:08');
 
 -- --------------------------------------------------------
 
@@ -765,7 +768,7 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (74, 'Bear Brand Choco', ' a chocolate-flavored powdered milk drink fortified with essential nutrients like iron, zinc, and vitamin C, designed for individuals aged 3 and up to support strong immunity and overall well-being', 93.00, 20, 'Milk and Chocolate Drink', 'https://i.ibb.co/nMPC557v/b9527d3d54b3.png', '2025-04-08 23:00:50', '2025-06-11 16:38:11'),
 (75, 'Milo', 'a chocolate-flavored malted beverage powder created by Nestlé, known for its unique choco-malty flavor and often mixed with milk or water to create a nutritious and delicious drink, especially popular among children and those seeking an energy boost. ', 54.00, 5, 'Milk and Chocolate Drink', 'https://i.ibb.co/7NrmLyxz/6d157cac0a1f.png', '2025-04-08 23:05:20', '2025-06-11 15:29:15'),
 (76, 'Birch Tree', ' known for its affordable price and high-quality nutrition, with a focus on fortified milk for children and adults. ', 51.00, 22, 'Milk and Chocolate Drink', 'https://i.ibb.co/xK9CjyBV/e407420a9dcb.png', '2025-04-08 23:10:11', '2025-04-20 17:03:16'),
-(77, 'Del Monte Ketchup', 'made from real, high-quality tomatoes, naturally contains lycopene, and is guaranteed to have no preservatives, offering a rich tomato flavor and a sweet-sour taste for delicious dips and meals', 49.00, 19, 'Condiments', 'https://i.ibb.co/jmzv3ZM/728ac9940fe7.png', '2025-04-09 06:48:17', '2025-04-20 17:03:04'),
+(77, 'Del Monte Ketchup', 'made from real, high-quality tomatoes, naturally contains lycopene, and is guaranteed to have no preservatives, offering a rich tomato flavor and a sweet-sour taste for delicious dips and meals', 49.00, 18, 'Condiments', 'https://i.ibb.co/jmzv3ZM/728ac9940fe7.png', '2025-04-09 06:48:17', '2025-06-14 01:16:24'),
 (78, 'Lorins Patis', 'a popular, tangy Filipino fish sauce, ideal as a dipping sauce or cooking ingredient for a wide variety of dishes, including seafood, meat, poultry, vegetables, and Filipino favorites like sinigang and nilaga. ', 27.00, 20, 'Condiments', 'https://i.ibb.co/3yZ5qszC/df3e929a28ec.png', '2025-04-09 07:02:19', '2025-04-09 07:03:39'),
 (79, 'Sugar per kg', 'brown and white refined', 72.00, 300, 'Condiments', 'https://i.ibb.co/xK5TGqzf/2eb5e49aefb7.png', '2025-04-09 07:06:43', '2025-04-09 07:12:13'),
 (80, 'Salt per kg', 'sea salt', 12.00, 200, 'Condiments', 'https://i.ibb.co/j9LdB8xH/50a57d229f22.png', '2025-04-09 07:08:19', '2025-04-09 07:08:19'),
@@ -780,7 +783,9 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (89, 'Lucky 7 Sardines', ' a budget-friendly, canned sardine option in tomato sauce, known for their savory taste and affordability, making them a popular choice for daily meals. ', 21.50, 45, 'Canned Goods', 'https://i.ibb.co/JRzY9m7R/054a358ac5dc.png', '2025-04-09 07:26:01', '2025-04-22 06:34:17'),
 (90, 'Atami Sardines', 'A delightful and flavorful seafood choice that combines the natural goodness of sardines', 23.00, 50, 'Canned Goods', 'https://i.ibb.co/sdNR2j4f/0f5b60542f2a.png', '2025-04-09 07:28:21', '2025-04-09 07:28:21'),
 (91, 'Master Sardines', 'known for their premium quality, sourced from the depths of the ocean and expertly preserved to retain natural flavors and nutritional goodness, with a focus on a quick catch-to-can process. ', 25.50, 99, 'Canned Goods', 'https://i.ibb.co/ksGrTmWD/8c3590d7e350.png', '2025-04-09 07:31:56', '2025-06-13 18:46:19'),
-(92, 'trytry test', 'jm garis', 100.00, 20, 'Beverages', 'https://i.ibb.co/pjrnNm07/59cc32c572c3.jpg', '2025-05-19 07:05:23', '2025-06-11 16:38:19');
+(92, 'trytry test', 'jm garis', 100.00, 20, 'Beverages', 'https://i.ibb.co/pjrnNm07/59cc32c572c3.jpg', '2025-05-19 07:05:23', '2025-06-11 16:38:19'),
+(95, 'trytryzxczxc', 'zxc', 0.00, 0, 'Coffee and Creamer', 'https://i.ibb.co/gbgf00bt/65560c328868.jpg', '2025-06-14 01:53:44', '2025-06-14 01:53:44'),
+(96, 'trytryzxczxctry', 'zxcxzcxzczx', 0.00, 0, 'Coffee and Creamer', 'https://i.ibb.co/DH46fpwY/16f540a83f32.jpg', '2025-06-14 02:05:40', '2025-06-14 02:05:40');
 
 -- --------------------------------------------------------
 
@@ -803,7 +808,10 @@ CREATE TABLE `product_choices` (
 
 INSERT INTO `product_choices` (`choice_id`, `product_id`, `name`, `price`, `stock`, `image`) VALUES
 (31, 92, 'Large (480g)zxc', 70.00, 46, 'https://i.ibb.co/pBF2F0Q5/89e84b090e37.webp'),
-(32, 92, '750ml', 90.00, 39, NULL);
+(32, 92, '750ml', 90.00, 39, NULL),
+(33, 95, 'Large (480g)', 43.00, 40, 'https://i.ibb.co/3m4qpq3D/c34918e1868b.jpg'),
+(34, 95, '750ml', 50.00, 21, 'https://i.ibb.co/prhX6DF0/1bbb34d00de0.jpg'),
+(35, 96, 'Large (480g)', 43.00, 40, 'https://i.ibb.co/TxfPY88k/89af1b0efc5c.webp');
 
 -- --------------------------------------------------------
 
@@ -906,7 +914,7 @@ INSERT INTO `users` (`id`, `username`, `firstname`, `middlename`, `lastname`, `g
 (23, 'Helios', 'Kien Eros', NULL, 'Aas', 'male', 'single', '097874547561', 'ilaya calapan', NULL, 'hernandezlanslorence@gmail.com', '$2a$10$FXivDvr6ZEu4/.BoTHD8tOXi6Ji6V3mv8BvVdrS68cQ3hYcmu3j1O', '2025-02-14 21:37:21', NULL, NULL, 1, 'staff', NULL, NULL, NULL),
 (56, 'l4nszxcqwe', 'dsa', 'dsa', 'dsadsa', 'female', 'single', '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', '2025-02-16', 'dsdsadasdas@gmail.com', '$2a$10$SSpSYo7VpFS4tolhVjEQ2On47sOeNhXD3eplmpR/wEFNkGooExiC6', '2025-02-16 04:31:13', 'lKiGNV', '2025-02-16 04:41:13', 0, 'user', NULL, NULL, NULL),
 (57, 'dsad213213', 'adsad', 'sadsa', '3dsads', 'female', 'single', '3442342', 'dsadas', '2025-02-16', 'lans@gmail.com', '$2a$10$Pd2lZMPCnTMBxylXfT47e.OHqz5AekpbITPS9PFmCKcetRQm.2qb6', '2025-02-16 04:32:19', 'blj3Gv', '2025-02-16 04:42:19', 0, 'user', NULL, NULL, NULL),
-(58, 'L4nszxc_09', 'Lans Lorence', 'Navarro', 'Hernandez', 'male', 'single', '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', '2004-07-09', 'lanslorence@gmail.com', '$2a$10$z4qsUgfnimoeNljOb83iy.ZyoesJyUPl6qLsxAo1YN03af72K.g0.', '2025-02-16 06:14:39', NULL, NULL, 1, 'user', 'Px7inM', '2025-03-17 23:50:19', 'https://i.ibb.co/5WWvbjyk/dac9333a4e72.jpg'),
+(58, 'L4nszxc_09', 'Lans Lorence', 'Navarro', 'Hernandez', 'male', 'single', '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', '2004-07-09', 'lanslorence@gmail.com', '$2a$10$z4qsUgfnimoeNljOb83iy.ZyoesJyUPl6qLsxAo1YN03af72K.g0.', '2025-02-16 06:14:39', NULL, NULL, 1, 'user', 'Px7inM', '2025-03-17 23:50:19', 'https://i.ibb.co/vx30tw6t/9dc4a1b4b580.jpg'),
 (60, 'saddsaddasdsa', 'sda', 'fdgd', 'fdgf', 'male', 'married', '3232432', 'dsadsa', '2025-02-26', 'sa@gmail.com', '$2a$10$rtbD7y7bDxqiyrlvtmoYROheqdfqRbI2RSIFQX/DKkj.lly8B474.', '2025-02-25 18:02:55', NULL, NULL, 1, 'staff', NULL, NULL, NULL),
 (1000, 'l4nstest optinal', 'lans', NULL, 'hernandez', NULL, NULL, '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', NULL, 'l4nsh3rn4nd3z@gmail.com', '$2a$10$.mxwVsDEB/kVnXpjw3.ieu6cc5uRXSoBu6.m5iHbz3IgvfLqH7wum', '2025-06-13 18:19:20', NULL, NULL, 1, 'user', NULL, NULL, NULL);
 
@@ -1162,13 +1170,13 @@ ALTER TABLE `available_discounts`
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491653;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491654;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1751;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1752;
 
 --
 -- AUTO_INCREMENT for table `order_reports`
@@ -1180,19 +1188,19 @@ ALTER TABLE `order_reports`
 -- AUTO_INCREMENT for table `order_reviews`
 --
 ALTER TABLE `order_reviews`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `products_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
+  MODIFY `products_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=97;
 
 --
 -- AUTO_INCREMENT for table `product_choices`
 --
 ALTER TABLE `product_choices`
-  MODIFY `choice_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `choice_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT for table `receipt_settings`
