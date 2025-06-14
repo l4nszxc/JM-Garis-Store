@@ -179,54 +179,54 @@
                     <div class="product-preview">
                         <h3>Product Preview</h3>
                         <div class="preview-content">
-                            <div class="product-card">
-                                <div class="product-image-container">
-                                    <img 
-                                        :src="previewImage || '/img/icons/defaultinsertimage.jpg'" 
-                                        alt="Product Preview" 
-                                        class="product-image"
-                                    >
-                                </div>
-                                <div class="product-details">
-                                    <h3>{{ product.name || 'Product Name' }}</h3>
-                                    <div class="product-rating">
-                                        <div class="star-rating">
-                                            <i v-for="i in 5" :key="i" class="fas fa-star"></i>
-                                        </div>
-                                        <span class="rating-count">No reviews yet</span>
-                                    </div>
-                                    <p class="product-description">
-                                        {{ product.description || 'Product description will appear here.' }}
-                                    </p>
-                                    <div class="product-info">
-                                        <p class="product-price">
-                                            <template v-if="hasChoices && getPriceRange.min !== getPriceRange.max">
-                                                {{ formatPrice(getPriceRange.min) }} - {{ formatPrice(getPriceRange.max) }}
-                                            </template>
-                                            <template v-else-if="hasChoices && getPriceRange.min === getPriceRange.max && getPriceRange.min > 0">
-                                                {{ formatPrice(getPriceRange.min) }}
-                                            </template>
-                                            <template v-else>
-                                                {{ formatPrice(product.price || 0) }}
-                                            </template>
-                                        </p>
-                                        <p class="product-stock" :class="{ 'low-stock': getTotalStock <= 10 }">
-                                            <i class="fas fa-box"></i> 
-                                            {{ getTotalStock }} in stock
-                                        </p>
-                                    </div>
-                                    <p class="product-category">
-                                        <i class="fas fa-tag"></i> {{ product.category || 'Category' }}
-                                    </p>
-                                </div>
-                                <button class="add-to-cart-btn" disabled>
-                                    <i class="fas fa-shopping-cart"></i> Add to Cart
-                                </button>
-                            </div>
+                          <div class="product-card">
+                              <div class="product-image-container">
+                                  <img 
+                                      :src="previewImage || '/img/icons/defaultinsertimage.jpg'" 
+                                      alt="Product Preview" 
+                                      class="product-image"
+                                  >
+                              </div>
+                              <div class="product-details">
+                                  <h3>{{ product.name || 'Product Name' }}</h3>
+                                  <div class="product-rating">
+                                      <div class="star-rating">
+                                          <i v-for="i in 5" :key="i" class="fas fa-star"></i>
+                                      </div>
+                                      <span class="rating-count">No reviews yet</span>
+                                  </div>
+                                  <p class="product-description">
+                                      {{ product.description || 'Product description will appear here.' }}
+                                  </p>
+                                  <div class="product-info">
+                                      <p class="product-price">
+                                          <template v-if="hasChoices && getPriceRange.min !== getPriceRange.max">
+                                              {{ formatPrice(getPriceRange.min) }} - {{ formatPrice(getPriceRange.max) }}
+                                          </template>
+                                          <template v-else-if="hasChoices && getPriceRange.min === getPriceRange.max && getPriceRange.min > 0">
+                                              {{ formatPrice(getPriceRange.min) }}
+                                          </template>
+                                          <template v-else>
+                                              {{ formatPrice(product.price || 0) }}
+                                          </template>
+                                      </p>
+                                      <p class="product-stock" :class="{ 'low-stock': getTotalStock <= 10 }">
+                                          <i class="fas fa-box"></i> 
+                                          {{ getTotalStock }} in stock
+                                      </p>
+                                  </div>
+                                  <p class="product-category">
+                                      <i class="fas fa-tag"></i> {{ product.category || 'Category' }}
+                                  </p>
+                              </div>
+                              <button class="add-to-cart-btn" disabled>
+                                  <i class="fas fa-shopping-cart"></i> Add to Cart
+                              </button>
+                          </div>
 
-                            <!-- Choices Preview Section -->
-                            <div v-if="choices.length > 0" class="choices-preview">
-                              <h4>Available Options:</h4>
+                          <!-- Choices Preview Section with scrolling -->
+                          <div v-if="choices.length > 0" class="choices-preview">
+                              <h4>Available Options <span class="options-count">({{ choices.length }})</span>:</h4>
                               <div class="choice-chips">
                                   <div v-for="(choice, idx) in choices" :key="idx" class="choice-chip">
                                       <div class="choice-image-container" v-if="choiceImagePreviews && choiceImagePreviews[idx]">
@@ -242,7 +242,7 @@
                                   </div>
                               </div>
                           </div>
-                        </div>
+                      </div>
                     </div>
                     
                     <div class="form-actions">
@@ -773,7 +773,7 @@ export default {
 .form-group input,
 .form-group textarea,
 .form-group select {
-  width: 100%;
+  width: 97%;
   padding: 0.75rem;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
@@ -817,13 +817,13 @@ input:disabled,
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   padding: 1.5rem;
-  min-height: 400px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
   overflow-y: auto;
-  max-height: 600px;
+  max-height: 75vh; /* Use viewport height for better responsiveness */
+  height: 85%;
 }
 
 /* Product Card Styles for Preview */
@@ -836,6 +836,7 @@ input:disabled,
   flex-direction: column;
   width: 100%;
   max-width: 300px;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .product-image-container {
@@ -960,6 +961,8 @@ input:disabled,
   border-radius: 12px;
   padding: 1rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0; /* Prevent shrinking */
+  overflow-y: auto; /* Add vertical scrolling */
 }
 
 .choices-preview h4 {
@@ -983,6 +986,7 @@ input:disabled,
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  padding-right: 0.5rem; /* Add space for scrollbar */
 }
 
 .choice-chip {
@@ -1391,5 +1395,31 @@ input:disabled,
   .product-choice {
     padding: 1rem;
   }
+}
+.options-count {
+  background-color: #e2e8f0;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  margin-left: 0.5rem;
+}
+.choices-preview::-webkit-scrollbar {
+  width: 6px;
+}
+
+.choices-preview::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.choices-preview::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.choices-preview::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 </style>
