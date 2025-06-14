@@ -53,18 +53,27 @@
               </div>
               
               <div 
-                v-for="choice in product.choices" 
-                v-if="choice.image" 
-                :key="choice.choice_id"
-                class="thumbnail-container"
-                :class="{ active: currentImage === choice.image }"
-                @click="setCurrentImage(choice.image)"
+                v-for="choice in product.choices || []" 
+                v-if="choice"
+                :key="choice.choice_id || index"
+                class="option-card"
+                :class="{ 'selected': selectedChoice === choice, 'out-of-stock': choice.stock <= 0 }"
+                @click="selectChoice(choice)"
               >
-                <img 
-                  :src="choice.image || '/img/placeholder.jpg'" 
-                  :alt="`${choice.name}`" 
-                  @error="handleImageError"
-                />
+                <div class="option-image">
+                  <img 
+                    :src="choice.image || product.image || '/img/placeholder.jpg'" 
+                    :alt="choice.name || 'Option'" 
+                    @error="handleImageError"
+                  />
+                </div>
+                <div class="option-details">
+                  <span class="option-name">{{ choice.name || 'Option' }}</span>
+                  <span class="option-price">{{ formatPrice(choice.price || product.price || 0) }}</span>
+                  <span class="option-stock" :class="{'low-stock': choice.stock <= 10}">
+                    {{ choice.stock > 0 ? `${choice.stock} in stock` : 'Out of stock' }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -344,13 +353,14 @@ export default {
   },
   computed: {
     hasChoices() {
-      return this.product && this.product.choices && this.product.choices.length > 0;
+      return this.product && this.product.choices && Array.isArray(this.product.choices) && this.product.choices.length > 0;
     },
     hasMultipleImages() {
       if (!this.product) return false;
+      if (!this.product.choices || !Array.isArray(this.product.choices)) return false;
       
       // Check if there are any choices with images
-      const choicesWithImages = this.product.choices?.filter(choice => choice.image) || [];
+      const choicesWithImages = this.product.choices.filter(choice => choice && choice.image);
       return choicesWithImages.length > 0;
     },
     maxStock() {
@@ -377,9 +387,11 @@ export default {
       let max = 0;
       
       this.product.choices.forEach(choice => {
-        const price = parseFloat(choice.price) || parseFloat(this.product.price) || 0;
-        min = Math.min(min, price);
-        max = Math.max(max, price);
+        if (choice) {
+          const price = parseFloat(choice.price) || parseFloat(this.product.price) || 0;
+          min = Math.min(min, price);
+          max = Math.max(max, price);
+        }
       });
       
       if (min === Infinity) min = this.product.price || 0;
@@ -408,7 +420,7 @@ export default {
       this.currentImage = image;
     },
     selectChoice(choice) {
-      if (choice.stock <= 0) return;
+      if (!choice || choice.stock <= 0) return;
       
       if (this.selectedChoice === choice) {
         this.selectedChoice = null;
@@ -418,7 +430,7 @@ export default {
         this.quantity = 1;
         
         // Update current image if choice has an image
-        if (choice.image) {
+        if (choice && choice.image) {
           this.currentImage = choice.image;
         }
       }
@@ -521,7 +533,13 @@ export default {
             }
             
             const product = await response.json();
-            console.log('Product data received:', product); // Add logging
+            console.log('Product data received:', product);
+
+            // Ensure product.choices is always an array
+            if (!product.choices || !Array.isArray(product.choices)) {
+              product.choices = [];
+            }
+
             this.product = product;
             this.currentImage = product.image;
             
