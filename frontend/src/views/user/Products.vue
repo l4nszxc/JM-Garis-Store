@@ -68,6 +68,9 @@
                                 <template v-if="hasChoices(product) && getPriceRange(product).min !== getPriceRange(product).max">
                                     {{ formatPrice(getPriceRange(product).min) }} - {{ formatPrice(getPriceRange(product).max) }}
                                 </template>
+                                <template v-else-if="hasChoices(product)">
+                                    {{ formatPrice(getPriceRange(product).min) }}
+                                </template>
                                 <template v-else>
                                     {{ formatPrice(product.price) }}
                                 </template>
@@ -183,16 +186,11 @@ export default {
                 return { min: product.price, max: product.price };
             }
             
+            // Initialize with high and low values for comparison
             let min = Infinity;
             let max = 0;
             
-            // Check base product price
-            if (product.price) {
-                min = Math.min(min, parseFloat(product.price));
-                max = Math.max(max, parseFloat(product.price));
-            }
-            
-            // Check all choice prices
+            // Only check choice prices, ignore the main product price
             product.choices.forEach(choice => {
                 if (choice.price && parseFloat(choice.price) > 0) {
                     min = Math.min(min, parseFloat(choice.price));
@@ -200,9 +198,9 @@ export default {
                 }
             });
             
-            // If no valid prices were found, default to product price
-            if (min === Infinity) min = parseFloat(product.price) || 0;
-            if (max === 0) max = parseFloat(product.price) || 0;
+            // If no valid prices were found, set to 0
+            if (min === Infinity) min = 0;
+            if (max === 0) max = 0;
             
             return { min, max };
         },
