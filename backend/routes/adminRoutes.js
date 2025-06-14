@@ -26,6 +26,8 @@ router.get('/forecasts', adminController.getProductForecasts);
 router.get('/low-stock', authenticate, isAdmin, adminController.getLowStockItems);
 router.get('/receipt-settings', authenticate, isAdmin, adminController.getReceiptSettings);
 router.post('/receipt-settings', authenticate, isAdmin, adminController.saveReceiptSettings);
-
-
+router.get('/sales-chart',authenticate, isAdmin, adminController.getSalesChartData);
+router.get('/dashboard-stats', authenticate, isAdmin, adminController.getDashboardStats);
+router.get('/top-customers', authenticate, isAdmin, adminController.getTopCustomers);
+router.get('/top-products', authenticate, isAdmin, adminController.getTopProducts);
 module.exports = router;

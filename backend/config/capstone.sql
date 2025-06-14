@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jun 13, 2025 at 06:05 PM
+-- Generation Time: Jun 14, 2025 at 01:05 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -298,7 +298,9 @@ INSERT INTO `available_discounts` (`id`, `user_id`, `amount`, `created_at`, `exp
 (51, 58, 50.00, '2025-05-19 06:25:15', '2025-06-18 06:25:15', 1, '7576385'),
 (52, 58, 100.00, '2025-06-11 12:44:07', '2025-07-11 12:44:07', 1, '4970734'),
 (53, 58, 50.00, '2025-06-11 12:49:02', '2025-07-11 12:49:02', 1, '8634793'),
-(54, 58, 250.00, '2025-06-11 12:49:16', '2025-07-11 12:49:16', 1, '0479798');
+(54, 58, 250.00, '2025-06-11 12:49:16', '2025-07-11 12:49:16', 1, '0479798'),
+(55, 58, 50.00, '2025-06-14 00:18:08', '2025-07-14 00:18:08', 0, NULL),
+(56, 58, 100.00, '2025-06-14 00:18:10', '2025-07-14 00:18:10', 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -345,7 +347,7 @@ CREATE TABLE `orders` (
 --
 
 INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_at`, `updated_at`, `cancel_reason`, `accepted_by`, `accepted_at`, `shared_by`, `shared_with`, `shared_cart_id`, `shared_with_id`, `is_shared_cart_owner`, `is_physical_order`, `customer_name`) VALUES
-('0049544', 56, 378.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('0049544', 56, 378.00, 'paid', '2025-06-07 13:39:44', '2025-06-14 01:01:14', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('0062958', 56, 320.50, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('0078361', 56, 60.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('0166286', 56, 141.00, 'paid', '2025-06-06 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -386,19 +388,21 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('3226219', 56, 468.00, 'paid', '2025-05-26 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('3464693', 56, 301.00, 'paid', '2025-05-24 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('3505083', 56, 586.00, 'paid', '2025-05-23 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('3661468', 58, 25.50, 'paid', '2025-06-13 18:46:19', '2025-06-13 22:06:20', NULL, 23, '2025-06-14 02:46:37', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('3752935', 56, 378.00, 'paid', '2025-05-15 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('3851076', 56, 111.00, 'paid', '2025-05-28 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('3871827', 56, 216.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4023658', 56, 19.00, 'paid', '2025-06-09 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4151897', 58, 140.00, 'preparing', '2025-06-12 08:17:29', '2025-06-12 08:17:41', NULL, 23, '2025-06-12 16:17:41', NULL, NULL, NULL, NULL, 0, 0, NULL),
+('4151897', 58, 140.00, 'preparing', '2025-06-12 08:17:29', '2025-06-13 19:16:18', NULL, 23, '2025-06-12 16:17:41', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4217171', 56, 1291.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4226170', 56, 378.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4234665', 56, 189.00, 'paid', '2025-05-22 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4379664', 56, 282.00, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4406490', 56, 189.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4429183', 56, 189.00, 'paid', '2025-05-27 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4527232', 58, 1359.00, 'ready for pickup', '2025-06-12 08:11:45', '2025-06-12 08:12:00', NULL, 23, '2025-06-12 16:11:56', NULL, NULL, NULL, NULL, 0, 0, NULL),
+('4527232', 58, 1359.00, 'paid', '2025-06-12 08:11:45', '2025-06-13 18:27:17', NULL, 23, '2025-06-12 16:11:56', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4547246', 56, 74.00, 'paid', '2025-06-04 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('4562216', 58, 140.00, 'paid', '2025-06-13 18:26:04', '2025-06-13 18:26:35', NULL, 23, '2025-06-14 02:26:14', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4564808', 56, 378.00, 'paid', '2025-06-04 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('4672841', 56, 378.00, 'paid', '2025-05-20 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('5041695', 58, 189.00, 'cancelled', '2025-06-11 12:39:58', '2025-06-11 12:40:02', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -423,6 +427,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('7339968', 56, 106.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('7687088', 56, 189.00, 'paid', '2025-05-28 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('7789578', 56, 542.50, 'paid', '2025-06-08 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('7826305', 58, 20.50, 'paid', '2025-06-13 18:36:15', '2025-06-13 18:36:51', NULL, 23, '2025-06-14 02:36:20', NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('7826652', 56, 72.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('7853322', 56, 23.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('7872481', 56, 189.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
@@ -638,7 +643,10 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (1744, '8653905', 31, 1, 301.00, NULL),
 (1745, '8653905', 33, 4, 649.00, NULL),
 (1746, '1288891', 34, 3, 141.00, NULL),
-(1747, '1288891', 33, 4, 649.00, NULL);
+(1747, '1288891', 33, 4, 649.00, NULL),
+(1748, '4562216', 36, 1, 140.00, NULL),
+(1749, '7826305', 67, 1, 20.50, NULL),
+(1750, '3661468', 91, 1, 25.50, NULL);
 
 -- --------------------------------------------------------
 
@@ -689,7 +697,11 @@ CREATE TABLE `order_reviews` (
 INSERT INTO `order_reviews` (`id`, `order_id`, `user_id`, `rating`, `comment`, `created_at`, `updated_at`) VALUES
 (1, '2173189', 58, 5, NULL, '2025-06-12 09:48:35', '2025-06-12 09:48:35'),
 (2, '8653905', 58, 5, NULL, '2025-06-12 10:36:50', '2025-06-12 10:36:50'),
-(3, '1288891', 58, 3, NULL, '2025-06-12 10:37:47', '2025-06-12 10:37:47');
+(3, '1288891', 58, 3, NULL, '2025-06-12 10:37:47', '2025-06-12 10:37:47'),
+(4, '4527232', 58, 5, NULL, '2025-06-13 18:36:01', '2025-06-13 18:36:01'),
+(5, '4562216', 58, 4, NULL, '2025-06-13 18:36:09', '2025-06-13 18:36:09'),
+(6, '3661468', 58, 5, NULL, '2025-06-13 22:14:04', '2025-06-13 22:14:04'),
+(7, '7826305', 58, 5, NULL, '2025-06-14 00:17:58', '2025-06-14 00:17:58');
 
 -- --------------------------------------------------------
 
@@ -719,7 +731,7 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 980, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-06-12 10:37:08'),
 (34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 76, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-06-12 10:37:08'),
 (35, 'GSM Mojito 1L', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 189.00, 977, 'Beverages', 'https://i.ibb.co/vvP01sRS/00058af3eb33.png', '2025-04-01 07:28:48', '2025-06-12 08:35:52'),
-(36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 80, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-04-01 07:34:49', '2025-06-12 08:17:29'),
+(36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 79, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-04-01 07:34:49', '2025-06-13 18:26:04'),
 (37, 'Primera Light 1Liter', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 189.00, 95, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 07:35:27', '2025-05-09 13:17:45'),
 (38, 'Lucky 7 Corned Beef ', 'organic-free corned beef multipack', 17.50, 196, 'Canned Goods', 'https://i.ibb.co/MD9MDJ5q/d66d18901a73.png', '2025-04-01 07:37:33', '2025-06-12 08:43:21'),
 (41, 'Lucky 7 Meat Loaf 100g', 'organic-free corned beef multipack', 23.00, 48, 'Canned Goods', 'https://i.ibb.co/tTMm9hg9/bf73f6e95a5d.png', '2025-04-01 07:42:51', '2025-04-24 16:44:33'),
@@ -743,7 +755,7 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (64, 'Century Tuna', 'a leading canned tuna brand in the Philippines, known for its healthy, delicious, and convenient options,', 27.50, 100, 'Canned Goods', 'https://i.ibb.co/FbXNJm1m/c00050cbdeba.png', '2025-04-08 22:14:26', '2025-04-08 22:14:26'),
 (65, 'Blue Bay', 'Manamis-namis. Deliciously irresistible. Unmistakably fresh. The sea`s bounty and farm`s harvest make one delightful feast.', 29.75, 200, 'Canned Goods', 'https://i.ibb.co/vxtvqDpM/cc9c981cfeb3.png', '2025-04-08 22:18:53', '2025-04-08 22:18:53'),
 (66, '555 Tuna', 'the “Super Ulam Pinoy” because it is rich in calcium for stronger bones, protein for muscle building, lycopene for cancer prevention', 26.00, 49, 'Canned Goods', 'https://i.ibb.co/Y7jbJpZ9/0f06ee53e48d.png', '2025-04-08 22:21:01', '2025-04-20 17:03:16'),
-(67, 'CDO Karne Norte', 'a Filipino-style corned beef that has a delicious guisado taste', 20.50, 100, 'Canned Goods', 'https://i.ibb.co/KjNHwTmS/6ef04ff0da58.png', '2025-04-08 22:23:53', '2025-04-08 22:23:53'),
+(67, 'CDO Karne Norte', 'a Filipino-style corned beef that has a delicious guisado taste', 20.50, 99, 'Canned Goods', 'https://i.ibb.co/KjNHwTmS/6ef04ff0da58.png', '2025-04-08 22:23:53', '2025-06-13 18:36:15'),
 (68, 'Bingo Corned Beef', 'a canned, ready-to-eat corned beef product, specially prepared with beef and savory seasonings, and fortified with zinc and iron', 19.00, 50, 'Canned Goods', 'https://i.ibb.co/BH4TXJBC/d226081191f0.png', '2025-04-08 22:26:27', '2025-04-08 22:26:27'),
 (69, 'San Marino', 'has the delicious taste and health benefits of tuna', 32.00, 100, 'Canned Goods', 'https://i.ibb.co/ns3PXZPS/e9feba69ac43.png', '2025-04-08 22:34:10', '2025-04-08 22:34:10'),
 (70, 'Fresca Tuna', 'It\'s a great alternative to the usual sardines, giving you more value for your money while staying within your budget.', 26.50, 100, 'Canned Goods', 'https://i.ibb.co/j9QJQfM7/2e963da1932c.png', '2025-04-08 22:37:38', '2025-04-08 22:37:38'),
@@ -767,7 +779,7 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (88, 'Ligo Sardines', 'well-known for its excellent taste worldwide', 26.50, 200, 'Canned Goods', 'https://i.ibb.co/hJpmZjDM/09da9c6b37b1.png', '2025-04-09 07:23:47', '2025-04-09 07:23:47'),
 (89, 'Lucky 7 Sardines', ' a budget-friendly, canned sardine option in tomato sauce, known for their savory taste and affordability, making them a popular choice for daily meals. ', 21.50, 45, 'Canned Goods', 'https://i.ibb.co/JRzY9m7R/054a358ac5dc.png', '2025-04-09 07:26:01', '2025-04-22 06:34:17'),
 (90, 'Atami Sardines', 'A delightful and flavorful seafood choice that combines the natural goodness of sardines', 23.00, 50, 'Canned Goods', 'https://i.ibb.co/sdNR2j4f/0f5b60542f2a.png', '2025-04-09 07:28:21', '2025-04-09 07:28:21'),
-(91, 'Master Sardines', 'known for their premium quality, sourced from the depths of the ocean and expertly preserved to retain natural flavors and nutritional goodness, with a focus on a quick catch-to-can process. ', 25.50, 100, 'Canned Goods', 'https://i.ibb.co/ksGrTmWD/8c3590d7e350.png', '2025-04-09 07:31:56', '2025-04-09 07:31:56'),
+(91, 'Master Sardines', 'known for their premium quality, sourced from the depths of the ocean and expertly preserved to retain natural flavors and nutritional goodness, with a focus on a quick catch-to-can process. ', 25.50, 99, 'Canned Goods', 'https://i.ibb.co/ksGrTmWD/8c3590d7e350.png', '2025-04-09 07:31:56', '2025-06-13 18:46:19'),
 (92, 'trytry test', 'jm garis', 100.00, 20, 'Beverages', 'https://i.ibb.co/pjrnNm07/59cc32c572c3.jpg', '2025-05-19 07:05:23', '2025-06-11 16:38:19');
 
 -- --------------------------------------------------------
@@ -792,6 +804,31 @@ CREATE TABLE `product_choices` (
 INSERT INTO `product_choices` (`choice_id`, `product_id`, `name`, `price`, `stock`, `image`) VALUES
 (31, 92, 'Large (480g)zxc', 70.00, 46, 'https://i.ibb.co/pBF2F0Q5/89e84b090e37.webp'),
 (32, 92, '750ml', 90.00, 39, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `receipt_settings`
+--
+
+CREATE TABLE `receipt_settings` (
+  `id` int NOT NULL,
+  `storeName` varchar(255) NOT NULL DEFAULT 'JM Garis Store',
+  `storeTagline` varchar(255) DEFAULT 'Official Receipt',
+  `storeAddress` text,
+  `contactNumber` varchar(50) DEFAULT NULL,
+  `thankyouMessage` text,
+  `footerText` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `receipt_settings`
+--
+
+INSERT INTO `receipt_settings` (`id`, `storeName`, `storeTagline`, `storeAddress`, `contactNumber`, `thankyouMessage`, `footerText`, `created_at`, `updated_at`) VALUES
+(1, 'JM Garis Store', 'Official Receipt', 'Barcenaga, Naujan City, Oriental Mindoro', 'lanslorence@gmail.com', 'Thank you for your purchase!\nPlease come again', '', '2025-06-13 22:06:01', '2025-06-13 22:21:38');
 
 -- --------------------------------------------------------
 
@@ -843,8 +880,8 @@ CREATE TABLE `users` (
   `firstname` varchar(50) NOT NULL,
   `middlename` varchar(50) DEFAULT NULL,
   `lastname` varchar(50) NOT NULL,
-  `gender` enum('male','female','other') NOT NULL,
-  `civil_status` enum('single','married','widowed','divorced','separated') NOT NULL,
+  `gender` enum('male','female','other') DEFAULT NULL,
+  `civil_status` enum('single','married','widowed','divorced','separated') DEFAULT NULL,
   `phone_number` varchar(15) DEFAULT NULL,
   `address` text,
   `birthdate` date DEFAULT NULL,
@@ -870,9 +907,8 @@ INSERT INTO `users` (`id`, `username`, `firstname`, `middlename`, `lastname`, `g
 (56, 'l4nszxcqwe', 'dsa', 'dsa', 'dsadsa', 'female', 'single', '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', '2025-02-16', 'dsdsadasdas@gmail.com', '$2a$10$SSpSYo7VpFS4tolhVjEQ2On47sOeNhXD3eplmpR/wEFNkGooExiC6', '2025-02-16 04:31:13', 'lKiGNV', '2025-02-16 04:41:13', 0, 'user', NULL, NULL, NULL),
 (57, 'dsad213213', 'adsad', 'sadsa', '3dsads', 'female', 'single', '3442342', 'dsadas', '2025-02-16', 'lans@gmail.com', '$2a$10$Pd2lZMPCnTMBxylXfT47e.OHqz5AekpbITPS9PFmCKcetRQm.2qb6', '2025-02-16 04:32:19', 'blj3Gv', '2025-02-16 04:42:19', 0, 'user', NULL, NULL, NULL),
 (58, 'L4nszxc_09', 'Lans Lorence', 'Navarro', 'Hernandez', 'male', 'single', '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', '2004-07-09', 'lanslorence@gmail.com', '$2a$10$z4qsUgfnimoeNljOb83iy.ZyoesJyUPl6qLsxAo1YN03af72K.g0.', '2025-02-16 06:14:39', NULL, NULL, 1, 'user', 'Px7inM', '2025-03-17 23:50:19', 'https://i.ibb.co/5WWvbjyk/dac9333a4e72.jpg'),
-(59, 'pangit', 'Lansdsadsa', 'sadasd', 'Losdadsarence', 'female', 'single', '09127649805', 'Zone 3321', '2025-02-16', 'l4nsh3rn4nd3z@gmail.com', '$2a$10$AO6fKFsPsvFCfhHg9X9GxOMFmeeWkcCzFNArxLDNL/6RQXkrev6o6', '2025-02-16 13:53:55', NULL, NULL, 1, 'user', NULL, NULL, 'https://i.ibb.co/LzL6qMy1/0d11738a2d26.jpg'),
 (60, 'saddsaddasdsa', 'sda', 'fdgd', 'fdgf', 'male', 'married', '3232432', 'dsadsa', '2025-02-26', 'sa@gmail.com', '$2a$10$rtbD7y7bDxqiyrlvtmoYROheqdfqRbI2RSIFQX/DKkj.lly8B474.', '2025-02-25 18:02:55', NULL, NULL, 1, 'staff', NULL, NULL, NULL),
-(999, 'testuser', '', NULL, '', 'male', 'single', NULL, NULL, NULL, 'test@example.com', 'password123', '2025-04-06 11:41:32', NULL, NULL, 0, '', NULL, NULL, NULL);
+(1000, 'l4nstest optinal', 'lans', NULL, 'hernandez', NULL, NULL, '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', NULL, 'l4nsh3rn4nd3z@gmail.com', '$2a$10$.mxwVsDEB/kVnXpjw3.ieu6cc5uRXSoBu6.m5iHbz3IgvfLqH7wum', '2025-06-13 18:19:20', NULL, NULL, 1, 'user', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1005,7 +1041,10 @@ INSERT INTO `user_rewards` (`id`, `user_id`, `order_id`, `points`, `description`
 (372, 58, '9344479', 1, 'Earned points from order #9344479', '2025-06-12 08:45:37'),
 (373, 58, '2173189', 6, 'Earned points from order #2173189', '2025-06-12 09:26:02'),
 (374, 58, '8653905', 28, 'Earned points from order #8653905', '2025-06-12 10:36:15'),
-(375, 58, '1288891', 30, 'Earned points from order #1288891', '2025-06-12 10:37:08');
+(375, 58, '1288891', 30, 'Earned points from order #1288891', '2025-06-12 10:37:08'),
+(376, 58, '4562216', 1, 'Earned points from order #4562216', '2025-06-13 18:26:04'),
+(377, 58, NULL, -100, 'Redeemed for Bronze Rewardz', '2025-06-14 00:18:08'),
+(378, 58, NULL, -200, 'Redeemed for Silver Reward', '2025-06-14 00:18:10');
 
 --
 -- Indexes for dumped tables
@@ -1076,6 +1115,12 @@ ALTER TABLE `product_choices`
   ADD KEY `product_id` (`product_id`);
 
 --
+-- Indexes for table `receipt_settings`
+--
+ALTER TABLE `receipt_settings`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `reward_tiers`
 --
 ALTER TABLE `reward_tiers`
@@ -1111,19 +1156,19 @@ ALTER TABLE `user_rewards`
 -- AUTO_INCREMENT for table `available_discounts`
 --
 ALTER TABLE `available_discounts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
 
 --
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491650;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491653;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1748;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1751;
 
 --
 -- AUTO_INCREMENT for table `order_reports`
@@ -1135,19 +1180,25 @@ ALTER TABLE `order_reports`
 -- AUTO_INCREMENT for table `order_reviews`
 --
 ALTER TABLE `order_reviews`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `products_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=93;
+  MODIFY `products_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
 
 --
 -- AUTO_INCREMENT for table `product_choices`
 --
 ALTER TABLE `product_choices`
   MODIFY `choice_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+
+--
+-- AUTO_INCREMENT for table `receipt_settings`
+--
+ALTER TABLE `receipt_settings`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `reward_tiers`
@@ -1159,13 +1210,13 @@ ALTER TABLE `reward_tiers`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1000;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1001;
 
 --
 -- AUTO_INCREMENT for table `user_rewards`
 --
 ALTER TABLE `user_rewards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=376;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=379;
 
 --
 -- Constraints for dumped tables
