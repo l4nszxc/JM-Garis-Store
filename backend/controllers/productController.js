@@ -210,19 +210,37 @@ exports.deleteProduct = async (req, res) => {
 };
 
 exports.getProductById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const product = await Product.getById(id);
-        
-        if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
-        }
-        
-        res.json(product);
-    } catch (error) {
-        console.error('Error fetching product:', error);
-        res.status(500).json({ message: 'Error fetching product' });
+  try {
+    const productId = req.params.id;
+    
+    // Fixed query that doesn't rely on the categories table
+    // Instead, get the category directly from the products table
+    const [product] = await db.query(
+      `SELECT p.* 
+       FROM products p 
+       WHERE p.products_id = ?`,
+      [productId]
+    );
+    
+    if (product.length === 0) {
+      return res.status(404).json({ message: 'Product not found' });
     }
+    
+    // Get product choices/options if any
+    const [choices] = await db.query(
+      `SELECT * FROM product_choices WHERE product_id = ?`,
+      [productId]
+    );
+    
+    // Add choices to the product
+    product[0].choices = choices || [];
+    
+    // Return the product with its choices
+    res.json(product[0]);
+  } catch (error) {
+    console.error('Error retrieving product:', error);
+    res.status(500).json({ message: 'Server error when retrieving product' });
+  }
 };
 exports.updateProductChoice = async (req, res) => {
     try {
@@ -315,5 +333,102 @@ exports.getProductRatings = async (req, res) => {
   } catch (error) {
     console.error('Error fetching product ratings:', error);
     res.status(500).json({ message: 'Error fetching product ratings' });
+  }
+};
+exports.getProductRatingById = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    
+    // Query to get average rating and review count for a specific product
+    const [ratings] = await db.execute(`
+      SELECT 
+        oi.product_id, 
+        AVG(r.rating) AS avg_rating, 
+        COUNT(r.id) AS review_count
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.order_id
+      LEFT JOIN order_reviews r ON o.order_id = r.order_id
+      WHERE oi.product_id = ? AND r.id IS NOT NULL
+      GROUP BY oi.product_id
+    `, [productId]);
+    
+    if (ratings.length === 0) {
+      return res.json({
+        avg_rating: 0,
+        review_count: 0
+      });
+    }
+    
+    res.json(ratings[0]);
+  } catch (error) {
+    console.error('Error fetching product rating:', error);
+    res.status(500).json({ message: 'Error fetching product rating' });
+  }
+};
+exports.getProductReviews = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    
+    // Join order_items with order_reviews to get reviews related to this product
+    const [reviews] = await db.execute(`
+      SELECT 
+        r.id,
+        r.order_id,
+        r.user_id,
+        r.rating,
+        r.comment,
+        r.created_at,
+        r.updated_at,
+        u.username
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.order_id
+      JOIN order_reviews r ON o.order_id = r.order_id
+      JOIN users u ON r.user_id = u.id
+      WHERE oi.product_id = ?
+      ORDER BY r.created_at DESC
+    `, [productId]);
+    
+    res.json(reviews);
+  } catch (error) {
+    console.error('Error fetching product reviews:', error);
+    res.status(500).json({ message: 'Error fetching product reviews' });
+  }
+};
+exports.reportProduct = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const { issueType, description } = req.body;
+    const userId = req.user.id;
+    
+    // Input validation
+    if (!issueType || !description) {
+      return res.status(400).json({ message: 'Issue type and description are required' });
+    }
+    
+    // Check if product exists
+    const [product] = await db.query(
+      'SELECT * FROM products WHERE products_id = ?',
+      [productId]
+    );
+    
+    if (product.length === 0) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    
+    // Insert the report
+    const [result] = await db.query(
+      `INSERT INTO product_reports 
+       (product_id, user_id, issue_type, description, status) 
+       VALUES (?, ?, ?, ?, 'pending')`,
+      [productId, userId, issueType, description]
+    );
+    
+    res.status(201).json({ 
+      message: 'Report submitted successfully',
+      reportId: result.insertId
+    });
+  } catch (error) {
+    console.error('Error submitting product report:', error);
+    res.status(500).json({ message: 'Error submitting report' });
   }
 };

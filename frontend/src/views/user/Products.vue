@@ -37,17 +37,23 @@
                 <i class="fas fa-spinner fa-spin"></i> Loading products...
             </div>
             <div class="products-grid">
-                <div v-for="product in filteredProducts" :key="product.products_id" class="product-card">
+                <div 
+                    v-for="product in filteredProducts" 
+                    :key="product.products_id" 
+                    class="product-card"
+                    @click="viewProductDetails(product.products_id)"
+                >
+                    <!-- Product content remains the same -->
                     <div class="product-image-container">
-                        <img 
-                            :src="product.image || '/img/placeholder.jpg'"
-                            :alt="product.name" 
-                            class="product-image"
-                            @error="handleImageError"
-                        >
-                        <span class="sold-badge" v-if="parseInt(product.total_sold) > 0">
-                            <i class="fas fa-fire"></i> {{ parseInt(product.total_sold) }} sold
-                        </span>
+                    <img 
+                        :src="product.image || '/img/placeholder.jpg'"
+                        :alt="product.name" 
+                        class="product-image"
+                        @error="handleImageError"
+                    >
+                    <span class="sold-badge" v-if="parseInt(product.total_sold) > 0">
+                        <i class="fas fa-fire"></i> {{ parseInt(product.total_sold) }} sold
+                    </span>
                     </div>
                     <div class="product-details">
                         <h3>{{ product.name }}</h3>
@@ -177,6 +183,10 @@ export default {
         }
     },
     methods: {
+        viewProductDetails(productId) {
+        console.log(`Navigating to product with ID: ${productId}`);
+        this.$router.push(`/product/${productId}`);
+        },
         hasChoices(product) {
             return product.choices && product.choices.length > 0;
         },
@@ -591,6 +601,7 @@ export default {
     display: flex;
     flex-direction: column;
     height: 100%;
+    cursor: pointer;
 }
 .product-card:hover {
     transform: translateY(-5px);

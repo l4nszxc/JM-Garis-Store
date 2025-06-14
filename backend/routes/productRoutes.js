@@ -14,4 +14,9 @@ router.put('/:id', productController.uploadMiddleware, productController.updateP
 router.delete('/:id', productController.deleteProduct);
 router.get('/:id/has-choices', authenticate, productController.hasChoices);
 router.get('/ratings', productController.getProductRatings);
+router.get('/:id', authenticate, productController.getProductById);
+router.get('/:id/rating', authenticate, productController.getProductRatingById);
+router.get('/:id/reviews', authenticate, productController.getProductReviews);
+router.post('/:id/report', authenticate, productController.reportProduct);
+
 module.exports = router;

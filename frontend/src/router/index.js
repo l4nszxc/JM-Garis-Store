@@ -23,6 +23,7 @@ import CreateOrder from '../views/staff/CreateOrder.vue'
 import Notifications from'../views/user/Notifications.vue'
 import SalesForecast from '../views/admin/SalesForecast.vue'
 import AdminReceiptSettings from '../views/admin/ReceiptSettings.vue'
+import ProductDetail from '../views/user/ProductDetail.vue';
 
 const routes = [
   {
@@ -114,6 +115,14 @@ const routes = [
     path: '/order-details/:id',
     name: 'OrderDetails',
     component: () => import('../views/user/OrderDetails.vue'),
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/product/:id',
+    name: 'ProductDetail',
+    component: ProductDetail,
     meta: {
       requiresAuth: true
     }

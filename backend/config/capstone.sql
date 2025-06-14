@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jun 14, 2025 at 07:47 PM
+-- Generation Time: Jun 14, 2025 at 09:13 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -300,7 +300,8 @@ INSERT INTO `available_discounts` (`id`, `user_id`, `amount`, `created_at`, `exp
 (53, 58, 50.00, '2025-06-11 12:49:02', '2025-07-11 12:49:02', 1, '8634793'),
 (54, 58, 250.00, '2025-06-11 12:49:16', '2025-07-11 12:49:16', 1, '0479798'),
 (55, 58, 50.00, '2025-06-14 00:18:08', '2025-07-14 00:18:08', 0, NULL),
-(56, 58, 100.00, '2025-06-14 00:18:10', '2025-07-14 00:18:10', 0, NULL);
+(56, 58, 100.00, '2025-06-14 00:18:10', '2025-07-14 00:18:10', 0, NULL),
+(57, 58, 250.00, '2025-06-14 20:12:55', '2025-07-14 20:12:55', 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -451,7 +452,8 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('9525472', 56, 1252.00, 'paid', '2025-05-22 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('9811008', 56, 1218.00, 'paid', '2025-05-25 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
 ('9848840', 56, 189.00, 'paid', '2025-05-22 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('9868934', 56, 513.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL);
+('9868934', 56, 513.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
+('9922841', 58, 790.00, 'pending', '2025-06-14 21:08:09', '2025-06-14 21:08:09', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -648,7 +650,9 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (1748, '4562216', 36, 1, 140.00, NULL),
 (1749, '7826305', 67, 1, 20.50, NULL),
 (1750, '3661468', 91, 1, 25.50, NULL),
-(1751, '8510875', 77, 1, 49.00, NULL);
+(1751, '8510875', 77, 1, 49.00, NULL),
+(1752, '9922841', 33, 1, 649.00, NULL),
+(1753, '9922841', 34, 1, 141.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -731,8 +735,8 @@ CREATE TABLE `products` (
 INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_quantity`, `category`, `image`, `created_at`, `updated_at`) VALUES
 (31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 998, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-04-01 07:21:29', '2025-06-12 10:36:15'),
 (32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 994, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-04-01 07:22:15', '2025-06-12 08:11:45'),
-(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 980, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-06-12 10:37:08'),
-(34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 76, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-06-12 10:37:08'),
+(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 979, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-06-14 21:08:09'),
+(34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 75, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-06-14 21:08:09'),
 (35, 'GSM Mojito 1L', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 189.00, 977, 'Beverages', 'https://i.ibb.co/vvP01sRS/00058af3eb33.png', '2025-04-01 07:28:48', '2025-06-12 08:35:52'),
 (36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 79, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-04-01 07:34:49', '2025-06-13 18:26:04'),
 (37, 'Primera Light 1Liter', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 189.00, 95, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 07:35:27', '2025-05-09 13:17:45'),
@@ -812,6 +816,25 @@ INSERT INTO `product_choices` (`choice_id`, `product_id`, `name`, `price`, `stoc
 (33, 95, 'Large (480g)', 43.00, 40, 'https://i.ibb.co/3m4qpq3D/c34918e1868b.jpg'),
 (34, 95, '750ml', 50.00, 21, 'https://i.ibb.co/prhX6DF0/1bbb34d00de0.jpg'),
 (35, 96, 'Large (480g)', 43.00, 40, 'https://i.ibb.co/TxfPY88k/89af1b0efc5c.webp');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `product_reports`
+--
+
+CREATE TABLE `product_reports` (
+  `id` int NOT NULL,
+  `product_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `issue_type` varchar(50) NOT NULL,
+  `description` text NOT NULL,
+  `status` enum('pending','in_progress','resolved','rejected') DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `admin_response` text,
+  `resolved_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -914,7 +937,7 @@ INSERT INTO `users` (`id`, `username`, `firstname`, `middlename`, `lastname`, `g
 (23, 'Helios', 'Kien Eros', NULL, 'Aas', 'male', 'single', '097874547561', 'ilaya calapan', NULL, 'hernandezlanslorence@gmail.com', '$2a$10$FXivDvr6ZEu4/.BoTHD8tOXi6Ji6V3mv8BvVdrS68cQ3hYcmu3j1O', '2025-02-14 21:37:21', NULL, NULL, 1, 'staff', NULL, NULL, NULL),
 (56, 'l4nszxcqwe', 'dsa', 'dsa', 'dsadsa', 'female', 'single', '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', '2025-02-16', 'dsdsadasdas@gmail.com', '$2a$10$SSpSYo7VpFS4tolhVjEQ2On47sOeNhXD3eplmpR/wEFNkGooExiC6', '2025-02-16 04:31:13', 'lKiGNV', '2025-02-16 04:41:13', 0, 'user', NULL, NULL, NULL),
 (57, 'dsad213213', 'adsad', 'sadsa', '3dsads', 'female', 'single', '3442342', 'dsadas', '2025-02-16', 'lans@gmail.com', '$2a$10$Pd2lZMPCnTMBxylXfT47e.OHqz5AekpbITPS9PFmCKcetRQm.2qb6', '2025-02-16 04:32:19', 'blj3Gv', '2025-02-16 04:42:19', 0, 'user', NULL, NULL, NULL),
-(58, 'L4nszxc_09', 'Lans Lorence', 'Navarro', 'Hernandez', 'male', 'single', '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', '2004-07-09', 'lanslorence@gmail.com', '$2a$10$z4qsUgfnimoeNljOb83iy.ZyoesJyUPl6qLsxAo1YN03af72K.g0.', '2025-02-16 06:14:39', NULL, NULL, 1, 'user', 'Px7inM', '2025-03-17 23:50:19', 'https://i.ibb.co/vx30tw6t/9dc4a1b4b580.jpg'),
+(58, 'L4nszxc_09', 'Lans Lorence', 'Navarro', 'Hernandez', 'male', 'single', '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', '2004-07-09', 'lanslorence@gmail.com', '$2a$10$z4qsUgfnimoeNljOb83iy.ZyoesJyUPl6qLsxAo1YN03af72K.g0.', '2025-02-16 06:14:39', NULL, NULL, 1, 'user', 'Px7inM', '2025-03-17 23:50:19', 'https://i.ibb.co/WvLskzHp/c25c8f6e3a6d.jpg'),
 (60, 'saddsaddasdsa', 'sda', 'fdgd', 'fdgf', 'male', 'married', '3232432', 'dsadsa', '2025-02-26', 'sa@gmail.com', '$2a$10$rtbD7y7bDxqiyrlvtmoYROheqdfqRbI2RSIFQX/DKkj.lly8B474.', '2025-02-25 18:02:55', NULL, NULL, 1, 'staff', NULL, NULL, NULL),
 (1000, 'l4nstest optinal', 'lans', NULL, 'hernandez', NULL, NULL, '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', NULL, 'l4nsh3rn4nd3z@gmail.com', '$2a$10$.mxwVsDEB/kVnXpjw3.ieu6cc5uRXSoBu6.m5iHbz3IgvfLqH7wum', '2025-06-13 18:19:20', NULL, NULL, 1, 'user', NULL, NULL, NULL);
 
@@ -1052,7 +1075,9 @@ INSERT INTO `user_rewards` (`id`, `user_id`, `order_id`, `points`, `description`
 (375, 58, '1288891', 30, 'Earned points from order #1288891', '2025-06-12 10:37:08'),
 (376, 58, '4562216', 1, 'Earned points from order #4562216', '2025-06-13 18:26:04'),
 (377, 58, NULL, -100, 'Redeemed for Bronze Rewardz', '2025-06-14 00:18:08'),
-(378, 58, NULL, -200, 'Redeemed for Silver Reward', '2025-06-14 00:18:10');
+(378, 58, NULL, -200, 'Redeemed for Silver Reward', '2025-06-14 00:18:10'),
+(379, 58, NULL, -500, 'Redeemed for Gold Reward', '2025-06-14 20:12:55'),
+(380, 58, '9922841', 7, 'Earned points from order #9922841', '2025-06-14 21:08:09');
 
 --
 -- Indexes for dumped tables
@@ -1123,6 +1148,14 @@ ALTER TABLE `product_choices`
   ADD KEY `product_id` (`product_id`);
 
 --
+-- Indexes for table `product_reports`
+--
+ALTER TABLE `product_reports`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `product_id` (`product_id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
 -- Indexes for table `receipt_settings`
 --
 ALTER TABLE `receipt_settings`
@@ -1164,19 +1197,19 @@ ALTER TABLE `user_rewards`
 -- AUTO_INCREMENT for table `available_discounts`
 --
 ALTER TABLE `available_discounts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
 
 --
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491654;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491658;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1752;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1754;
 
 --
 -- AUTO_INCREMENT for table `order_reports`
@@ -1203,6 +1236,12 @@ ALTER TABLE `product_choices`
   MODIFY `choice_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
+-- AUTO_INCREMENT for table `product_reports`
+--
+ALTER TABLE `product_reports`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `receipt_settings`
 --
 ALTER TABLE `receipt_settings`
@@ -1224,7 +1263,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_rewards`
 --
 ALTER TABLE `user_rewards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=379;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=381;
 
 --
 -- Constraints for dumped tables
@@ -1278,6 +1317,13 @@ ALTER TABLE `order_reviews`
 --
 ALTER TABLE `product_choices`
   ADD CONSTRAINT `product_choices_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`products_id`);
+
+--
+-- Constraints for table `product_reports`
+--
+ALTER TABLE `product_reports`
+  ADD CONSTRAINT `product_reports_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`products_id`),
+  ADD CONSTRAINT `product_reports_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 --
 -- Constraints for table `shared_carts`
