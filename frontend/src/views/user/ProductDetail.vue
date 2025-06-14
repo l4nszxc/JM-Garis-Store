@@ -773,10 +773,12 @@ export default {
 </script>
 
 <style scoped>
+/* Base Styles */
 .product-detail-container {
-  font-family: Arial, sans-serif;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
   min-height: 100vh;
   background-color: #f8f9fa;
+  color: #2a3f2a; /* Darker green text for contrast */
 }
 
 .content-container {
@@ -794,22 +796,24 @@ export default {
   text-align: center;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   margin: 2rem 0;
   color: #64748b;
   gap: 1rem;
+  border-left: 4px solid #4CAF50; /* Green accent border */
 }
 
 .loading i, .error-message i {
   font-size: 2rem;
   margin-bottom: 1rem;
+  color: #4CAF50; /* Green icon */
 }
 
 .back-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: #3498db;
+  background-color: #4CAF50; /* Green button to match products page */
   color: white;
   text-decoration: none;
   padding: 0.75rem 1.5rem;
@@ -820,8 +824,9 @@ export default {
 }
 
 .back-btn:hover {
-  background-color: #2980b9;
+  background-color: #388e3c; /* Darker green on hover */
   transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
 }
 
 .breadcrumb {
@@ -831,7 +836,7 @@ export default {
 }
 
 .breadcrumb a {
-  color: #3498db;
+  color: #4CAF50; /* Green links to match theme */
   text-decoration: none;
 }
 
@@ -845,9 +850,10 @@ export default {
   gap: 2rem;
   background-color: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   padding: 2rem;
   margin-bottom: 2rem;
+  border-left: 4px solid #4CAF50; /* Green accent border */
 }
 
 .product-gallery {
@@ -862,7 +868,8 @@ export default {
   border-radius: 8px;
   overflow: hidden;
   aspect-ratio: 1/1;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: #f9fff9; /* Very light green background */
 }
 
 .main-image {
@@ -876,7 +883,7 @@ export default {
   position: absolute;
   top: 10px;
   right: 10px;
-  background-color: rgba(239, 68, 68, 0.9);
+  background-color: rgba(76, 175, 80, 0.9); /* Green badge to match */
   color: white;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
@@ -911,7 +918,7 @@ export default {
 }
 
 .thumbnail-container.active {
-  border: 2px solid #3498db;
+  border: 2px solid #4CAF50; /* Green accent */
 }
 
 .thumbnail-container img {
@@ -927,7 +934,7 @@ export default {
 }
 
 .product-info h1 {
-  color: #2c3e50;
+  color: #2a3f2a; /* Dark green */
   margin: 0 0 0.5rem 0;
   font-size: 1.8rem;
   line-height: 1.3;
@@ -952,7 +959,7 @@ export default {
 }
 
 .star-rating .fa-star.filled {
-  color: #ffca28;
+  color: #4CAF50; /* Green stars to match Products.vue */
 }
 
 .rating-count {
@@ -962,10 +969,10 @@ export default {
 
 .category-tag {
   padding: 0.25rem 0.75rem;
-  background-color: #f1f5f9;
+  background-color: #f1f9f1; /* Light green background */
   border-radius: 20px;
   font-size: 0.85rem;
-  color: #64748b;
+  color: #4CAF50; /* Green text */
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -973,15 +980,15 @@ export default {
 
 .price-section {
   margin: 1rem 0;
-  border-top: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
+  border-top: 1px solid #f1f9f1; /* Light green separator */
+  border-bottom: 1px solid #f1f9f1;
   padding: 1rem 0;
 }
 
 .price {
   font-size: 2rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: #1e5b1e; /* Dark green */
   margin: 0;
 }
 
@@ -991,12 +998,12 @@ export default {
 
 .description h3 {
   font-size: 1.2rem;
-  color: #2c3e50;
+  color: #2a3f2a; /* Dark green */
   margin: 0 0 0.5rem 0;
 }
 
 .description p {
-  color: #64748b;
+  color: #5a675a; /* Medium green-gray */
   line-height: 1.6;
   margin: 0;
 }
@@ -1007,7 +1014,7 @@ export default {
 
 .product-choices h3 {
   font-size: 1.2rem;
-  color: #2c3e50;
+  color: #2a3f2a; /* Dark green */
   margin: 0 0 1rem 0;
 }
 
@@ -1028,14 +1035,14 @@ export default {
 
 .option-card:hover:not(.out-of-stock) {
   transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.15); /* Green-tinted shadow */
   border-color: #cbd5e1;
 }
 
 .option-card.selected {
-  border: 2px solid #3498db;
+  border: 2px solid #4CAF50; /* Green accent */
   transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
 }
 
 .option-card.out-of-stock {
@@ -1064,21 +1071,21 @@ export default {
 
 .option-name {
   font-weight: 600;
-  color: #2c3e50;
+  color: #2a3f2a; /* Dark green */
 }
 
 .option-price {
   font-weight: 700;
-  color: #3498db;
+  color: #4CAF50; /* Green price */
 }
 
 .option-stock {
   font-size: 0.85rem;
-  color: #22c55e;
+  color: #22c55e; /* Green for in stock */
 }
 
 .low-stock {
-  color: #f59e0b;
+  color: #f59e0b; /* Orange for low stock */
 }
 
 .quantity-section {
@@ -1087,7 +1094,7 @@ export default {
 
 .quantity-section h3 {
   font-size: 1.2rem;
-  color: #2c3e50;
+  color: #2a3f2a; /* Dark green */
   margin: 0 0 1rem 0;
 }
 
@@ -1103,7 +1110,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f1f5f9;
+  background-color: #f1f9f1; /* Light green */
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -1154,28 +1161,28 @@ export default {
 
 .add-to-cart-btn {
   flex: 1;
-  background-color: #4CAF50;
+  background-color: #4CAF50; /* Green button */
   color: white;
   border: none;
 }
 
 .add-to-cart-btn:hover:not(:disabled) {
-  background-color: #3e8e41;
+  background-color: #388e3c; /* Darker green on hover */
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
 }
 
 .buy-now-btn {
   flex: 1;
-  background-color: #3498db;
+  background-color: #4CAF50; /* Match green theme */
   color: white;
   border: none;
 }
 
 .buy-now-btn:hover:not(:disabled) {
-  background-color: #2980b9;
+  background-color: #388e3c; /* Darker green on hover */
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
 }
 
 .report-btn {
@@ -1190,7 +1197,7 @@ export default {
 }
 
 .add-to-cart-btn:disabled, .buy-now-btn:disabled {
-  background-color: #ccc;
+  background-color: #c8e6c9; /* Very light green when disabled */
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -1199,13 +1206,14 @@ export default {
 .reviews-section, .similar-products {
   background-color: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   padding: 2rem;
   margin-bottom: 2rem;
+  border-left: 4px solid #4CAF50; /* Green accent border */
 }
 
 .reviews-section h2, .similar-products h2 {
-  color: #2c3e50;
+  color: #2a3f2a; /* Dark green */
   margin: 0 0 1.5rem 0;
   font-size: 1.5rem;
 }
@@ -1233,7 +1241,7 @@ export default {
 
 .review-author {
   font-weight: 600;
-  color: #2c3e50;
+  color: #2a3f2a; /* Dark green */
 }
 
 .review-date {
@@ -1242,7 +1250,7 @@ export default {
 }
 
 .review-comment {
-  color: #64748b;
+  color: #5a675a; /* Medium green-gray */
   line-height: 1.6;
   margin: 0;
 }
@@ -1260,6 +1268,7 @@ export default {
 .no-reviews i {
   font-size: 3rem;
   margin-bottom: 1rem;
+  color: #4CAF50; /* Green icon */
 }
 
 .products-slider {
@@ -1271,15 +1280,16 @@ export default {
 .product-card {
   background-color: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   cursor: pointer;
   transition: all 0.3s ease;
+  border-left: 3px solid #4CAF50; /* Green accent border */
 }
 
 .product-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 15px rgba(76, 175, 80, 0.15); /* Green-tinted shadow */
 }
 
 .product-image-container {
@@ -1300,7 +1310,7 @@ export default {
 .product-details h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1rem;
-  color: #2c3e50;
+  color: #2a3f2a; /* Dark green */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1308,7 +1318,7 @@ export default {
 
 .product-price {
   font-weight: 600;
-  color: #3498db;
+  color: #4CAF50; /* Green price */
 }
 
 /* Modal styles */
@@ -1334,10 +1344,11 @@ export default {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   max-height: 90vh;
   overflow-y: auto;
+  border-left: 4px solid #4CAF50; /* Green accent border */
 }
 
 .modal-content h2 {
-  color: #2c3e50;
+  color: #2a3f2a; /* Dark green */
   margin: 0 0 1.5rem 0;
   font-size: 1.5rem;
   text-align: center;
@@ -1351,7 +1362,7 @@ export default {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: #2a3f2a; /* Dark green */
 }
 
 .form-group select,
@@ -1391,7 +1402,7 @@ export default {
 }
 
 .submit-btn:hover {
-  background-color: #3e8e41;
+  background-color: #388e3c;
 }
 
 .cancel-btn {
