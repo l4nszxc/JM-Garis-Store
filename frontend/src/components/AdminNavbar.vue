@@ -12,64 +12,88 @@
       
       <div class="sidebar-menu">
         <router-link to="/admin" class="menu-item" exact-active-class="active">
-          <i class="fas fa-chart-line"></i>
+          <div class="icon-container dashboard-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
           <span>Dashboard</span>
         </router-link>
 
         <router-link to="/admin/orders" class="menu-item" exact-active-class="active">
-          <i class="fas fa-shopping-cart"></i>
+          <div class="icon-container orders-icon">
+            <i class="fas fa-shopping-cart"></i>
+          </div>
           <span>All Orders</span>
         </router-link>
         
         <router-link to="/admin/receipt-settings" class="menu-item" active-class="active">
-          <i class="fas fa-receipt"></i>
+          <div class="icon-container receipt-icon">
+            <i class="fas fa-receipt"></i>
+          </div>
           <span>Receipt Settings</span>
         </router-link>
 
         <router-link to="/admin/users" class="menu-item" active-class="active">
-          <i class="fas fa-users"></i>
+          <div class="icon-container users-icon">
+            <i class="fas fa-users"></i>
+          </div>
           <span>Users</span>
         </router-link>
 
         <router-link to="/admin/staff" class="menu-item" active-class="active">
-          <i class="fas fa-id-card"></i>
+          <div class="icon-container staff-icon">
+            <i class="fas fa-id-card"></i>
+          </div>
           <span>Staff</span>
         </router-link>
         
         <router-link to="/admin/products" class="menu-item" active-class="active">
-          <i class="fas fa-boxes"></i>
+          <div class="icon-container products-icon">
+            <i class="fas fa-boxes"></i>
+          </div>
           <span>Manage Products</span>
         </router-link>
         
         <router-link to="/admin/low-stock" class="menu-item" active-class="active">
-          <i class="fas fa-exclamation-triangle"></i>
+          <div class="icon-container low-stock-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
           <span>Low Stock</span>
         </router-link>
 
         <router-link to="/admin/insert-products" class="menu-item" active-class="active">
-          <i class="fas fa-box"></i>
+          <div class="icon-container insert-icon">
+            <i class="fas fa-box"></i>
+          </div>
           <span>Insert Products</span>
         </router-link>
 
         <router-link to="/admin/forecast" class="menu-item" active-class="active">
-          <i class="fas fa-chart-bar"></i>
+          <div class="icon-container forecast-icon">
+            <i class="fas fa-chart-bar"></i>
+          </div>
           <span>Sales Forecast</span>
         </router-link>
 
         <router-link to="/admin/recruit-staff" class="menu-item" active-class="active">
-          <i class="fas fa-user-plus"></i>
+          <div class="icon-container recruit-icon">
+            <i class="fas fa-user-plus"></i>
+          </div>
           <span>Recruit Staff</span>
         </router-link>
         
         <router-link to="/admin/rewards" class="menu-item" active-class="active">
-          <i class="fas fa-gift"></i>
+          <div class="icon-container rewards-icon">
+            <i class="fas fa-gift"></i>
+          </div>
           <span>Rewards Management</span>
         </router-link>
       </div>
 
       <div class="sidebar-footer">
         <div class="admin-profile">
-          <i class="fas fa-user-shield"></i>
+          <div class="icon-container profile-icon">
+            <i class="fas fa-user-shield"></i>
+          </div>
           <span class="admin-name">{{ username }}</span>
         </div>
         
@@ -235,10 +259,85 @@ export default {
   overflow: hidden;
 }
 
-.menu-item i {
-  width: 20px;
-  text-align: center;
+/* Colorful icon containers */
+.icon-container {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.menu-item:hover .icon-container {
+  transform: scale(1.1);
+}
+
+.dashboard-icon {
+  background-color: #3498db;
+  color: white;
+}
+
+.orders-icon {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.receipt-icon {
+  background-color: #9b59b6;
+  color: white;
+}
+
+.users-icon {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.staff-icon {
+  background-color: #f39c12;
+  color: white;
+}
+
+.products-icon {
+  background-color: #1abc9c;
+  color: white;
+}
+
+.low-stock-icon {
+  background-color: #e67e22;
+  color: white;
+}
+
+.insert-icon {
+  background-color: #27ae60;
+  color: white;
+}
+
+.forecast-icon {
+  background-color: #8e44ad;
+  color: white;
+}
+
+.recruit-icon {
+  background-color: #16a085;
+  color: white;
+}
+
+.rewards-icon {
+  background-color: #d35400;
+  color: white;
+}
+
+.profile-icon {
+  background-color: #34495e;
+  color: white;
+}
+
+.menu-item i {
+  text-align: center;
+  font-size: 0.95rem;
 }
 
 .menu-item span {
@@ -343,9 +442,8 @@ export default {
   padding: 0.75rem;
 }
 
-.admin-sidebar.collapsed .menu-item i {
-  width: auto;
-  font-size: 1.2rem;
+.admin-sidebar.collapsed .menu-item .icon-container {
+  margin: 0 auto;
 }
 
 .admin-sidebar.collapsed .admin-profile {
