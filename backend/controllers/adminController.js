@@ -418,20 +418,88 @@ exports.getRewardsStatistics = async (req, res) => {
 };
 exports.getProductForecasts = async (req, res) => {
     try {
-        const { type = 'sales', days = 30 } = req.query;
+        const { type = 'sales', days = 30, method = 'prophet' } = req.query;
         
-        const forecastResult = await forecastService.updateForecastMetrics({
-            type,
-            days: parseInt(days)
-        });
-        
-        if (forecastResult.status === 'error') {
-            return res.status(500).json({ 
-                message: forecastResult.message || 'Error generating forecasts' 
+        // Additional validation
+        if (!['sales', 'demand'].includes(type)) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid forecast type. Must be "sales" or "demand"'
             });
         }
         
-        res.json(forecastResult);
+        const parsedDays = parseInt(days);
+        if (isNaN(parsedDays) || parsedDays < 7 || parsedDays > 180) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Invalid forecast period. Must be between 7 and 180 days'
+            });
+        }
+        
+        // Check if we're using the Python service or JavaScript service
+        if (['prophet', 'advanced'].includes(method)) {
+            // Use Python service for advanced forecasting
+            const { spawn } = require('child_process');
+            const options = JSON.stringify({
+                type,
+                days: parsedDays,
+                method: method === 'advanced' ? 'prophet' : method
+            });
+            
+            const pythonProcess = spawn('python', [
+                './services/forecastService.py',
+                options
+            ]);
+            
+            let result = '';
+            let errorOutput = '';
+            
+            pythonProcess.stdout.on('data', (data) => {
+                result += data.toString();
+            });
+            
+            pythonProcess.stderr.on('data', (data) => {
+                errorOutput += data.toString();
+            });
+            
+            pythonProcess.on('close', (code) => {
+                if (code !== 0) {
+                    console.error('Python process error:', errorOutput);
+                    return res.status(500).json({
+                        status: 'error',
+                        message: 'Error in forecasting service',
+                        error: errorOutput
+                    });
+                }
+                
+                try {
+                    const forecasts = JSON.parse(result);
+                    return res.json(forecasts);
+                } catch (e) {
+                    console.error('Error parsing Python output:', e);
+                    return res.status(500).json({
+                        status: 'error',
+                        message: 'Error parsing forecast results'
+                    });
+                }
+            });
+        } else {
+            // Fall back to JavaScript service for simpler methods
+            const forecastService = require('../services/forecastService');
+            const forecastResult = await forecastService.updateForecastMetrics({
+                type,
+                days: parsedDays,
+                method
+            });
+            
+            if (forecastResult.status === 'error') {
+                return res.status(500).json({ 
+                    message: forecastResult.message || 'Error generating forecasts' 
+                });
+            }
+            
+            res.json(forecastResult);
+        }
     } catch (error) {
         console.error('Error getting forecasts:', error);
         res.status(500).json({ message: 'Error generating forecasts' });

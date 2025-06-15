@@ -442,15 +442,16 @@ export default {
     },
     
     getSeasonal(forecast) {
-      // Mock seasonal data
-      if (!forecast || this.forecastMethod !== 'seasonal') return null;
+      if (!forecast || (this.forecastMethod !== 'seasonal' && this.forecastMethod !== 'advanced')) {
+        return null;
+      }
       
-      return {
+      return forecast.seasonal_patterns || forecast.seasonal_info || {
         peak: 'Weekends',
         low: 'Mid-week'
       };
     },
-    
+        
     showTooltip(event, point, index) {
       this.tooltipVisible = true;
       
@@ -542,7 +543,14 @@ export default {
       
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/admin/forecasts?type=${this.forecastType}&days=${this.forecastDays}&method=${this.forecastMethod}`, {
+        
+        // Map the forecast method correctly
+        let method = this.forecastMethod;
+        if (method === 'advanced') {
+          method = 'prophet';  // Use prophet for advanced
+        }
+        
+        const response = await fetch(`http://localhost:7904/api/admin/forecasts?type=${this.forecastType}&days=${this.forecastDays}&method=${method}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -559,19 +567,35 @@ export default {
           throw new Error(data.message || 'Failed to generate forecasts');
         }
         
-        // Map the data to include price information for sales forecasting
+        // Process and normalize the forecast data
         this.forecasts = Object.values(data.data || {}).map(item => {
-          // Set fixed price for each product to ensure consistency
-          const price = item.price || (Math.floor(Math.random() * 100) + 50);
-          
+          // Ensure we have price information for forecasts
           return {
             ...item,
-            forecast_data: item.forecast_data.map(point => ({
-              ...point,
-              price: price
-            }))
+            forecast_data: Array.isArray(item.forecast_data) ? 
+              item.forecast_data.map(point => ({
+                ...point,
+                price: item.price || 100,
+                // Ensure forecast values are non-negative
+                yhat: Math.max(0, point.yhat),
+                yhat_lower: Math.max(0, point.yhat_lower),
+                yhat_upper: Math.max(0, point.yhat_upper)
+              })) : []
           };
         });
+        
+        // Add seasonal information from the Python model
+        if (this.forecastMethod === 'seasonal' || this.forecastMethod === 'advanced') {
+          this.forecasts = this.forecasts.map(forecast => {
+            return {
+              ...forecast,
+              seasonal_info: forecast.seasonal_patterns || {
+                peak: 'Weekends',
+                low: 'Mid-week'
+              }
+            };
+          });
+        }
         
         // Generate date breakpoints if we have forecasts
         if (this.forecasts.length > 0) {
