@@ -6,84 +6,97 @@
     />
     
     <div class="admin-content">
-      <div class="header">
-        <h2>LOW STOCK PRODUCTS</h2>
-        <div class="filters">
-          <div class="search-container">
+      <h1><i class="fas fa-exclamation-triangle"></i> Low Stock Products</h1>
+
+      <div class="low-stock-section">
+        <div class="search-filter">
+          <div class="status-filters">
+            <button 
+              v-for="filter in stockFilters" 
+              :key="filter.value"
+              @click="stockFilter = filter.value"
+              :class="['filter-btn', stockFilter === filter.value ? 'active' : '', filter.class]"
+            >
+              {{ filter.label }}
+            </button>
+          </div>
+          
+          <div class="filters-right">
             <div class="search-box">
+              <i class="fas fa-search"></i>
               <input 
                 type="text" 
                 v-model="searchQuery" 
-                placeholder="Search products..."
+                placeholder="Search products or variants..."
               >
             </div>
-            <div class="stock-filter">
-              <select v-model="stockFilter" class="stock-select">
-                <option value="all">All Low Stock</option>
-                <option value="critical">Critical (≤ 10)</option>
-                <option value="warning">Warning (≤ 20)</option>
-                <option value="low">Low (≤ 30)</option>
-              </select>
-            </div>
+            
+            <button 
+              @click="resetFilters" 
+              class="reset-filters-btn"
+              v-if="hasActiveFilters"
+            >
+              <i class="fas fa-redo-alt"></i> Reset Filters
+            </button>
           </div>
         </div>
-      </div>
-
-      <div class="table-container low-stock-table">
-        <table v-if="filteredLowStock.length">
-          <thead>
-            <tr>
-              <th>Product Name</th>
-              <th>Stock Left</th>
-              <th>Price</th>
-              <th>Category</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in filteredLowStock" :key="item.type === 'choice' ? `choice-${item.choice_id}` : `product-${item.id}`">
-              <td>
-                {{ item.type === 'choice' ? 
-                    `${item.product_name} (${item.choice_name})` : 
-                    item.name }}
-                <span v-if="item.type === 'choice'" class="choice-badge">
-                  <i class="fas fa-tag"></i> Variant
-                </span>
-              </td>
-              <td>
-                <div v-if="editingId === (item.type === 'choice' ? `choice-${item.choice_id}` : item.id)" class="stock-edit">
-                  <input 
-                    type="number" 
-                    v-model="editingStock"
-                    min="0"
-                    @keyup.enter="saveStock(item)"
-                    @keyup.esc="cancelEdit()"
-                    :ref="el => { if (el) stockInput = el }"
-                    class="stock-input"
-                  >
-                </div>
-                <span v-else class="stock-badge" :class="getStockStatusClass(item.stock)">
-                  {{ item.stock }}
-                </span>
-              </td>
-              <td>₱{{ formatPrice(item.price) }}</td>
-              <td>{{ item.category }}</td>
-              <td>
-                <button v-if="editingId === (item.type === 'choice' ? `choice-${item.choice_id}` : item.id)" class="save-btn" @click="saveStock(item)">
-                  <i class="fas fa-save"></i> Save
-                </button>
-                <button v-else @click="startEdit(item)" class="edit-btn">
-                  <i class="fas fa-edit"></i> Edit Stock
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <p v-else class="no-data">
-          <i class="fas fa-check-circle"></i>
-          No products with low stock found
-          <span class="help-text" v-if="searchQuery">Try changing your search criteria</span>
-        </p>
+        
+        <div class="table-container">
+          <table v-if="filteredLowStock.length">
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th>Stock Left</th>
+                <th>Price</th>
+                <th>Category</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in filteredLowStock" :key="item.type === 'choice' ? `choice-${item.choice_id}` : `product-${item.id}`">
+                <td>
+                  {{ item.type === 'choice' ? 
+                      `${item.product_name} (${item.choice_name})` : 
+                      item.name }}
+                  <span v-if="item.type === 'choice'" class="choice-badge">
+                    <i class="fas fa-tag"></i> Variant
+                  </span>
+                </td>
+                <td>
+                  <div v-if="editingId === (item.type === 'choice' ? `choice-${item.choice_id}` : item.id)" class="stock-edit">
+                    <input 
+                      type="number" 
+                      v-model="editingStock"
+                      min="0"
+                      @keyup.enter="saveStock(item)"
+                      @keyup.esc="cancelEdit()"
+                      :ref="el => { if (el) stockInput = el }"
+                      class="stock-input"
+                    >
+                  </div>
+                  <span v-else class="status-badge" :class="getStockStatusClass(item.stock)">
+                    {{ item.stock }}
+                  </span>
+                </td>
+                <td>₱{{ formatPrice(item.price) }}</td>
+                <td>{{ item.category }}</td>
+                <td>
+                  <button v-if="editingId === (item.type === 'choice' ? `choice-${item.choice_id}` : item.id)" class="save-btn" @click="saveStock(item)">
+                    <i class="fas fa-save"></i> Save
+                  </button>
+                  <button v-else @click="startEdit(item)" class="edit-btn">
+                    <i class="fas fa-edit"></i> Edit Stock
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else class="no-data">
+            <i class="fas fa-check-circle"></i>
+            <p>No products with low stock found</p>
+            <span v-if="searchQuery" class="help-text">Try changing your search criteria</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -99,7 +112,7 @@
           </span> 
           to <span class="highlighted-text">{{ editingStock }}</span>?
         </p>
-        <div class="modal-buttons">
+        <div class="modal-actions">
           <button @click="confirmSave" class="confirm-btn">
             <i class="fas fa-check"></i> Yes, Update Stock
           </button>
@@ -139,10 +152,20 @@ export default {
       itemToUpdate: null,
       lowStockItems: [],
       searchQuery: '',
-      stockFilter: 'all'
+      stockFilter: 'all',
+      stockFilters: [
+        { label: 'All Low Stock', value: 'all', class: '' },
+        { label: 'Critical (≤ 10)', value: 'critical', class: 'critical' },
+        { label: 'Warning (≤ 20)', value: 'warning', class: 'warning' },
+        { label: 'Low (≤ 30)', value: 'low', class: 'low' }
+      ],
+      defaultStockFilter: 'all'
     }
   },
   computed: {
+    hasActiveFilters() {
+      return this.searchQuery !== '' || this.stockFilter !== this.defaultStockFilter;
+    },
     filteredLowStock() {
       if (!this.lowStockItems.length) return [];
       
@@ -170,10 +193,15 @@ export default {
     }
   },
   methods: {
+    resetFilters() {
+      this.searchQuery = '';
+      this.stockFilter = this.defaultStockFilter;
+    },
+    
     getStockStatusClass(stock) {
-      if (stock <= 10) return 'critical-stock';
-      if (stock <= 20) return 'low-stock';
-      return 'normal-stock';
+      if (stock <= 10) return 'critical';
+      if (stock <= 20) return 'warning';
+      return 'low';
     },
     
     startEdit(item) {
@@ -241,36 +269,36 @@ export default {
         });
 
         if (response.ok) {
-        // Update only the stock in the local data
-        const index = this.lowStockItems.findIndex(item => {
-          if (this.itemToUpdate.type === 'choice') {
-            return item.choice_id === this.itemToUpdate.choice_id;
-          } else {
-            return item.id === this.itemToUpdate.id;
-          }
-        });
-        
-        if (index !== -1) {
-          this.lowStockItems[index].stock = parseInt(this.editingStock);
+          // Update only the stock in the local data
+          const index = this.lowStockItems.findIndex(item => {
+            if (this.itemToUpdate.type === 'choice') {
+              return item.choice_id === this.itemToUpdate.choice_id;
+            } else {
+              return item.id === this.itemToUpdate.id;
+            }
+          });
           
-          // Remove from list if it's no longer low stock
-          if (this.editingStock > 30) {
-            this.lowStockItems.splice(index, 1);
+          if (index !== -1) {
+            this.lowStockItems[index].stock = parseInt(this.editingStock);
+            
+            // Remove from list if it's no longer low stock
+            if (this.editingStock > 30) {
+              this.lowStockItems.splice(index, 1);
+            }
           }
-        }
-        
-        this.editingId = null;
-        this.editingStock = null;
-        
-        // Refresh data
-        await this.fetchLowStockItems();
-        
-        // Dispatch event to update sidebar badge
-        window.dispatchEvent(new CustomEvent('stock-updated'));
-      } else {
-          const error = await response.json();
-          throw new Error(error.message || 'Failed to update stock');
-        }
+          
+          this.editingId = null;
+          this.editingStock = null;
+          
+          // Refresh data
+          await this.fetchLowStockItems();
+          
+          // Dispatch event to update sidebar badge
+          window.dispatchEvent(new CustomEvent('stock-updated'));
+        } else {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to update stock');
+          }
       } catch (error) {
         console.error('Error updating stock:', error);
       } finally {
@@ -347,143 +375,185 @@ export default {
 
 .admin-content {
   padding: 2rem;
-  margin: 0 auto;
 }
 
-.header {
+.admin-content h1 {
+  color: #2c3e50;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.low-stock-section {
   background: white;
-  padding: 1.5rem;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin-bottom: 2rem;
+  padding: 1.5rem;
 }
 
-.header h2 {
-  color: #2c3e50;
-  margin: 0 0 1rem 0;
-  font-size: 1.5rem;
-  font-weight: 600;
+.search-filter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-.filters {
+.filters-right {
   display: flex;
   gap: 1rem;
   align-items: center;
-}
-
-.search-container {
-  display: flex;
-  gap: 1rem;
-  width: 100%;
+  flex-wrap: wrap;
 }
 
 .search-box {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+  max-width: 300px;
+}
+
+.search-box input {
+  width: 78%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.search-box i {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a0aec0;
+}
+
+.status-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: left;
   flex: 2;
 }
 
-.stock-filter {
-  flex: 1;
-}
-
-input, select {
-  width: 97%;
-  padding: 0.75rem 1rem;
+.filter-btn {
+  padding: 0.5rem 1rem;
+  background-color: #f8f9fa;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
-  font-size: 0.95rem;
+  cursor: pointer;
   transition: all 0.3s ease;
+  text-align: center;
 }
 
-input:focus, select:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-  outline: none;
+.filter-btn.critical {
+  background-color: #fee2e2;
+  color: #dc2626;
 }
 
-.low-stock-table {
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
+.filter-btn.critical.active {
+  background-color: #dc2626;
+  color: white;
+}
+
+.filter-btn.warning {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.filter-btn.warning.active {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.filter-btn.low {
+  background-color: #e3f5e9;
+  color: #0f7840;
+}
+
+.filter-btn.low.active {
+  background-color: #38a169;
+  color: white;
+}
+
+.filter-btn.active {
+  transform: scale(1.05);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  max-height: 600px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 #f8fafc;
 }
 
-.low-stock-table::-webkit-scrollbar {
-  width: 8px;
-}
-
-.low-stock-table::-webkit-scrollbar-track {
-  background: #f8fafc;
+.reset-filters-btn {
+  background-color: #6c757d;
+  color: white;
+  border: none;
   border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
 }
 
-.low-stock-table::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 8px;
-  border: 2px solid #f8fafc;
+.reset-filters-btn:hover {
+  background-color: #5a6268;
+  transform: translateY(-1px);
 }
 
-.low-stock-table::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
+.reset-filters-btn i {
+  font-size: 0.8rem;
 }
 
-.low-stock-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background-color: #f8fafc;
+.table-container {
+  overflow-x: auto;
 }
 
-.low-stock-table table {
-  border-spacing: 0;
+table {
   width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+th, td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
 }
 
 th {
-  background-color: #f8fafc;
-  padding: 1rem;
+  background-color: #f8f9fa;
   font-weight: 600;
-  color: #475569;
-  text-align: left;
-  box-shadow: 0 1px 0 #e2e8f0;
-}
-
-td {
-  padding: 1rem;
-  border-bottom: 1px solid #e2e8f0;
-  vertical-align: middle;
+  color: #2c3e50;
 }
 
 tr:hover {
   background-color: #f8fafc;
 }
 
-.stock-badge {
+.status-badge {
   display: inline-block;
-  padding: 0.4rem 1rem;
+  padding: 0.5rem 1rem;
   border-radius: 20px;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 500;
   text-align: center;
-  min-width: 60px;
 }
 
-.critical-stock {
-  color: #dc2626;
+.critical {
   background-color: #fee2e2;
+  color: #dc2626;
 }
 
-.low-stock {
-  color: #854d0e;
+.warning {
   background-color: #fef3c7;
+  color: #d97706;
 }
 
-.normal-stock {
-  color: #475569;
-  background-color: #f1f5f9;
+.low {
+  background-color: #e3f5e9;
+  color: #0f7840;
 }
 
 .choice-badge {
@@ -499,7 +569,7 @@ tr:hover {
 }
 
 .edit-btn {
-  background-color: #3b82f6;
+  background-color: #3498db;
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -513,12 +583,12 @@ tr:hover {
 }
 
 .edit-btn:hover {
-  background-color: #2563eb;
+  background-color: #2980b9;
   transform: translateY(-1px);
 }
 
 .save-btn {
-  background-color: #10b981;
+  background-color: #4CAF50;
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -532,37 +602,42 @@ tr:hover {
 }
 
 .save-btn:hover {
-  background-color: #059669;
+  background-color: #45a049;
   transform: translateY(-1px);
 }
 
 .stock-input {
   width: 80px;
   padding: 0.5rem;
-  border: 2px solid #3b82f6;
-  border-radius: 4px;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
   font-size: 0.9rem;
   text-align: center;
+  background-color: #f0f9ff;
 }
 
 .stock-input:focus {
   outline: none;
   border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .no-data {
   text-align: center;
+  padding: 3rem 1rem;
   color: #64748b;
-  padding: 3rem;
   font-size: 1rem;
 }
 
 .no-data i {
-  font-size: 2rem;
+  font-size: 3rem;
   color: #94a3b8;
   margin-bottom: 1rem;
-  display: block;
+}
+
+.no-data p {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
 }
 
 .help-text {
@@ -578,7 +653,7 @@ tr:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0,0,0,0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -587,8 +662,8 @@ tr:hover {
 
 .modal-content {
   background: white;
+  border-radius: 12px;
   padding: 2rem;
-  border-radius: 8px;
   width: 90%;
   max-width: 500px;
 }
@@ -618,93 +693,93 @@ tr:hover {
   color: #3b82f6;
 }
 
-.modal-buttons {
+.modal-actions {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
   display: flex;
   justify-content: center;
   gap: 1rem;
-  margin-top: 1.5rem;
 }
 
 .confirm-btn {
-  background-color: #10b981;
+  background-color: #4CAF50;
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 500;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
-  min-width: 120px;
-  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
 }
 
 .confirm-btn:hover {
-  background-color: #059669;
+  background-color: #45a049;
 }
 
 .cancel-btn {
-  background-color: #ef4444;
+  background-color: #6c757d;
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 500;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
-  min-width: 120px;
-  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
 }
 
 .cancel-btn:hover {
-  background-color: #dc2626;
-}
-
-@media (max-width: 1024px) {
-  .search-container {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
+  background-color: #5a6268;
 }
 
 @media (max-width: 768px) {
   .admin-container {
     padding-left: 60px;
   }
-  
+
   .admin-content {
     padding: 1rem;
   }
+
+  .search-filter {
+    flex-direction: column;
+    align-items: stretch;
+  }
   
-  .header {
+  .filters-right {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .search-box {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .status-filters {
+    order: 2;
+    justify-content: center;
+  }
+  
+  .reset-filters-btn {
+    width: 100%;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+
+  .modal-content {
+    width: 95%;
     padding: 1rem;
   }
   
   th, td {
     padding: 0.75rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .header h2 {
-    font-size: 1.25rem;
-  }
-  
-  .stock-badge {
-    padding: 0.3rem 0.6rem;
-    font-size: 0.75rem;
-  }
-  
-  .edit-btn, .save-btn {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.8rem;
   }
 }
 </style>
