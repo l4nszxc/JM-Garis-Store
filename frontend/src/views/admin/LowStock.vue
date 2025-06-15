@@ -241,30 +241,33 @@ export default {
         });
 
         if (response.ok) {
-          // Update only the stock in the local data
-          const index = this.lowStockItems.findIndex(item => {
-            if (this.itemToUpdate.type === 'choice') {
-              return item.choice_id === this.itemToUpdate.choice_id;
-            } else {
-              return item.id === this.itemToUpdate.id;
-            }
-          });
-          
-          if (index !== -1) {
-            this.lowStockItems[index].stock = parseInt(this.editingStock);
-            
-            // Remove from list if it's no longer low stock
-            if (this.editingStock > 30) {
-              this.lowStockItems.splice(index, 1);
-            }
+        // Update only the stock in the local data
+        const index = this.lowStockItems.findIndex(item => {
+          if (this.itemToUpdate.type === 'choice') {
+            return item.choice_id === this.itemToUpdate.choice_id;
+          } else {
+            return item.id === this.itemToUpdate.id;
           }
+        });
+        
+        if (index !== -1) {
+          this.lowStockItems[index].stock = parseInt(this.editingStock);
           
-          this.editingId = null;
-          this.editingStock = null;
-          
-          // Refresh data
-          await this.fetchLowStockItems();
-        } else {
+          // Remove from list if it's no longer low stock
+          if (this.editingStock > 30) {
+            this.lowStockItems.splice(index, 1);
+          }
+        }
+        
+        this.editingId = null;
+        this.editingStock = null;
+        
+        // Refresh data
+        await this.fetchLowStockItems();
+        
+        // Dispatch event to update sidebar badge
+        window.dispatchEvent(new CustomEvent('stock-updated'));
+      } else {
           const error = await response.json();
           throw new Error(error.message || 'Failed to update stock');
         }

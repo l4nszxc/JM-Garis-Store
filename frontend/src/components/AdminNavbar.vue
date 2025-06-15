@@ -39,9 +39,11 @@
           <span>Manage Products</span>
         </router-link>
         
+        <!-- Modified low-stock menu item with count badge -->
         <router-link to="/admin/low-stock" class="menu-item" active-class="active">
           <div class="icon-container low-stock-icon">
             <i class="fas fa-exclamation-triangle"></i>
+            <span v-if="lowStockCount > 0" class="alert-badge">{{ lowStockCount }}</span>
           </div>
           <span>Low Stock</span>
         </router-link>
@@ -131,29 +133,27 @@ export default {
   data() {
     return {
       isSidebarCollapsed: window.innerWidth <= 768,
-      showOverlay: false
+      showOverlay: false,
+      lowStockCount: 0
     }
   },
   methods: {
+    // Existing methods
     toggleSidebar() {
       this.isSidebarCollapsed = !this.isSidebarCollapsed;
       this.updateOverlay();
-      // Emit event to notify parent components
       this.$emit('sidebar-toggle', this.isSidebarCollapsed);
-      // Add a body class to control the main container padding
       document.body.classList.toggle('sidebar-collapsed', this.isSidebarCollapsed);
     },
     closeSidebar() {
       if (window.innerWidth <= 768) {
         this.isSidebarCollapsed = true;
         this.showOverlay = false;
-        // Emit event when sidebar is closed
         this.$emit('sidebar-toggle', true);
         document.body.classList.add('sidebar-collapsed');
       }
     },
     updateOverlay() {
-      // Only show overlay on mobile when sidebar is expanded
       this.showOverlay = window.innerWidth <= 768 && !this.isSidebarCollapsed;
     },
     handleResize() {
@@ -162,22 +162,56 @@ export default {
         this.isSidebarCollapsed = true;
         this.showOverlay = false;
       }
-      // Only emit event if state changed
       if (wasSidebarCollapsed !== this.isSidebarCollapsed) {
         this.$emit('sidebar-toggle', this.isSidebarCollapsed);
         document.body.classList.toggle('sidebar-collapsed', this.isSidebarCollapsed);
+      }
+    },
+    // New method to fetch low stock count
+    async fetchLowStockCount() {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const response = await fetch('http://localhost:7904/api/admin/low-stock', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          this.lowStockCount = data.length || 0;
+        }
+      } catch (error) {
+        console.error('Error fetching low stock count:', error);
       }
     }
   },
   mounted() {
     window.addEventListener('resize', this.handleResize);
-    // Set initial body class
     document.body.classList.toggle('sidebar-collapsed', this.isSidebarCollapsed);
+    
+    // Fetch low stock count when component is mounted
+    this.fetchLowStockCount();
+    
+    // Set up interval to refresh count periodically (every 5 minutes)
+    this.lowStockInterval = setInterval(() => {
+      this.fetchLowStockCount();
+    }, 300000);
+    
+    // Listen for custom event that might be emitted when stock is updated
+    window.addEventListener('stock-updated', this.fetchLowStockCount);
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.handleResize);
-    // Clean up body class when component is removed
     document.body.classList.remove('sidebar-collapsed');
+    
+    // Clean up interval and event listener
+    if (this.lowStockInterval) {
+      clearInterval(this.lowStockInterval);
+    }
+    window.removeEventListener('stock-updated', this.fetchLowStockCount);
   }
 }
 </script>
@@ -268,6 +302,7 @@ export default {
 
 /* Colorful icon containers */
 .icon-container {
+  position: relative;
   width: 32px;
   height: 32px;
   border-radius: 8px;
@@ -416,7 +451,23 @@ export default {
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 999;
 }
-
+.alert-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #e74c3c;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid #2c3e50;
+}
 /* Responsive Styles */
 @media (max-width: 768px) {
   .admin-sidebar {
