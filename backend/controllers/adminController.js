@@ -79,6 +79,10 @@ exports.getDashboardStats = async (req, res) => {
         timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY)';
         previousPeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 730 DAY) AND o.created_at < DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY)';
         break;
+      case 'all':
+        timePeriod = '1=1'; // This means no time restriction
+        previousPeriod = '1=0'; // There's no meaningful "previous" period for all time
+        break;
       default:
         timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)';
         previousPeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY) AND o.created_at < DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)';
@@ -697,5 +701,128 @@ exports.getTopProducts = async (req, res) => {
   } catch (error) {
     console.error('Error fetching top products:', error);
     res.status(500).json({ message: 'Failed to fetch top products' });
+  }
+};
+exports.getOrderReports = async (req, res) => {
+  try {
+    const [reports] = await db.query(`
+      SELECT r.*, u.username 
+      FROM order_reports r
+      JOIN users u ON r.user_id = u.id
+      ORDER BY 
+        CASE 
+          WHEN r.status = 'pending' THEN 0
+          WHEN r.status = 'in_progress' THEN 1
+          ELSE 2
+        END,
+        r.created_at DESC
+    `);
+    
+    res.json(reports);
+  } catch (error) {
+    console.error('Error fetching order reports:', error);
+    res.status(500).json({ message: 'Error fetching order reports' });
+  }
+};
+
+// Get all product reports
+exports.getProductReports = async (req, res) => {
+  try {
+    const [reports] = await db.query(`
+      SELECT r.*, u.username, p.name, p.image
+      FROM product_reports r
+      JOIN users u ON r.user_id = u.id
+      JOIN products p ON r.product_id = p.products_id
+      ORDER BY 
+        CASE 
+          WHEN r.status = 'pending' THEN 0
+          WHEN r.status = 'in_progress' THEN 1
+          ELSE 2
+        END,
+        r.created_at DESC
+    `);
+    
+    res.json(reports);
+  } catch (error) {
+    console.error('Error fetching product reports:', error);
+    res.status(500).json({ message: 'Error fetching product reports' });
+  }
+};
+
+// Update an order report
+exports.updateOrderReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, admin_response } = req.body;
+    
+    // Validate input
+    if (!status) {
+      return res.status(400).json({ message: 'Status is required' });
+    }
+    
+    // Check if report exists
+    const [reportCheck] = await db.query(
+      'SELECT id FROM order_reports WHERE id = ?',
+      [id]
+    );
+    
+    if (reportCheck.length === 0) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    
+    // Update report
+    const now = new Date();
+    const resolved_at = (status === 'resolved' || status === 'rejected') ? now : null;
+    
+    await db.query(
+      `UPDATE order_reports 
+       SET status = ?, admin_response = ?, updated_at = ?, resolved_at = ?
+       WHERE id = ?`,
+      [status, admin_response || null, now, resolved_at, id]
+    );
+    
+    res.json({ message: 'Report updated successfully' });
+  } catch (error) {
+    console.error('Error updating order report:', error);
+    res.status(500).json({ message: 'Error updating report' });
+  }
+};
+
+// Update a product report
+exports.updateProductReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, admin_response } = req.body;
+    
+    // Validate input
+    if (!status) {
+      return res.status(400).json({ message: 'Status is required' });
+    }
+    
+    // Check if report exists
+    const [reportCheck] = await db.query(
+      'SELECT id FROM product_reports WHERE id = ?',
+      [id]
+    );
+    
+    if (reportCheck.length === 0) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    
+    // Update report
+    const now = new Date();
+    const resolved_at = (status === 'resolved' || status === 'rejected') ? now : null;
+    
+    await db.query(
+      `UPDATE product_reports 
+       SET status = ?, admin_response = ?, updated_at = ?, resolved_at = ?
+       WHERE id = ?`,
+      [status, admin_response || null, now, resolved_at, id]
+    );
+    
+    res.json({ message: 'Report updated successfully' });
+  } catch (error) {
+    console.error('Error updating product report:', error);
+    res.status(500).json({ message: 'Error updating report' });
   }
 };

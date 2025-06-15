@@ -15,6 +15,7 @@
               <option value="week">This Week</option>
               <option value="month">This Month</option>
               <option value="year">This Year</option>
+              <option value="all">Overall</option>
             </select>
           </div>
         </div>

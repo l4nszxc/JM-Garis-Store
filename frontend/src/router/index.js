@@ -24,6 +24,7 @@ import Notifications from'../views/user/Notifications.vue'
 import SalesForecast from '../views/admin/SalesForecast.vue'
 import AdminReceiptSettings from '../views/admin/ReceiptSettings.vue'
 import ProductDetail from '../views/user/ProductDetail.vue';
+import AdminReports from '../views/admin/AdminReports.vue'
 
 const routes = [
   {
@@ -196,6 +197,12 @@ const routes = [
     name: 'AdminReceiptSettings',
     component: AdminReceiptSettings,
     meta: { requiresAuth: true, role: 'admin' }
+  },
+  {
+    path: '/admin/reports',
+    name: 'AdminReports',
+    component: AdminReports,
+    meta: { requiresAuth: true, requiredRole: 'admin' }
   },
   // Staff Routes
   {

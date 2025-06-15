@@ -30,4 +30,10 @@ router.get('/sales-chart',authenticate, isAdmin, adminController.getSalesChartDa
 router.get('/dashboard-stats', authenticate, isAdmin, adminController.getDashboardStats);
 router.get('/top-customers', authenticate, isAdmin, adminController.getTopCustomers);
 router.get('/top-products', authenticate, isAdmin, adminController.getTopProducts);
+
+router.get('/order-reports', authenticate, isAdmin, adminController.getOrderReports);
+router.get('/product-reports', authenticate, isAdmin, adminController.getProductReports);
+router.put('/order-reports/:id', authenticate, isAdmin, adminController.updateOrderReport);
+router.put('/product-reports/:id', authenticate, isAdmin, adminController.updateProductReport);
+
 module.exports = router;

@@ -18,32 +18,18 @@
           <span>Dashboard</span>
         </router-link>
 
+        <router-link to="/admin/forecast" class="menu-item" active-class="active">
+          <div class="icon-container forecast-icon">
+            <i class="fas fa-chart-bar"></i>
+          </div>
+          <span>Sales Forecast</span>
+        </router-link>
+
         <router-link to="/admin/orders" class="menu-item" exact-active-class="active">
           <div class="icon-container orders-icon">
             <i class="fas fa-shopping-cart"></i>
           </div>
           <span>All Orders</span>
-        </router-link>
-        
-        <router-link to="/admin/receipt-settings" class="menu-item" active-class="active">
-          <div class="icon-container receipt-icon">
-            <i class="fas fa-receipt"></i>
-          </div>
-          <span>Receipt Settings</span>
-        </router-link>
-
-        <router-link to="/admin/users" class="menu-item" active-class="active">
-          <div class="icon-container users-icon">
-            <i class="fas fa-users"></i>
-          </div>
-          <span>Users</span>
-        </router-link>
-
-        <router-link to="/admin/staff" class="menu-item" active-class="active">
-          <div class="icon-container staff-icon">
-            <i class="fas fa-id-card"></i>
-          </div>
-          <span>Staff</span>
         </router-link>
         
         <router-link to="/admin/products" class="menu-item" active-class="active">
@@ -60,18 +46,18 @@
           <span>Low Stock</span>
         </router-link>
 
+        <router-link to="/admin/rewards" class="menu-item" active-class="active">
+          <div class="icon-container rewards-icon">
+            <i class="fas fa-gift"></i>
+          </div>
+          <span>Rewards Management</span>
+        </router-link>
+        
         <router-link to="/admin/insert-products" class="menu-item" active-class="active">
           <div class="icon-container insert-icon">
             <i class="fas fa-box"></i>
           </div>
           <span>Insert Products</span>
-        </router-link>
-
-        <router-link to="/admin/forecast" class="menu-item" active-class="active">
-          <div class="icon-container forecast-icon">
-            <i class="fas fa-chart-bar"></i>
-          </div>
-          <span>Sales Forecast</span>
         </router-link>
 
         <router-link to="/admin/recruit-staff" class="menu-item" active-class="active">
@@ -80,14 +66,35 @@
           </div>
           <span>Recruit Staff</span>
         </router-link>
-        
-        <router-link to="/admin/rewards" class="menu-item" active-class="active">
-          <div class="icon-container rewards-icon">
-            <i class="fas fa-gift"></i>
+        <router-link to="/admin/users" class="menu-item" active-class="active">
+          <div class="icon-container users-icon">
+            <i class="fas fa-users"></i>
           </div>
-          <span>Rewards Management</span>
+          <span>Users</span>
+        </router-link>
+
+        <router-link to="/admin/staff" class="menu-item" active-class="active">
+          <div class="icon-container staff-icon">
+            <i class="fas fa-id-card"></i>
+          </div>
+          <span>Staff</span>
+        </router-link>
+
+        <router-link to="/admin/receipt-settings" class="menu-item" active-class="active">
+          <div class="icon-container receipt-icon">
+            <i class="fas fa-receipt"></i>
+          </div>
+          <span>Receipt Settings</span>
+        </router-link>
+
+        <router-link to="/admin/reports" class="menu-item" active-class="active">
+          <div class="icon-container reports-icon">
+            <i class="fas fa-flag"></i>
+          </div>
+          <span>Reports</span>
         </router-link>
       </div>
+      
 
       <div class="sidebar-footer">
         <div class="admin-profile">
@@ -319,7 +326,10 @@ export default {
   background-color: #8e44ad;
   color: white;
 }
-
+.reports-icon {
+  background-color: #ff5722;
+  color: white;
+}
 .recruit-icon {
   background-color: #16a085;
   color: white;
