@@ -301,6 +301,19 @@
             </div>
         </div>
 
+        <div v-if="showEmailSuccess" class="modal-overlay">
+            <div class="modal-content email-success-modal">
+                <div class="email-success-icon">
+                    <i class="fas fa-envelope-circle-check"></i>
+                </div>
+                <h2>Receipt Sent!</h2>
+                <p>A digital receipt has been emailed to <span class="customer-email">{{ selectedOrder?.email }}</span></p>
+                <button @click="showEmailSuccess = false" class="close-btn">
+                    <i class="fas fa-check"></i> OK
+                </button>
+            </div>
+        </div>
+
         <!-- Logout Modal -->
         <LogoutModal 
             :show="showLogoutModal"
@@ -328,6 +341,7 @@ export default {
             selectedOrder: null,
             searchQuery: '',
             dateFilter: '',
+            showEmailSuccess: false,
             selectedStatus: 'ready for pickup',
             defaultStatusFilter: 'ready for pickup',
             statusFilters: [
@@ -425,16 +439,26 @@ export default {
                     },
                     body: JSON.stringify({
                         cashAmount: parseFloat(this.cashAmount),
-                        changeAmount: this.changeAmount
+                        changeAmount: this.changeAmount,
+                        sendEmailReceipt: true // Add flag to indicate email receipt should be sent
                     })
                 });
 
                 if (response.ok) {
-                    // Print first, then update UI
+                    // Print physical receipt first
                     this.printReceipt();
+                    
+                    // Show email success modal if customer has email
+                    if (this.selectedOrder.email) {
+                        this.showEmailSuccess = true;
+                    }
+                    
                     await this.fetchOrders();
                     this.showPaymentConfirmation = false;
-                    this.selectedOrder = null;
+                    // Note: Don't set selectedOrder to null yet if showing email success
+                    if (!this.showEmailSuccess) {
+                        this.selectedOrder = null;
+                    }
                 } else {
                     throw new Error('Failed to process payment');
                 }
@@ -785,13 +809,14 @@ export default {
                     this.selectedOrder = {
                         ...orderData,
                         subtotal: orderData.subtotal || orderData.total_amount,
-                        discount_amount: parseFloat(orderData.discount_amount) || 0
+                        discount_amount: parseFloat(orderData.discount_amount) || 0,
+                        email: orderData.email // Make sure email is included in the order data
                     };
                 }
             } catch (error) {
                 console.error('Error fetching order details:', error);
             }
-        }
+        },
     },
     mounted() {
         const token = localStorage.getItem('token');
@@ -1533,6 +1558,39 @@ tfoot tr td {
     right: 1rem;
     pointer-events: none;
     color: #64748b;
+}
+.email-success-modal {
+    text-align: center;
+    max-width: 400px;
+    padding: 2rem;
+}
+
+.email-success-icon {
+    font-size: 4rem;
+    color: #4CAF50;
+    margin-bottom: 1rem;
+}
+
+.email-success-modal h2 {
+    color: #1e293b;
+    margin: 0 0 1rem 0;
+    font-size: 1.5rem;
+}
+
+.email-success-modal p {
+    color: #64748b;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.customer-email {
+    font-weight: 600;
+    color: #3b82f6;
+}
+
+.email-success-modal .close-btn {
+    margin: 0 auto;
 }
 @media (max-width: 768px) {
     .sort-filter {

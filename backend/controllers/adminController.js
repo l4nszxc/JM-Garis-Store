@@ -5,8 +5,198 @@ const User = require('../models/userModel');
 const Reward = require('../models/rewardModel');
 const emailService = require('../services/emailService');
 const forecastService = require('../services/forecastService');
+const nodemailer = require('nodemailer'); 
 const jwt = require('jsonwebtoken');
 
+async function sendEmailReceipt(order, settings) {
+    try {
+        // Create transporter (configure with your email service)
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',  // Replace with your email service
+            auth: {
+                user: process.env.EMAIL_USER || 'lanslorence@gmail.com', // Use default if env not set
+                pass: process.env.EMAIL_PASS || 'dwha kvpo ogpk txmg' // Use default if env not set
+            }
+        });
+        
+        // Generate receipt HTML
+        const receiptHtml = generateEmailReceiptHTML(order, settings);
+        
+        // Define email options
+        const mailOptions = {
+            from: `"${settings.storeName}" <${process.env.EMAIL_USER || 'lanslorence@gmail.com'}>`,
+            to: order.email,
+            subject: `Receipt for Order #${order.order_id}`,
+            html: receiptHtml
+        };
+        
+        // Send email
+        await transporter.sendMail(mailOptions);
+        console.log(`Receipt email sent to ${order.email} for order ${order.order_id}`);
+    } catch (error) {
+        console.error('Error sending email receipt:', error);
+        // Continue execution even if email fails
+    }
+}
+
+function generateEmailReceiptHTML(order, settings) {
+    const date = new Date().toLocaleString();
+    
+    // Format items
+    const itemsHtml = order.items.map(item => `
+        <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                <div style="font-weight: 500;">${item.name}</div>
+                <div style="font-size: 14px; color: #666;">
+                    ${item.quantity} × ₱${parseFloat(item.price).toFixed(2)} = ₱${(item.price * item.quantity).toFixed(2)}
+                </div>
+            </td>
+        </tr>
+    `).join('');
+    
+    // Format the thank you message with line breaks
+    const thankyouMessage = settings.thankyouMessage
+        ? settings.thankyouMessage.replace(/\n/g, '<br>')
+        : 'Thank you for your purchase!<br>Please come again!';
+    
+    // Ensure numerical values are parsed correctly
+    const subtotal = parseFloat(order.subtotal) || 0;
+    const discountAmount = parseFloat(order.discount_amount) || 0;
+    const totalAmount = parseFloat(order.total_amount) || 0;
+    const cashAmount = parseFloat(order.cash_amount) || 0;
+    const changeAmount = parseFloat(order.change_amount) || 0;
+    
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Receipt for Order #${order.order_id}</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    margin: 0;
+                    padding: 0;
+                }
+                .receipt-container {
+                    max-width: 600px;
+                    margin: 0 auto;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 8px;
+                    overflow: hidden;
+                }
+                .receipt-header {
+                    background-color: #4CAF50;
+                    color: white;
+                    padding: 20px;
+                    text-align: center;
+                }
+                .receipt-header h1 {
+                    margin: 0;
+                    font-size: 24px;
+                }
+                .receipt-header p {
+                    margin: 5px 0 0;
+                    opacity: 0.9;
+                }
+                .receipt-body {
+                    padding: 20px;
+                    background-color: white;
+                }
+                .receipt-info {
+                    margin-bottom: 20px;
+                    padding-bottom: 20px;
+                    border-bottom: 1px solid #eee;
+                }
+                .receipt-info p {
+                    margin: 8px 0;
+                }
+                .receipt-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                .receipt-totals {
+                    margin-top: 20px;
+                    padding-top: 20px;
+                    border-top: 1px solid #eee;
+                    text-align: right;
+                }
+                .receipt-totals p {
+                    margin: 8px 0;
+                }
+                .subtotal {
+                    color: #666;
+                }
+                .discount {
+                    color: #4CAF50;
+                }
+                .total {
+                    font-size: 18px;
+                    font-weight: bold;
+                    color: #333;
+                }
+                .payment {
+                    margin-top: 15px;
+                    padding-top: 15px;
+                    border-top: 1px solid #eee;
+                }
+                .receipt-footer {
+                    background-color: #f9f9f9;
+                    padding: 20px;
+                    text-align: center;
+                }
+                .receipt-footer p {
+                    margin: 5px 0;
+                    color: #666;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="receipt-container">
+                <div class="receipt-header">
+                    <h1>${settings.storeName}</h1>
+                    <p>${settings.storeTagline}</p>
+                </div>
+                
+                <div class="receipt-body">
+                    <div class="receipt-info">
+                        <p><strong>Order ID:</strong> ${order.order_id}</p>
+                        <p><strong>Date:</strong> ${date}</p>
+                        <p><strong>Customer:</strong> ${order.customer_name}</p>
+                        ${settings.storeAddress ? `<p><strong>Store Address:</strong> ${settings.storeAddress}</p>` : ''}
+                        ${settings.contactNumber ? `<p><strong>Contact:</strong> ${settings.contactNumber}</p>` : ''}
+                    </div>
+                    
+                    <table class="receipt-table">
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+                    
+                    <div class="receipt-totals">
+                        <p class="subtotal">Subtotal: ₱${subtotal.toFixed(2)}</p>
+                        ${discountAmount > 0 ? `<p class="discount">Discount: -₱${discountAmount.toFixed(2)}</p>` : ''}
+                        <p class="total">Total: ₱${totalAmount.toFixed(2)}</p>
+                        
+                        <div class="payment">
+                            <p>Cash: ₱${cashAmount.toFixed(2)}</p>
+                            <p>Change: ₱${changeAmount.toFixed(2)}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="receipt-footer">
+                    <p>${thankyouMessage}</p>
+                    ${settings.footerText ? `<p style="font-size: 12px; margin-top: 10px;">${settings.footerText}</p>` : ''}
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+}
 exports.getStats = async (req, res) => {
     try {
         const stats = await Admin.getUserStats();
@@ -259,7 +449,7 @@ exports.getOrderDetails = async (req, res) => {
 exports.processPayment = async (req, res) => {
     try {
         const { orderId } = req.params;
-        const { cashAmount, changeAmount } = req.body;
+        const { cashAmount, changeAmount, sendEmailReceipt: shouldSendEmail } = req.body;
         
         // Get order details with user email before updating status
         const [orderDetails] = await db.execute(
@@ -292,13 +482,77 @@ exports.processPayment = async (req, res) => {
             [orderId]
         );
 
-        // Update order status
-        await db.execute(
-            'UPDATE orders SET status = ? WHERE order_id = ?',
-            ['paid', orderId]
-        );
+        // Add cash_amount and change_amount columns if they don't exist
+        try {
+            // First check if the columns exist
+            const [columns] = await db.query(`SHOW COLUMNS FROM orders LIKE 'cash_amount'`);
+            
+            if (columns.length === 0) {
+                // Columns don't exist, add them
+                await db.query(`ALTER TABLE orders 
+                    ADD COLUMN cash_amount DECIMAL(10,2) NULL,
+                    ADD COLUMN change_amount DECIMAL(10,2) NULL`);
+                console.log('Added cash_amount and change_amount columns to orders table');
+            }
+        } catch (error) {
+            console.error('Error checking/adding columns:', error);
+            // Continue with the update - we'll handle any errors below
+        }
 
-        // Email sending is removed
+        // Update order status and payment details
+        try {
+            await db.execute(
+                'UPDATE orders SET status = ?, cash_amount = ?, change_amount = ? WHERE order_id = ?',
+                ['paid', parseFloat(cashAmount), parseFloat(changeAmount), orderId]
+            );
+        } catch (error) {
+            console.error('Error updating order payment:', error);
+            
+            // Fall back to just updating the status if columns don't exist
+            await db.execute(
+                'UPDATE orders SET status = ? WHERE order_id = ?',
+                ['paid', orderId]
+            );
+        }
+        
+        // If sendEmailReceipt is true and user has an email, send digital receipt
+        if (shouldSendEmail && orderDetails[0].email) {
+            // Get receipt settings
+            const [receiptSettings] = await db.query('SELECT * FROM receipt_settings LIMIT 1');
+            const settings = receiptSettings[0] || {
+                storeName: 'JM Garis Store',
+                storeTagline: 'Official Receipt',
+                storeAddress: '',
+                contactNumber: '',
+                thankyouMessage: 'Thank you for your purchase!\nPlease come again!',
+                footerText: ''
+            };
+            
+            // Format items for email
+            const formattedItems = items.map(item => ({
+                product_id: item.product_id,
+                quantity: item.quantity,
+                price: item.price,
+                name: item.choice_name ? `${item.name} (${item.choice_name})` : item.name,
+                choice_name: item.choice_name,
+                image: item.actual_image || item.image
+            }));
+            
+            // Prepare order details for email
+            const orderData = {
+                ...orderDetails[0],
+                items: formattedItems,
+                subtotal: items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                order_id: orderId,
+                total_amount: orderDetails[0].total_amount,
+                discount_amount: parseFloat(orderDetails[0].discount_amount) || 0,
+                cash_amount: parseFloat(cashAmount),
+                change_amount: parseFloat(changeAmount),
+            };
+            
+            // Send email receipt
+            await sendEmailReceipt(orderData, settings);
+        }
 
         res.json({ message: 'Payment processed successfully' });
     } catch (error) {
