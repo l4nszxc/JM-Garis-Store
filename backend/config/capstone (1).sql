@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jun 14, 2025 at 09:13 PM
+-- Generation Time: Jun 16, 2025 at 09:01 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -20,258 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Database: `capstone`
 --
-
-DELIMITER $$
---
--- Procedures
---
-CREATE DEFINER=`root`@`localhost` PROCEDURE `ForecastingData` ()   BEGIN
-    -- Variables for configuration
-    DECLARE i INT DEFAULT 0;
-    DECLARE currentDate DATE;
-    DECLARE userId INT;
-    DECLARE staffId INT;
-    DECLARE productId INT;
-    DECLARE quantity INT;
-    DECLARE price DECIMAL(10,2);
-    DECLARE orderId CHAR(7);
-    
-    -- Get a valid user and staff ID
-    SELECT id INTO userId FROM users WHERE role = 'user' ORDER BY id LIMIT 1;
-    SELECT id INTO staffId FROM users WHERE role = 'staff' ORDER BY id LIMIT 1;
-    
-    -- Start date (90 days ago)
-    SET currentDate = DATE_SUB(CURDATE(), INTERVAL 90 DAY);
-    
-    -- Generate data for each day
-    WHILE i < 90 DO
-        -- For each product ID 34-40, create sales data with specific patterns
-        
-        -- Product 34 (GSM Blue 700mL) - Strong upward trend
-        SET productId = 34;
-        SELECT price INTO price FROM products WHERE products_id = productId;
-        -- Base quantity with upward trend and day-of-week seasonality
-        SET quantity = 2 + FLOOR(i/15) + IF(WEEKDAY(currentDate) IN (5,6), 2, 0);
-        
-        -- Create order
-        SET orderId = LPAD(FLOOR(RAND() * 9999999), 7, '0');
-        INSERT INTO orders (order_id, user_id, total_amount, status, created_at, updated_at, accepted_by, customer_name)
-        VALUES (orderId, userId, quantity * price, 'paid', 
-               DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR), 
-               DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR),
-               staffId, NULL);
-               
-        -- Add order item
-        INSERT INTO order_items (order_id, product_id, quantity, price, choice_id)
-        VALUES (orderId, productId, quantity, price, NULL);
-        
-        -- Update totals
-        UPDATE orders SET total_amount = quantity * price WHERE order_id = orderId;
-        
-        -- Product 35 (GSM Blue 1L) - Stable with weekly pattern
-        SET productId = 35;
-        SELECT price INTO price FROM products WHERE products_id = productId;
-        -- Stable base with strong weekend peaks
-        SET quantity = 1 + IF(WEEKDAY(currentDate) IN (5,6), 3, 0);
-        
-        -- Skip some days to create sparse data pattern
-        IF RAND() < 0.8 THEN
-            -- Create order
-            SET orderId = LPAD(FLOOR(RAND() * 9999999), 7, '0');
-            INSERT INTO orders (order_id, user_id, total_amount, status, created_at, updated_at, accepted_by, customer_name)
-            VALUES (orderId, userId, quantity * price, 'paid', 
-                   DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR), 
-                   DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR),
-                   staffId, NULL);
-                   
-            -- Add order item
-            INSERT INTO order_items (order_id, product_id, quantity, price, choice_id)
-            VALUES (orderId, productId, quantity, price, NULL);
-            
-            -- Update totals
-            UPDATE orders SET total_amount = quantity * price WHERE order_id = orderId;
-        END IF;
-        
-        -- Product 37 (Primera Light 1L) - Declining trend
-        SET productId = 37;
-        SELECT price INTO price FROM products WHERE products_id = productId;
-        -- Declining trend (higher at start, lower at end)
-        SET quantity = 4 - FLOOR(i/30);
-        IF quantity < 1 THEN SET quantity = 1; END IF;
-        
-        -- Skip some days to create sparse data pattern
-        IF RAND() < 0.7 THEN
-            -- Create order
-            SET orderId = LPAD(FLOOR(RAND() * 9999999), 7, '0');
-            INSERT INTO orders (order_id, user_id, total_amount, status, created_at, updated_at, accepted_by, customer_name)
-            VALUES (orderId, userId, quantity * price, 'paid', 
-                   DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR), 
-                   DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR),
-                   staffId, NULL);
-                   
-            -- Add order item
-            INSERT INTO order_items (order_id, product_id, quantity, price, choice_id)
-            VALUES (orderId, productId, quantity, price, NULL);
-            
-            -- Update totals
-            UPDATE orders SET total_amount = quantity * price WHERE order_id = orderId;
-        END IF;
-        
-        -- Product 38 (GSM Blue Flavors 700mL) - Cyclical pattern (14-day cycle)
-        SET productId = 38;
-        SELECT price INTO price FROM products WHERE products_id = productId;
-        -- Cyclical pattern with 14-day period
-        SET quantity = 1 + FLOOR(2 * SIN(i * 0.448)); -- 0.448 gives ~14 day cycle
-        IF quantity < 1 THEN SET quantity = 1; END IF;
-        
-        -- Skip some days to create sparse data pattern
-        IF RAND() < 0.75 THEN
-            -- Create order
-            SET orderId = LPAD(FLOOR(RAND() * 9999999), 7, '0');
-            INSERT INTO orders (order_id, user_id, total_amount, status, created_at, updated_at, accepted_by, customer_name)
-            VALUES (orderId, userId, quantity * price, 'paid', 
-                   DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR), 
-                   DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR),
-                   staffId, NULL);
-                   
-            -- Add order item
-            INSERT INTO order_items (order_id, product_id, quantity, price, choice_id)
-            VALUES (orderId, productId, quantity, price, NULL);
-            
-            -- Update totals
-            UPDATE orders SET total_amount = quantity * price WHERE order_id = orderId;
-        END IF;
-        
-        -- Move to next day
-        SET currentDate = DATE_ADD(currentDate, INTERVAL 1 DAY);
-        SET i = i + 1;
-    END WHILE;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `GenerateForecastingData` ()   BEGIN
-    -- Variables for configuration
-    DECLARE i INT DEFAULT 0;
-    DECLARE currentDate DATE;
-    DECLARE userId INT;
-    DECLARE staffId INT;
-    DECLARE productId INT;
-    DECLARE quantity INT;
-    DECLARE price DECIMAL(10,2);
-    DECLARE orderId CHAR(7);
-    
-    -- Get a valid user and staff ID
-    SELECT id INTO userId FROM users WHERE role = 'user' ORDER BY id LIMIT 1;
-    SELECT id INTO staffId FROM users WHERE role = 'staff' ORDER BY id LIMIT 1;
-    
-    -- Start date (90 days ago)
-    SET currentDate = DATE_SUB(CURDATE(), INTERVAL 90 DAY);
-    
-    -- Generate data for each day
-    WHILE i < 90 DO
-        -- For each product ID 34-40, create sales data with specific patterns
-        
-        -- Product 34 (GSM Blue 700mL) - Strong upward trend
-        SET productId = 34;
-        SELECT price INTO price FROM products WHERE products_id = productId;
-        -- Base quantity with upward trend and day-of-week seasonality
-        SET quantity = 2 + FLOOR(i/15) + IF(WEEKDAY(currentDate) IN (5,6), 2, 0);
-        
-        -- Create order
-        SET orderId = LPAD(FLOOR(RAND() * 9999999), 7, '0');
-        INSERT INTO orders (order_id, user_id, total_amount, status, created_at, updated_at, accepted_by, customer_name)
-        VALUES (orderId, userId, quantity * price, 'paid', 
-               DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR), 
-               DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR),
-               staffId, NULL);
-               
-        -- Add order item
-        INSERT INTO order_items (order_id, product_id, quantity, price, choice_id)
-        VALUES (orderId, productId, quantity, price, NULL);
-        
-        -- Update totals
-        UPDATE orders SET total_amount = quantity * price WHERE order_id = orderId;
-        
-        -- Product 35 (GSM Blue 1L) - Stable with weekly pattern
-        SET productId = 35;
-        SELECT price INTO price FROM products WHERE products_id = productId;
-        -- Stable base with strong weekend peaks
-        SET quantity = 1 + IF(WEEKDAY(currentDate) IN (5,6), 3, 0);
-        
-        -- Skip some days to create sparse data pattern
-        IF RAND() < 0.8 THEN
-            -- Create order
-            SET orderId = LPAD(FLOOR(RAND() * 9999999), 7, '0');
-            INSERT INTO orders (order_id, user_id, total_amount, status, created_at, updated_at, accepted_by, customer_name)
-            VALUES (orderId, userId, quantity * price, 'paid', 
-                   DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR), 
-                   DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR),
-                   staffId, NULL);
-                   
-            -- Add order item
-            INSERT INTO order_items (order_id, product_id, quantity, price, choice_id)
-            VALUES (orderId, productId, quantity, price, NULL);
-            
-            -- Update totals
-            UPDATE orders SET total_amount = quantity * price WHERE order_id = orderId;
-        END IF;
-        
-        -- Product 37 (Primera Light 1L) - Declining trend
-        SET productId = 37;
-        SELECT price INTO price FROM products WHERE products_id = productId;
-        -- Declining trend (higher at start, lower at end)
-        SET quantity = 4 - FLOOR(i/30);
-        IF quantity < 1 THEN SET quantity = 1; END IF;
-        
-        -- Skip some days to create sparse data pattern
-        IF RAND() < 0.7 THEN
-            -- Create order
-            SET orderId = LPAD(FLOOR(RAND() * 9999999), 7, '0');
-            INSERT INTO orders (order_id, user_id, total_amount, status, created_at, updated_at, accepted_by, customer_name)
-            VALUES (orderId, userId, quantity * price, 'paid', 
-                   DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR), 
-                   DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR),
-                   staffId, NULL);
-                   
-            -- Add order item
-            INSERT INTO order_items (order_id, product_id, quantity, price, choice_id)
-            VALUES (orderId, productId, quantity, price, NULL);
-            
-            -- Update totals
-            UPDATE orders SET total_amount = quantity * price WHERE order_id = orderId;
-        END IF;
-        
-        -- Product 38 (GSM Blue Flavors 700mL) - Cyclical pattern (14-day cycle)
-        SET productId = 38;
-        SELECT price INTO price FROM products WHERE products_id = productId;
-        -- Cyclical pattern with 14-day period
-        SET quantity = 1 + FLOOR(2 * SIN(i * 0.448)); -- 0.448 gives ~14 day cycle
-        IF quantity < 1 THEN SET quantity = 1; END IF;
-        
-        -- Skip some days to create sparse data pattern
-        IF RAND() < 0.75 THEN
-            -- Create order
-            SET orderId = LPAD(FLOOR(RAND() * 9999999), 7, '0');
-            INSERT INTO orders (order_id, user_id, total_amount, status, created_at, updated_at, accepted_by, customer_name)
-            VALUES (orderId, userId, quantity * price, 'paid', 
-                   DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR), 
-                   DATE_ADD(currentDate, INTERVAL FLOOR(RAND() * 24) HOUR),
-                   staffId, NULL);
-                   
-            -- Add order item
-            INSERT INTO order_items (order_id, product_id, quantity, price, choice_id)
-            VALUES (orderId, productId, quantity, price, NULL);
-            
-            -- Update totals
-            UPDATE orders SET total_amount = quantity * price WHERE order_id = orderId;
-        END IF;
-        
-        -- Move to next day
-        SET currentDate = DATE_ADD(currentDate, INTERVAL 1 DAY);
-        SET i = i + 1;
-    END WHILE;
-END$$
-
-DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -301,7 +49,8 @@ INSERT INTO `available_discounts` (`id`, `user_id`, `amount`, `created_at`, `exp
 (54, 58, 250.00, '2025-06-11 12:49:16', '2025-07-11 12:49:16', 1, '0479798'),
 (55, 58, 50.00, '2025-06-14 00:18:08', '2025-07-14 00:18:08', 0, NULL),
 (56, 58, 100.00, '2025-06-14 00:18:10', '2025-07-14 00:18:10', 0, NULL),
-(57, 58, 250.00, '2025-06-14 20:12:55', '2025-07-14 20:12:55', 0, NULL);
+(57, 58, 250.00, '2025-06-14 20:12:55', '2025-07-14 20:12:55', 0, NULL),
+(58, 58, 50.00, '2025-06-14 23:23:10', '2025-07-14 23:23:10', 1, '9284842');
 
 -- --------------------------------------------------------
 
@@ -317,6 +66,14 @@ CREATE TABLE `cart` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `choice_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `cart`
+--
+
+INSERT INTO `cart` (`id`, `user_id`, `product_id`, `quantity`, `created_at`, `choice_id`) VALUES
+(2491668, 60, 34, 3, '2025-06-15 21:19:13', NULL),
+(2491669, 60, 35, 3, '2025-06-15 21:19:23', NULL);
 
 -- --------------------------------------------------------
 
@@ -334,126 +91,127 @@ CREATE TABLE `orders` (
   `cancel_reason` varchar(255) DEFAULT NULL,
   `accepted_by` int DEFAULT NULL,
   `accepted_at` datetime DEFAULT NULL,
-  `shared_by` int DEFAULT NULL,
-  `shared_with` int DEFAULT NULL,
-  `shared_cart_id` varchar(255) DEFAULT NULL,
-  `shared_with_id` int DEFAULT NULL,
-  `is_shared_cart_owner` tinyint(1) DEFAULT '0',
-  `is_physical_order` tinyint(1) DEFAULT '0',
-  `customer_name` varchar(255) DEFAULT NULL
+  `cash_amount` decimal(10,2) DEFAULT NULL,
+  `change_amount` decimal(10,2) DEFAULT NULL,
+  `customer_name` varchar(255) DEFAULT NULL,
+  `is_physical_order` tinyint(1) DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_at`, `updated_at`, `cancel_reason`, `accepted_by`, `accepted_at`, `shared_by`, `shared_with`, `shared_cart_id`, `shared_with_id`, `is_shared_cart_owner`, `is_physical_order`, `customer_name`) VALUES
-('0049544', 56, 378.00, 'paid', '2025-06-07 13:39:44', '2025-06-14 01:20:39', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0062958', 56, 320.50, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0078361', 56, 60.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0166286', 56, 141.00, 'paid', '2025-06-06 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0181757', 56, 378.00, 'paid', '2025-05-24 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0270665', 58, 189.00, 'cancelled', '2025-06-10 22:06:06', '2025-06-11 12:17:46', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0318801', 56, 209.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0320939', 56, 51.00, 'paid', '2025-05-15 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0355902', 56, 567.00, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0370997', 56, 1223.00, 'paid', '2025-05-20 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0479798', 58, 0.00, 'preparing', '2025-06-11 12:49:43', '2025-06-11 17:09:58', NULL, 23, '2025-06-12 01:09:58', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0748472', 56, 378.00, 'paid', '2025-05-18 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0881007', 56, 370.00, 'paid', '2025-05-27 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('0907455', 58, 1170.00, 'cancelled', '2025-06-11 21:49:58', '2025-06-11 21:50:03', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('1042234', 56, 2554.00, 'paid', '2025-06-01 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('1094201', 56, 165.00, 'paid', '2025-05-27 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('1251674', 56, 270.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('1288891', 58, 3019.00, 'paid', '2025-06-12 10:37:08', '2025-06-12 10:37:36', NULL, 23, '2025-06-12 18:37:19', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('1310914', 56, 27.00, 'paid', '2025-05-26 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('1419916', 56, 911.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('1625405', 56, 477.00, 'paid', '2025-05-17 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('1628722', 56, 2528.00, 'paid', '2025-05-18 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('1679133', 56, 282.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('1749430', 56, 298.50, 'paid', '2025-06-02 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('1782065', 56, 611.00, 'paid', '2025-05-24 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('1917367', 56, 55.00, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('2132346', 56, 423.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('2165407', 56, 189.00, 'paid', '2025-05-16 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('2173189', 58, 617.00, 'paid', '2025-06-12 09:26:02', '2025-06-12 09:31:39', NULL, 23, '2025-06-12 17:26:17', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('2225484', 56, 91.00, 'paid', '2025-05-15 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('2388558', 56, 378.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('2474222', 56, 38.00, 'paid', '2025-06-04 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('2477674', 56, 562.00, 'paid', '2025-05-17 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('2486554', 56, 423.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('2657847', 56, 49.00, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('2734169', 56, 94.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('3049944', 56, 171.00, 'paid', '2025-06-02 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('3152531', 56, 189.00, 'paid', '2025-05-24 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('3226219', 56, 468.00, 'paid', '2025-05-26 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('3464693', 56, 301.00, 'paid', '2025-05-24 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('3505083', 56, 586.00, 'paid', '2025-05-23 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('3661468', 58, 25.50, 'paid', '2025-06-13 18:46:19', '2025-06-13 22:06:20', NULL, 23, '2025-06-14 02:46:37', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('3752935', 56, 378.00, 'paid', '2025-05-15 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('3851076', 56, 111.00, 'paid', '2025-05-28 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('3871827', 56, 216.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4023658', 56, 19.00, 'paid', '2025-06-09 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4151897', 58, 140.00, 'preparing', '2025-06-12 08:17:29', '2025-06-13 19:16:18', NULL, 23, '2025-06-12 16:17:41', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4217171', 56, 1291.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4226170', 56, 378.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4234665', 56, 189.00, 'paid', '2025-05-22 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4379664', 56, 282.00, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4406490', 56, 189.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4429183', 56, 189.00, 'paid', '2025-05-27 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4527232', 58, 1359.00, 'paid', '2025-06-12 08:11:45', '2025-06-13 18:27:17', NULL, 23, '2025-06-12 16:11:56', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4547246', 56, 74.00, 'paid', '2025-06-04 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4562216', 58, 140.00, 'paid', '2025-06-13 18:26:04', '2025-06-13 18:26:35', NULL, 23, '2025-06-14 02:26:14', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4564808', 56, 378.00, 'paid', '2025-06-04 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('4672841', 56, 378.00, 'paid', '2025-05-20 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('5041695', 58, 189.00, 'cancelled', '2025-06-11 12:39:58', '2025-06-11 12:40:02', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('5109806', 56, 1198.00, 'paid', '2025-06-06 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('5120226', 56, 140.00, 'paid', '2025-05-28 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('5219639', 56, 29.50, 'paid', '2025-06-01 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('5385274', 56, 564.00, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('5682030', 58, 3305.00, 'paid', '2025-06-11 15:29:15', '2025-06-11 15:29:41', NULL, 23, '2025-06-11 23:29:22', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('5954237', 56, 378.00, 'paid', '2025-06-02 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('6031901', 56, 937.00, 'paid', '2025-05-20 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('6069629', 56, 78.50, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('6180488', 56, 567.00, 'paid', '2025-05-20 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('6304317', 56, 378.00, 'paid', '2025-06-09 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('6464763', 58, 330.00, 'cancelled', '2025-06-10 21:58:25', '2025-06-11 12:17:48', 'Ordered by mistake', NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('6628013', 56, 59.50, 'paid', '2025-05-17 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('6751122', 56, 189.00, 'paid', '2025-06-05 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('6780150', 56, 151.75, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('6837166', 56, 282.00, 'paid', '2025-06-01 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('7070479', 56, 189.00, 'paid', '2025-05-17 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('7194326', 58, 141.00, 'cancelled', '2025-06-12 08:27:16', '2025-06-12 08:27:29', 'Customer cancelled', NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('7280722', 56, 141.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('7339968', 56, 106.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('7687088', 56, 189.00, 'paid', '2025-05-28 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('7789578', 56, 542.50, 'paid', '2025-06-08 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('7826305', 58, 20.50, 'paid', '2025-06-13 18:36:15', '2025-06-13 18:36:51', NULL, 23, '2025-06-14 02:36:20', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('7826652', 56, 72.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('7853322', 56, 23.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('7872481', 56, 189.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('7966136', 56, 297.00, 'paid', '2025-06-05 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('8135598', 56, 423.00, 'paid', '2025-06-09 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('8176548', 56, 1266.00, 'paid', '2025-06-06 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('8298188', 56, 605.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('8436968', 58, 23.00, 'preparing', '2025-06-11 17:20:10', '2025-06-11 17:20:28', NULL, 23, '2025-06-12 01:20:28', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('8448674', 56, 378.00, 'paid', '2025-05-23 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('8510875', 58, 49.00, 'paid', '2025-06-14 01:16:24', '2025-06-14 01:16:53', NULL, 23, '2025-06-14 09:16:36', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('8540515', 56, 72.00, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('8634793', 58, 510.00, 'preparing', '2025-06-11 15:32:15', '2025-06-11 19:32:17', NULL, 23, '2025-06-11 23:32:36', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('8653905', 58, 2897.00, 'paid', '2025-06-12 10:36:15', '2025-06-12 10:36:38', NULL, 23, '2025-06-12 18:36:22', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('8843835', 58, 189.00, 'cancelled', '2025-06-10 22:27:22', '2025-06-11 12:17:44', 'Ordered by mistake', NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('9056126', 56, 378.00, 'paid', '2025-05-26 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('9099822', 56, 564.00, 'paid', '2025-06-08 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('9325414', 56, 378.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('9344479', 58, 185.00, 'cancelled', '2025-06-12 08:45:37', '2025-06-12 08:45:48', 'Customer cancelled', NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('9360203', 58, 17.50, 'paid', '2025-06-10 21:46:41', '2025-06-11 12:41:28', NULL, 23, '2025-06-11 05:47:05', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('9396606', 58, 141.00, 'paid', '2025-06-10 21:47:26', '2025-06-10 21:48:11', NULL, 23, '2025-06-11 05:47:36', NULL, NULL, NULL, NULL, 0, 0, NULL),
-('9525472', 56, 1252.00, 'paid', '2025-05-22 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('9811008', 56, 1218.00, 'paid', '2025-05-25 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('9848840', 56, 189.00, 'paid', '2025-05-22 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('9868934', 56, 513.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL),
-('9922841', 58, 790.00, 'pending', '2025-06-14 21:08:09', '2025-06-14 21:08:09', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL);
+INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_at`, `updated_at`, `cancel_reason`, `accepted_by`, `accepted_at`, `cash_amount`, `change_amount`, `customer_name`, `is_physical_order`) VALUES
+('0049544', 56, 378.00, 'paid', '2025-06-07 13:39:44', '2025-06-15 21:06:47', NULL, 23, NULL, 1111.00, 733.00, NULL, 0),
+('0062958', 56, 320.50, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('0078361', 56, 60.00, 'paid', '2025-05-19 13:39:44', '2025-06-15 21:07:46', NULL, 23, NULL, 111.00, 51.00, NULL, 0),
+('0166286', 56, 141.00, 'paid', '2025-06-06 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('0181757', 56, 378.00, 'paid', '2025-05-24 13:39:44', '2025-06-15 21:13:21', NULL, 23, NULL, 400.00, 22.00, NULL, 0),
+('0270665', 58, 189.00, 'cancelled', '2025-06-10 22:06:06', '2025-06-11 12:17:46', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0),
+('0318801', 56, 209.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('0320939', 56, 51.00, 'paid', '2025-05-15 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('0355902', 56, 567.00, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('0370997', 56, 1223.00, 'paid', '2025-05-20 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('0479798', 58, 0.00, 'preparing', '2025-06-11 12:49:43', '2025-06-11 17:09:58', NULL, 23, '2025-06-12 01:09:58', NULL, NULL, NULL, 0),
+('0748472', 56, 378.00, 'paid', '2025-05-18 13:39:44', '2025-06-15 21:11:11', NULL, 23, NULL, 400.00, 22.00, NULL, 0),
+('0881007', 56, 370.00, 'paid', '2025-05-27 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('0907455', 58, 1170.00, 'cancelled', '2025-06-11 21:49:58', '2025-06-11 21:50:03', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0),
+('1042234', 56, 2554.00, 'paid', '2025-06-01 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('1094201', 56, 165.00, 'paid', '2025-05-27 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('1251674', 56, 270.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('1276483', 58, 189.00, 'paid', '2025-06-15 21:16:32', '2025-06-15 21:17:11', NULL, 23, '2025-06-16 05:16:55', 200.00, 11.00, NULL, 0),
+('1288891', 58, 3019.00, 'paid', '2025-06-12 10:37:08', '2025-06-12 10:37:36', NULL, 23, '2025-06-12 18:37:19', NULL, NULL, NULL, 0),
+('1310914', 56, 27.00, 'paid', '2025-05-26 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('1419916', 56, 911.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('1625405', 56, 477.00, 'paid', '2025-05-17 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('1628722', 56, 2528.00, 'paid', '2025-05-18 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('1679133', 56, 282.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('1749430', 56, 298.50, 'paid', '2025-06-02 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('1782065', 56, 611.00, 'paid', '2025-05-24 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('1917367', 56, 55.00, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('2132346', 56, 423.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('2165407', 56, 189.00, 'paid', '2025-05-16 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('2173189', 58, 617.00, 'paid', '2025-06-12 09:26:02', '2025-06-12 09:31:39', NULL, 23, '2025-06-12 17:26:17', NULL, NULL, NULL, 0),
+('2225484', 56, 91.00, 'paid', '2025-05-15 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('2388558', 56, 378.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('2474222', 56, 38.00, 'paid', '2025-06-04 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('2477674', 56, 562.00, 'paid', '2025-05-17 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('2486554', 56, 423.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('2657847', 56, 49.00, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('2734169', 56, 94.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('3049944', 56, 171.00, 'paid', '2025-06-02 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('3152531', 56, 189.00, 'paid', '2025-05-24 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('3226219', 56, 468.00, 'paid', '2025-05-26 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('3464693', 56, 301.00, 'paid', '2025-05-24 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('3505083', 56, 586.00, 'paid', '2025-05-23 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('3661468', 58, 25.50, 'paid', '2025-06-13 18:46:19', '2025-06-13 22:06:20', NULL, 23, '2025-06-14 02:46:37', NULL, NULL, NULL, 0),
+('3752935', 56, 378.00, 'paid', '2025-05-15 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('3851076', 56, 111.00, 'paid', '2025-05-28 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('3871827', 56, 216.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('4023658', 56, 19.00, 'paid', '2025-06-09 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('4151897', 58, 140.00, 'preparing', '2025-06-12 08:17:29', '2025-06-13 19:16:18', NULL, 23, '2025-06-12 16:17:41', NULL, NULL, NULL, 0),
+('4217171', 56, 1291.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('4226170', 56, 378.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('4234665', 56, 189.00, 'paid', '2025-05-22 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('4379664', 56, 282.00, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('4406490', 56, 189.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('4429183', 56, 189.00, 'paid', '2025-05-27 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('4527232', 58, 1359.00, 'paid', '2025-06-12 08:11:45', '2025-06-13 18:27:17', NULL, 23, '2025-06-12 16:11:56', NULL, NULL, NULL, 0),
+('4547246', 56, 74.00, 'paid', '2025-06-04 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('4562216', 58, 140.00, 'paid', '2025-06-13 18:26:04', '2025-06-13 18:26:35', NULL, 23, '2025-06-14 02:26:14', NULL, NULL, NULL, 0),
+('4564808', 56, 378.00, 'paid', '2025-06-04 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('4672841', 56, 378.00, 'paid', '2025-05-20 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('5041695', 58, 189.00, 'cancelled', '2025-06-11 12:39:58', '2025-06-11 12:40:02', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0),
+('5109806', 56, 1198.00, 'paid', '2025-06-06 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('5120226', 56, 140.00, 'paid', '2025-05-28 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('5219639', 56, 29.50, 'paid', '2025-06-01 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('5385274', 56, 564.00, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('5682030', 58, 3305.00, 'paid', '2025-06-11 15:29:15', '2025-06-11 15:29:41', NULL, 23, '2025-06-11 23:29:22', NULL, NULL, NULL, 0),
+('5716938', 58, 1131.00, 'paid', '2025-06-15 21:21:18', '2025-06-15 21:23:31', NULL, 23, '2025-06-16 05:21:24', 2000.00, 869.00, NULL, 0),
+('5954237', 56, 378.00, 'paid', '2025-06-02 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('6031901', 56, 937.00, 'paid', '2025-05-20 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('6069629', 56, 78.50, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('6180488', 56, 567.00, 'paid', '2025-05-20 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('6304317', 56, 378.00, 'paid', '2025-06-09 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('6464763', 58, 330.00, 'cancelled', '2025-06-10 21:58:25', '2025-06-11 12:17:48', 'Ordered by mistake', NULL, NULL, NULL, NULL, NULL, 0),
+('6628013', 56, 59.50, 'paid', '2025-05-17 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('6751122', 56, 189.00, 'paid', '2025-06-05 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('6780150', 56, 151.75, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('6837166', 56, 282.00, 'paid', '2025-06-01 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('7070479', 56, 189.00, 'paid', '2025-05-17 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('7194326', 58, 141.00, 'cancelled', '2025-06-12 08:27:16', '2025-06-12 08:27:29', 'Customer cancelled', NULL, NULL, NULL, NULL, NULL, 0),
+('7280722', 56, 141.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('7339968', 56, 106.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('7687088', 56, 189.00, 'paid', '2025-05-28 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('7789578', 56, 542.50, 'paid', '2025-06-08 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('7826305', 58, 20.50, 'paid', '2025-06-13 18:36:15', '2025-06-13 18:36:51', NULL, 23, '2025-06-14 02:36:20', NULL, NULL, NULL, 0),
+('7826652', 56, 72.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('7853322', 56, 23.00, 'paid', '2025-05-21 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('7872481', 56, 189.00, 'paid', '2025-06-07 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('7966136', 56, 297.00, 'paid', '2025-06-05 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('8135598', 56, 423.00, 'paid', '2025-06-09 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('8176548', 56, 1266.00, 'paid', '2025-06-06 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('8298188', 56, 605.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('8436968', 58, 23.00, 'preparing', '2025-06-11 17:20:10', '2025-06-11 17:20:28', NULL, 23, '2025-06-12 01:20:28', NULL, NULL, NULL, 0),
+('8448674', 56, 378.00, 'paid', '2025-05-23 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('8510875', 58, 49.00, 'paid', '2025-06-14 01:16:24', '2025-06-14 01:16:53', NULL, 23, '2025-06-14 09:16:36', NULL, NULL, NULL, 0),
+('8540515', 56, 72.00, 'paid', '2025-05-13 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('8634793', 58, 510.00, 'preparing', '2025-06-11 15:32:15', '2025-06-11 19:32:17', NULL, 23, '2025-06-11 23:32:36', NULL, NULL, NULL, 0),
+('8643349', 58, 15.00, 'cancelled', '2025-06-15 21:14:03', '2025-06-15 21:14:06', 'Ordered by mistake', NULL, NULL, NULL, NULL, NULL, 0),
+('8653905', 58, 2897.00, 'paid', '2025-06-12 10:36:15', '2025-06-12 10:36:38', NULL, 23, '2025-06-12 18:36:22', NULL, NULL, NULL, 0),
+('8843835', 58, 189.00, 'cancelled', '2025-06-10 22:27:22', '2025-06-11 12:17:44', 'Ordered by mistake', NULL, NULL, NULL, NULL, NULL, 0),
+('9056126', 56, 378.00, 'paid', '2025-05-26 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('9099822', 56, 564.00, 'paid', '2025-06-08 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('9284842', 58, 0.00, 'paid', '2025-06-15 21:14:26', '2025-06-15 21:15:02', NULL, 23, '2025-06-16 05:14:33', 1.00, 1.00, NULL, 0),
+('9325414', 56, 378.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('9344479', 58, 185.00, 'cancelled', '2025-06-12 08:45:37', '2025-06-12 08:45:48', 'Customer cancelled', NULL, NULL, NULL, NULL, NULL, 0),
+('9360203', 58, 17.50, 'paid', '2025-06-10 21:46:41', '2025-06-11 12:41:28', NULL, 23, '2025-06-11 05:47:05', NULL, NULL, NULL, 0),
+('9396606', 58, 141.00, 'paid', '2025-06-10 21:47:26', '2025-06-10 21:48:11', NULL, 23, '2025-06-11 05:47:36', NULL, NULL, NULL, 0),
+('9525472', 56, 1252.00, 'paid', '2025-05-22 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('9811008', 56, 1218.00, 'paid', '2025-05-25 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('9848840', 56, 189.00, 'paid', '2025-05-22 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('9868934', 56, 513.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('9922841', 58, 790.00, 'paid', '2025-06-14 21:08:09', '2025-06-15 21:25:09', 'Changed my mind', NULL, NULL, 800.00, 10.00, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -652,7 +410,12 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (1750, '3661468', 91, 1, 25.50, NULL),
 (1751, '8510875', 77, 1, 49.00, NULL),
 (1752, '9922841', 33, 1, 649.00, NULL),
-(1753, '9922841', 34, 1, 141.00, NULL);
+(1753, '9922841', 34, 1, 141.00, NULL),
+(1754, '8643349', 45, 1, 15.00, NULL),
+(1755, '9284842', 65, 1, 29.75, NULL),
+(1756, '1276483', 35, 1, 189.00, NULL),
+(1757, '5716938', 34, 4, 141.00, NULL),
+(1758, '5716938', 35, 3, 189.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -678,7 +441,7 @@ CREATE TABLE `order_reports` (
 --
 
 INSERT INTO `order_reports` (`id`, `order_id`, `user_id`, `issue_type`, `description`, `status`, `created_at`, `updated_at`, `admin_response`, `resolved_at`) VALUES
-(1, '2173189', 58, 'wrong-order', 'zxc', 'pending', '2025-06-12 09:48:07', '2025-06-12 09:48:07', NULL, NULL);
+(1, '2173189', 58, 'wrong-order', 'zxc', 'pending', '2025-06-12 09:48:07', '2025-06-15 20:33:18', 'zxc', NULL);
 
 -- --------------------------------------------------------
 
@@ -708,7 +471,7 @@ INSERT INTO `order_reviews` (`id`, `order_id`, `user_id`, `rating`, `comment`, `
 (5, '4562216', 58, 4, NULL, '2025-06-13 18:36:09', '2025-06-13 18:36:09'),
 (6, '3661468', 58, 5, NULL, '2025-06-13 22:14:04', '2025-06-13 22:14:04'),
 (7, '7826305', 58, 5, NULL, '2025-06-14 00:17:58', '2025-06-14 00:17:58'),
-(8, '8510875', 58, 5, NULL, '2025-06-14 02:09:08', '2025-06-14 02:09:08');
+(8, '8510875', 58, 5, 'zxczxczxc', '2025-06-14 02:09:08', '2025-06-14 21:30:43');
 
 -- --------------------------------------------------------
 
@@ -735,14 +498,14 @@ CREATE TABLE `products` (
 INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_quantity`, `category`, `image`, `created_at`, `updated_at`) VALUES
 (31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 998, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-04-01 07:21:29', '2025-06-12 10:36:15'),
 (32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 994, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-04-01 07:22:15', '2025-06-12 08:11:45'),
-(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 979, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-06-14 21:08:09'),
-(34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 75, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-06-14 21:08:09'),
-(35, 'GSM Mojito 1L', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 189.00, 977, 'Beverages', 'https://i.ibb.co/vvP01sRS/00058af3eb33.png', '2025-04-01 07:28:48', '2025-06-12 08:35:52'),
+(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 980, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-06-15 21:14:13'),
+(34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 72, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-06-15 21:21:18'),
+(35, 'GSM Mojito 1L', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 189.00, 973, 'Beverages', 'https://i.ibb.co/vvP01sRS/00058af3eb33.png', '2025-04-01 07:28:48', '2025-06-15 21:21:18'),
 (36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 79, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-04-01 07:34:49', '2025-06-13 18:26:04'),
 (37, 'Primera Light 1Liter', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 189.00, 95, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 07:35:27', '2025-05-09 13:17:45'),
 (38, 'Lucky 7 Corned Beef ', 'organic-free corned beef multipack', 17.50, 196, 'Canned Goods', 'https://i.ibb.co/MD9MDJ5q/d66d18901a73.png', '2025-04-01 07:37:33', '2025-06-12 08:43:21'),
 (41, 'Lucky 7 Meat Loaf 100g', 'organic-free corned beef multipack', 23.00, 48, 'Canned Goods', 'https://i.ibb.co/tTMm9hg9/bf73f6e95a5d.png', '2025-04-01 07:42:51', '2025-04-24 16:44:33'),
-(45, 'Datu Patis ', '#1 fish sauce in the Philippines.', 15.00, 95, 'Condiments', 'https://i.ibb.co/0Ry6CFm6/51d8ce58dd9f.png', '2025-04-01 09:25:10', '2025-06-12 08:36:27'),
+(45, 'Datu Patis ', '#1 fish sauce in the Philippines.', 15.00, 95, 'Condiments', 'https://i.ibb.co/0Ry6CFm6/51d8ce58dd9f.png', '2025-04-01 09:25:10', '2025-06-15 21:14:06'),
 (47, 'UFC Ketchup', 'unique blend of fresh spices and select bananas that provide the tamis anghang (sweet and spicy) flavor. ', 11.75, 100, 'Condiments', 'https://i.ibb.co/j9gnXrxH/cecb6672ce73.png', '2025-04-01 09:27:23', '2025-04-09 06:24:47'),
 (48, 'Argentina Corned Beef', 'No. 1 corned beef brand that has the food qualities consumer most value', 27.50, 100, 'Canned Goods', 'https://i.ibb.co/W46GfnGB/d19d7b986670.png', '2025-04-01 09:32:37', '2025-04-08 21:09:32'),
 (50, 'Primera Light 1Liter', 'a unique 55-proof brandy liqueur masterpiece', 185.00, 17, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 09:41:56', '2025-06-11 19:20:28'),
@@ -760,7 +523,7 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (62, 'Argentina Meat Loaf', 'made from quality meat that\'s seasoned with the most flavorful yet kid-friendly spices', 16.00, 99, 'Canned Goods', 'https://i.ibb.co/zTRL3z2K/67acda401865.png', '2025-04-08 21:13:02', '2025-04-20 17:03:04'),
 (63, 'Wow Ulam', 'brand of canned and fresh processed meat products from Century Pacific Food Inc.', 23.00, 99, 'Canned Goods', 'https://i.ibb.co/nNMdv4zm/8eaa96b1b065.png', '2025-04-08 22:09:14', '2025-06-11 17:20:10'),
 (64, 'Century Tuna', 'a leading canned tuna brand in the Philippines, known for its healthy, delicious, and convenient options,', 27.50, 100, 'Canned Goods', 'https://i.ibb.co/FbXNJm1m/c00050cbdeba.png', '2025-04-08 22:14:26', '2025-04-08 22:14:26'),
-(65, 'Blue Bay', 'Manamis-namis. Deliciously irresistible. Unmistakably fresh. The sea`s bounty and farm`s harvest make one delightful feast.', 29.75, 200, 'Canned Goods', 'https://i.ibb.co/vxtvqDpM/cc9c981cfeb3.png', '2025-04-08 22:18:53', '2025-04-08 22:18:53'),
+(65, 'Blue Bay', 'Manamis-namis. Deliciously irresistible. Unmistakably fresh. The sea`s bounty and farm`s harvest make one delightful feast.', 29.75, 199, 'Canned Goods', 'https://i.ibb.co/vxtvqDpM/cc9c981cfeb3.png', '2025-04-08 22:18:53', '2025-06-15 21:14:26'),
 (66, '555 Tuna', 'the “Super Ulam Pinoy” because it is rich in calcium for stronger bones, protein for muscle building, lycopene for cancer prevention', 26.00, 49, 'Canned Goods', 'https://i.ibb.co/Y7jbJpZ9/0f06ee53e48d.png', '2025-04-08 22:21:01', '2025-04-20 17:03:16'),
 (67, 'CDO Karne Norte', 'a Filipino-style corned beef that has a delicious guisado taste', 20.50, 99, 'Canned Goods', 'https://i.ibb.co/KjNHwTmS/6ef04ff0da58.png', '2025-04-08 22:23:53', '2025-06-13 18:36:15'),
 (68, 'Bingo Corned Beef', 'a canned, ready-to-eat corned beef product, specially prepared with beef and savory seasonings, and fortified with zinc and iron', 19.00, 50, 'Canned Goods', 'https://i.ibb.co/BH4TXJBC/d226081191f0.png', '2025-04-08 22:26:27', '2025-04-08 22:26:27'),
@@ -788,8 +551,8 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (90, 'Atami Sardines', 'A delightful and flavorful seafood choice that combines the natural goodness of sardines', 23.00, 50, 'Canned Goods', 'https://i.ibb.co/sdNR2j4f/0f5b60542f2a.png', '2025-04-09 07:28:21', '2025-04-09 07:28:21'),
 (91, 'Master Sardines', 'known for their premium quality, sourced from the depths of the ocean and expertly preserved to retain natural flavors and nutritional goodness, with a focus on a quick catch-to-can process. ', 25.50, 99, 'Canned Goods', 'https://i.ibb.co/ksGrTmWD/8c3590d7e350.png', '2025-04-09 07:31:56', '2025-06-13 18:46:19'),
 (92, 'trytry test', 'jm garis', 100.00, 20, 'Beverages', 'https://i.ibb.co/pjrnNm07/59cc32c572c3.jpg', '2025-05-19 07:05:23', '2025-06-11 16:38:19'),
-(95, 'trytryzxczxc', 'zxc', 0.00, 0, 'Coffee and Creamer', 'https://i.ibb.co/gbgf00bt/65560c328868.jpg', '2025-06-14 01:53:44', '2025-06-14 01:53:44'),
-(96, 'trytryzxczxctry', 'zxcxzcxzczx', 0.00, 0, 'Coffee and Creamer', 'https://i.ibb.co/DH46fpwY/16f540a83f32.jpg', '2025-06-14 02:05:40', '2025-06-14 02:05:40');
+(95, 'trytryzxczxc', 'zxc', 0.00, 100, 'Coffee and Creamer', 'https://i.ibb.co/gbgf00bt/65560c328868.jpg', '2025-06-14 01:53:44', '2025-06-15 20:47:37'),
+(96, 'trytryzxczxctry', 'zxcxzcxzczx', 100.00, 40, 'Coffee and Creamer', 'https://i.ibb.co/DH46fpwY/16f540a83f32.jpg', '2025-06-14 02:05:40', '2025-06-15 20:55:01');
 
 -- --------------------------------------------------------
 
@@ -836,6 +599,13 @@ CREATE TABLE `product_reports` (
   `resolved_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+--
+-- Dumping data for table `product_reports`
+--
+
+INSERT INTO `product_reports` (`id`, `product_id`, `user_id`, `issue_type`, `description`, `status`, `created_at`, `updated_at`, `admin_response`, `resolved_at`) VALUES
+(1, 35, 58, 'inaccurate-info', 'zxc', 'pending', '2025-06-14 21:18:27', '2025-06-14 21:18:27', NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -859,7 +629,7 @@ CREATE TABLE `receipt_settings` (
 --
 
 INSERT INTO `receipt_settings` (`id`, `storeName`, `storeTagline`, `storeAddress`, `contactNumber`, `thankyouMessage`, `footerText`, `created_at`, `updated_at`) VALUES
-(1, 'JM Garis Store', 'Official Receipt', 'Barcenaga, Naujan City, Oriental Mindoro', 'lanslorence@gmail.com', 'Thank you for your purchase!\nPlease come again', '', '2025-06-13 22:06:01', '2025-06-13 22:21:38');
+(1, 'JM Garis Store', 'Official Receipt', 'Barcenaga, Naujan City, Oriental Mindoro', 'storeofjmgaris@gmail.com', 'Thank you for your purchase!\nPlease come again', 'You can Contact us in: +63*** *** ****', '2025-06-13 22:06:01', '2025-06-15 21:26:44');
 
 -- --------------------------------------------------------
 
@@ -898,6 +668,14 @@ CREATE TABLE `shared_carts` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `status` enum('active','expired','used') DEFAULT 'active'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `shared_carts`
+--
+
+INSERT INTO `shared_carts` (`share_id`, `owner_id`, `shared_with`, `expires_at`, `created_at`, `status`) VALUES
+('0a935b8e-b838-4900-832b-996d4a7ffc93', 58, 60, '2025-06-16 21:19:07', '2025-06-15 21:19:07', 'expired'),
+('d2832328-610f-427e-9d21-145bc45f7729', 58, 60, '2025-06-16 21:16:00', '2025-06-15 21:16:00', 'expired');
 
 -- --------------------------------------------------------
 
@@ -1077,7 +855,10 @@ INSERT INTO `user_rewards` (`id`, `user_id`, `order_id`, `points`, `description`
 (377, 58, NULL, -100, 'Redeemed for Bronze Rewardz', '2025-06-14 00:18:08'),
 (378, 58, NULL, -200, 'Redeemed for Silver Reward', '2025-06-14 00:18:10'),
 (379, 58, NULL, -500, 'Redeemed for Gold Reward', '2025-06-14 20:12:55'),
-(380, 58, '9922841', 7, 'Earned points from order #9922841', '2025-06-14 21:08:09');
+(380, 58, '9922841', 7, 'Earned points from order #9922841', '2025-06-14 21:08:09'),
+(381, 58, NULL, -100, 'Redeemed for Bronze Rewardz', '2025-06-14 23:23:10'),
+(382, 58, '1276483', 1, 'Earned points from order #1276483', '2025-06-15 21:16:32'),
+(383, 58, '5716938', 11, 'Earned points from order #5716938', '2025-06-15 21:21:18');
 
 --
 -- Indexes for dumped tables
@@ -1106,9 +887,7 @@ ALTER TABLE `cart`
 ALTER TABLE `orders`
   ADD PRIMARY KEY (`order_id`),
   ADD KEY `user_id` (`user_id`),
-  ADD KEY `accepted_by` (`accepted_by`),
-  ADD KEY `idx_shared_cart` (`shared_cart_id`),
-  ADD KEY `idx_shared_with` (`shared_with_id`);
+  ADD KEY `accepted_by` (`accepted_by`);
 
 --
 -- Indexes for table `order_items`
@@ -1197,19 +976,19 @@ ALTER TABLE `user_rewards`
 -- AUTO_INCREMENT for table `available_discounts`
 --
 ALTER TABLE `available_discounts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
 
 --
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491658;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491671;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1754;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1759;
 
 --
 -- AUTO_INCREMENT for table `order_reports`
@@ -1239,7 +1018,7 @@ ALTER TABLE `product_choices`
 -- AUTO_INCREMENT for table `product_reports`
 --
 ALTER TABLE `product_reports`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `receipt_settings`
@@ -1251,7 +1030,7 @@ ALTER TABLE `receipt_settings`
 -- AUTO_INCREMENT for table `reward_tiers`
 --
 ALTER TABLE `reward_tiers`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -1263,7 +1042,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_rewards`
 --
 ALTER TABLE `user_rewards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=381;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=384;
 
 --
 -- Constraints for dumped tables
