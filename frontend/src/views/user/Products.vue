@@ -3,10 +3,7 @@
         <Navbar :username="username" @logout="showLogoutModal = true" />
         
         <div class="product-content">
-            <div class="page-header">
-                <h1><i class="fas fa-store"></i> Product Catalog</h1>
-            </div>
-<div class="filters-container">
+            <div class="filters-container">
                 <div class="search-filter">
                     <div class="input-with-icon">
                         <i class="fas fa-search"></i>

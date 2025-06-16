@@ -1,9 +1,6 @@
 <template>
-  <div class="home-container">
-    <Navbar 
-      :username="username"
-      @logout="showLogoutModal = true"
-    />
+    <div class="home-container">
+        <Navbar :username="username" @logout="showLogoutModal = true" />
     
     <section class="hero">
       <div class="hero-content">
@@ -263,10 +260,12 @@ export default {
   
 <style scoped>
 .home-container {
-  font-family: Arial, sans-serif;
-  min-height: 100vh;
-  background-color: #f8f9fa;
-  overflow-x: hidden;
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+    color: #2a3f2a; /* Darker green text for contrast */
+    width: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 /* Hero Section */

@@ -775,7 +775,7 @@ export default {
 <style scoped>
 /* Base Styles */
 .product-detail-container {
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-family: Arial, sans-serif;  
   min-height: 100vh;
   background-color: #f8f9fa;
   color: #2a3f2a; /* Darker green text for contrast */
