@@ -77,7 +77,17 @@
                                 </td>
                                 <td>{{ product.name }}</td>
                                 <td>{{ product.category }}</td>
-                                <td>{{ formatPrice(product.price) }}</td>
+                                <td>
+                                    <template v-if="product.choices && product.choices.length > 0 && getPriceRange(product).min !== getPriceRange(product).max">
+                                        {{ formatPrice(getPriceRange(product).min) }} - {{ formatPrice(getPriceRange(product).max) }}
+                                    </template>
+                                    <template v-else-if="product.choices && product.choices.length > 0">
+                                        {{ formatPrice(getPriceRange(product).min) }}
+                                    </template>
+                                    <template v-else>
+                                        {{ formatPrice(product.price) }}
+                                    </template>
+                                </td>
                                 <td>
                                     <div class="options-count">
                                         <span v-if="product.choices && product.choices.length">
@@ -477,6 +487,26 @@ export default {
         }
     },
     methods: {
+        getPriceRange(product) {
+            if (!product.choices || !product.choices.length) {
+                return { min: product.price, max: product.price };
+            }
+            
+            let min = Infinity;
+            let max = 0;
+            
+            product.choices.forEach(choice => {
+                if (choice.price && parseFloat(choice.price) > 0) {
+                    min = Math.min(min, parseFloat(choice.price));
+                    max = Math.max(max, parseFloat(choice.price));
+                }
+            });
+            
+            if (min === Infinity) min = parseFloat(product.price) || 0;
+            if (max === 0) max = parseFloat(product.price) || 0;
+            
+            return { min, max };
+        },
         toggleSortDirection() {
             this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
         },
