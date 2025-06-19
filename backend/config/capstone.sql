@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jun 16, 2025 at 09:01 AM
+-- Generation Time: Jun 19, 2025 at 09:40 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -50,7 +50,8 @@ INSERT INTO `available_discounts` (`id`, `user_id`, `amount`, `created_at`, `exp
 (55, 58, 50.00, '2025-06-14 00:18:08', '2025-07-14 00:18:08', 0, NULL),
 (56, 58, 100.00, '2025-06-14 00:18:10', '2025-07-14 00:18:10', 0, NULL),
 (57, 58, 250.00, '2025-06-14 20:12:55', '2025-07-14 20:12:55', 0, NULL),
-(58, 58, 50.00, '2025-06-14 23:23:10', '2025-07-14 23:23:10', 1, '9284842');
+(58, 58, 50.00, '2025-06-14 23:23:10', '2025-07-14 23:23:10', 1, '9284842'),
+(59, 58, 100.00, '2025-06-19 08:43:55', '2025-07-19 08:43:55', 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -291,7 +292,6 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (1631, '3464693', 31, 1, 301.00, NULL),
 (1632, '3464693', 32, 1, 0.00, NULL),
 (1633, '2734169', 90, 3, 23.00, NULL),
-(1634, '2734169', 87, 1, 25.00, NULL),
 (1635, '0318801', 85, 1, 20.00, NULL),
 (1636, '0318801', 51, 1, 0.00, NULL),
 (1637, '0318801', 37, 1, 189.00, NULL),
@@ -331,7 +331,6 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (1671, '8176548', 32, 2, 0.00, NULL),
 (1672, '8176548', 58, 1, 617.00, NULL),
 (1673, '0370997', 61, 2, 599.00, NULL),
-(1674, '0370997', 87, 1, 25.00, NULL),
 (1675, '6304317', 83, 3, 95.00, NULL),
 (1676, '6304317', 74, 1, 93.00, NULL),
 (1677, '1917367', 51, 2, 0.00, NULL),
@@ -471,7 +470,8 @@ INSERT INTO `order_reviews` (`id`, `order_id`, `user_id`, `rating`, `comment`, `
 (5, '4562216', 58, 4, NULL, '2025-06-13 18:36:09', '2025-06-13 18:36:09'),
 (6, '3661468', 58, 5, NULL, '2025-06-13 22:14:04', '2025-06-13 22:14:04'),
 (7, '7826305', 58, 5, NULL, '2025-06-14 00:17:58', '2025-06-14 00:17:58'),
-(8, '8510875', 58, 5, 'zxczxczxc', '2025-06-14 02:09:08', '2025-06-14 21:30:43');
+(8, '8510875', 58, 5, 'zxczxczxc', '2025-06-14 02:09:08', '2025-06-14 21:30:43'),
+(9, '9922841', 58, 5, NULL, '2025-06-16 09:04:58', '2025-06-16 09:04:58');
 
 -- --------------------------------------------------------
 
@@ -510,7 +510,7 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (48, 'Argentina Corned Beef', 'No. 1 corned beef brand that has the food qualities consumer most value', 27.50, 100, 'Canned Goods', 'https://i.ibb.co/W46GfnGB/d19d7b986670.png', '2025-04-01 09:32:37', '2025-04-08 21:09:32'),
 (50, 'Primera Light 1Liter', 'a unique 55-proof brandy liqueur masterpiece', 185.00, 17, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 09:41:56', '2025-06-11 19:20:28'),
 (51, 'May Sparkle Red', 'A non-alcoholic beverage from freshly-pressed and carefully-selected Belgium Grapes.', 0.00, 6, 'Beverages', 'https://i.ibb.co/Wv5gFDjr/d75fc84e5138.png', '2025-04-01 09:43:28', '2025-04-01 17:04:28'),
-(52, 'Novellino 750mL', 'Novellino Wild Blackberry is a casual wine vinified from choice vitis vinifera grapes in the tradition of fine Italian winemaking', 270.00, 5, 'Beverages', 'https://i.ibb.co/278v021y/05b8707b2772.png', '2025-04-01 09:45:11', '2025-06-12 08:43:06'),
+(52, 'Novellino 750mL', 'Novellino Wild Blackberry is a casual wine vinified from choice vitis vinifera grapes in the tradition of fine Italian winemaking', 270.00, 5, 'Beverages', 'https://i.ibb.co/278v021y/05b8707b2772.png', '2025-04-01 09:45:11', '2025-06-19 09:02:00'),
 (53, 'The Bar Dry Gin 335mL ', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 6, 'Beverages', 'https://i.ibb.co/jkNpPRn2/4cd7e58417a4.png', '2025-04-01 09:46:37', '2025-04-17 07:31:00'),
 (54, 'The Bar Pink 335mL', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 58, 'Beverages', 'https://i.ibb.co/hxGrvfmq/a6f137b5983c.png', '2025-04-01 09:47:16', '2025-05-19 06:14:33'),
 (55, 'The Bar Lime 335mL', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 6, 'Beverages', 'https://i.ibb.co/8gggkGVx/49ad7f791839.png', '2025-04-01 09:47:46', '2025-04-01 17:18:04'),
@@ -545,14 +545,49 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (84, 'Dip Catsup Gallon', 'often used as a dip or a topping for various dishes, characterized by its sweet and tangy flavor', 99.00, 12, 'Condiments', 'https://i.ibb.co/KjDjv9WP/00bb85cf904b.png', '2025-04-09 07:15:01', '2025-04-09 07:15:01'),
 (85, '555 Karne Norte', ' a locally manufactured corned beef, known for its quality and affordability, made with selected beef, hashed, and hygienically processed under international standards, ready to eat. ', 20.00, 30, 'Canned Goods', 'https://i.ibb.co/xtWHP4pc/d786693a1768.png', '2025-04-09 07:17:10', '2025-06-11 15:32:15'),
 (86, '555 Tausi', 'a popular Filipino canned food featuring fried sardines in a savory-sweet sauce with the distinct flavor of fermented black beans (tausi)', 33.00, 10, 'Canned Goods', 'https://i.ibb.co/B5zmwwY5/47dcc1b0cebc.png', '2025-04-09 07:18:12', '2025-04-09 07:18:12'),
-(87, 'Mega Sardines', 'the number one sardines brand in the Philippines, are known for their freshness, caught and canned within 12 hours', 25.00, 1000, 'Canned Goods', 'https://i.ibb.co/G4ZDkXmq/afdc08c9788a.png', '2025-04-09 07:22:00', '2025-04-09 07:22:00'),
-(88, 'Ligo Sardines', 'well-known for its excellent taste worldwide', 26.50, 200, 'Canned Goods', 'https://i.ibb.co/hJpmZjDM/09da9c6b37b1.png', '2025-04-09 07:23:47', '2025-04-09 07:23:47'),
 (89, 'Lucky 7 Sardines', ' a budget-friendly, canned sardine option in tomato sauce, known for their savory taste and affordability, making them a popular choice for daily meals. ', 21.50, 45, 'Canned Goods', 'https://i.ibb.co/JRzY9m7R/054a358ac5dc.png', '2025-04-09 07:26:01', '2025-04-22 06:34:17'),
 (90, 'Atami Sardines', 'A delightful and flavorful seafood choice that combines the natural goodness of sardines', 23.00, 50, 'Canned Goods', 'https://i.ibb.co/sdNR2j4f/0f5b60542f2a.png', '2025-04-09 07:28:21', '2025-04-09 07:28:21'),
 (91, 'Master Sardines', 'known for their premium quality, sourced from the depths of the ocean and expertly preserved to retain natural flavors and nutritional goodness, with a focus on a quick catch-to-can process. ', 25.50, 99, 'Canned Goods', 'https://i.ibb.co/ksGrTmWD/8c3590d7e350.png', '2025-04-09 07:31:56', '2025-06-13 18:46:19'),
 (92, 'trytry test', 'jm garis', 100.00, 20, 'Beverages', 'https://i.ibb.co/pjrnNm07/59cc32c572c3.jpg', '2025-05-19 07:05:23', '2025-06-11 16:38:19'),
 (95, 'trytryzxczxc', 'zxc', 0.00, 100, 'Coffee and Creamer', 'https://i.ibb.co/gbgf00bt/65560c328868.jpg', '2025-06-14 01:53:44', '2025-06-15 20:47:37'),
-(96, 'trytryzxczxctry', 'zxcxzcxzczx', 100.00, 40, 'Coffee and Creamer', 'https://i.ibb.co/DH46fpwY/16f540a83f32.jpg', '2025-06-14 02:05:40', '2025-06-15 20:55:01');
+(96, 'trytryzxczxctry', 'zxcxzcxzczx', 100.00, 40, 'Coffee and Creamer', 'https://i.ibb.co/DH46fpwY/16f540a83f32.jpg', '2025-06-14 02:05:40', '2025-06-15 20:55:01'),
+(97, 'Saba Mackarel', 'Saba mackerel, also known as Japanese mackerel or blue mackerel, is a flavorful and oily fish, particularly prized in Japanese cuisine', 0.00, 120, 'Canned Goods', 'https://i.ibb.co/ZRkbT3RJ/0e0921a17a8a.png', '2025-06-18 20:49:21', '2025-06-18 23:20:57'),
+(98, 'Mega Mackarel', 'Mega Mackerel is a canned mackerel product known for its big, flavorful chunks and versatility in Filipino dishes.', 33.00, 24, 'Canned Goods', 'https://i.ibb.co/6cB1crnb/dd7ac057568c.png', '2025-06-18 20:51:19', '2025-06-18 20:51:19'),
+(99, 'Saba Sardines Large', 'Saba sardines are a popular brand of canned sardines known for their firm, meaty texture and distinct flavor, particularly in the Philippines. ', 0.00, 100, 'Canned Goods', 'https://i.ibb.co/rfs5Z80w/b381e12b66d0.png', '2025-06-18 20:53:45', '2025-06-19 09:30:25'),
+(100, 'Saba Squid', 'Saba squid, specifically referring to products like \"Saba Squid in Soy Sauce\" or \"Saba Squid Sisig,\" is a Filipino delicacy featuring tender squid pieces cooked and preserved in a savory sauce, often with soy sauce and chili. ', 0.00, 70, 'Canned Goods', 'https://i.ibb.co/0jfpC22s/6b0257b01d55.png', '2025-06-18 20:56:21', '2025-06-19 09:30:44'),
+(101, 'Mega Squid', 'A mega squid, as depicted in The Future is Wild, is a large, terrestrial, omnivorous animal, standing 4 meters tall and weighing 8 tonnes, with a body structure that is a mix of squid and terrestrial animal features', 0.00, 30, 'Canned Goods', 'https://i.ibb.co/CsXsKJQT/bb0835eb7714.png', '2025-06-18 20:58:29', '2025-06-18 23:25:50'),
+(102, 'Rosebowl Sardines', 'They are a classic and well-regarded brand, often described as a favorite among many generations. The sardines are packed in a flavorful tomato sauce, and some varieties include a spicy chili kick', 0.00, 100, 'Canned Goods', 'https://i.ibb.co/MyCtkwpC/da06407e203a.png', '2025-06-18 21:01:09', '2025-06-19 09:28:34'),
+(103, 'MaLing', 'Maling is a brand of canned luncheon meat, often made with pork, that is popular in Asia, particularly in the Philippines and other Southeast Asian countries. It\'s known for its savory and slightly salty flavor, smooth texture, and versatility in various dishes. ', 0.00, 48, 'Canned Goods', 'https://i.ibb.co/SzRjMZP/499e0e083344.png', '2025-06-18 21:03:03', '2025-06-19 09:31:03'),
+(104, 'TigaBunga Squid', 'Tiga Bunga is a brand known for its canned squid in natural ink', 0.00, 62, 'Canned Goods', 'https://i.ibb.co/hNbLLDr/0afd5347f839.png', '2025-06-18 21:05:07', '2025-06-19 09:37:51'),
+(105, 'Reno Liver Spread', 'Reno Liver Spread is a Filipino canned liver spread, typically made from a mixture of pureed pork liver, poultry meat, cereals, vegetable oil, and spices.', 0.00, 160, 'Canned Goods', 'https://i.ibb.co/ZRds181S/2d7e7dcbc1ad.png', '2025-06-18 21:11:53', '2025-06-19 09:29:20'),
+(106, 'Philips Sausage', 'Philips is a well-known food brand in the Philippines, recognized for its canned goods, particularly its Vienna sausage. Philips Vienna Sausage is known for its quality and affordable price, making it a popular choice for Filipino families.', 26.00, 30, 'Canned Goods', 'https://i.ibb.co/1fXgkHCY/93501a584679.png', '2025-06-18 21:13:30', '2025-06-18 21:13:30'),
+(107, 'Koolers per Box', 'Koolers is a brand of juice drinks known for their fruity and refreshing flavors, often marketed as a fun and healthy way to start the day', 0.00, 200, 'Beverages', 'https://i.ibb.co/zhdYJH9K/9cd95abc48cc.png', '2025-06-18 21:18:31', '2025-06-19 09:38:09'),
+(108, 'Wilkins 7 Liter', 'a brand of purified drinking water, recognized for its quality and safety.', 88.00, 12, 'Beverages', 'https://i.ibb.co/yn8NpYs2/67e034629cb9.png', '2025-06-18 21:20:07', '2025-06-18 21:20:07'),
+(109, 'Refresh Mineral 350mL (sold per case)', 'a brand of bottled water known for its natural, clean taste, sourced directly from springs, and its eco-friendly packaging', 150.00, 20, 'Beverages', 'https://i.ibb.co/F13xwP6/641c5d6df4ec.png', '2025-06-18 21:21:40', '2025-06-18 21:21:40'),
+(110, 'Cobra (per case)', 'Cobra is an energy drink, primarily available in the Philippines, known for its orange flavor and ability to provide an energy boost', 207.00, 20, 'Beverages', 'https://i.ibb.co/n8ZzykdX/79aa8145fe83.png', '2025-06-18 21:24:11', '2025-06-18 21:24:11'),
+(111, 'Sting (per case)', 'Sting is a carbonated energy drink, produced by PepsiCo Vietnam, designed to provide a boost of energy and focus.', 200.00, 30, 'Beverages', 'https://i.ibb.co/DfwDcqLh/ad3f161a5e26.png', '2025-06-18 21:25:06', '2025-06-18 21:25:06'),
+(112, 'Mountain Dew (per case)', 'Mountain Dew is a citrus-flavored, caffeinated soft drink known for its unique, tangy taste and vibrant, slightly neon green color. It\'s a popular choice for those seeking a refreshing, energizing beverage, often enjoyed during activities or with meals.', 192.00, 30, 'Beverages', 'https://i.ibb.co/YBRdJfsP/d62cc77c8cd9.png', '2025-06-18 21:25:58', '2025-06-18 21:25:58'),
+(113, 'Coke/Royal/Sprite Mismo (per case)', 'Coke, Royal, and Sprite, all from The Coca-Cola Company, are popular carbonated soft drinks.', 0.00, 200, 'Beverages', 'https://i.ibb.co/ksMvMh8H/eccf0110a173.png', '2025-06-18 21:28:32', '2025-06-18 21:31:28'),
+(114, '1.5L Coke/Royal/Sprite (per case)', 'Coke, Royal, and Sprite, all from The Coca-Cola Company, are popular carbonated soft drinks.', 0.00, 30, 'Beverages', 'https://i.ibb.co/Y7W1c1pc/5ca33bf6a13a.png', '2025-06-18 21:31:03', '2025-06-19 09:38:30'),
+(115, 'Rebisco Crackers', 'Rebisco Crackers are a classic Filipino snack known for their light, crispy texture and subtle, slightly salty taste. ', 58.00, 10, 'Biscuits', 'https://i.ibb.co/dsfRcZN6/130d3bde1284.png', '2025-06-18 22:31:05', '2025-06-18 22:31:05'),
+(116, 'Flavored Rebisco Crackers', 'Rebisco offers a variety of flavored cracker sandwiches with creamy fillings. Popular flavors include chocolate, strawberry, cream, and butter, often sold in packs of 10. Some also feature peanut butter or pastillas fillings. Rebisco also offers whole wheat crackers and other flavored options like honey butter. ', 0.00, 90, 'Biscuits', 'https://i.ibb.co/9k7PNJ5m/4a91171d5a1d.png', '2025-06-18 22:34:03', '2025-06-19 09:38:48'),
+(117, 'Frootees', 'Frootees are a line of flavored shortcake cookies, marketed as a nutritious and filling snack for kids. They are known for being high in Vitamin C and Zinc, which are believed to boost the immune system and potentially improve focus.', 58.00, 150, 'Biscuits', 'https://i.ibb.co/yBPRRSdC/ab0f7e9ac462.png', '2025-06-18 22:38:31', '2025-06-18 22:38:31'),
+(118, 'Rebisco Extreme', 'Rebisco Extreme is a chocolate-flavored biscuit that features a combination of chocolate crackers, a chocolate filling, a chocolate coating, and chocolate sprinkles', 58.00, 150, 'Biscuits', 'https://i.ibb.co/S73MB8X3/41a3498b084b.png', '2025-06-18 22:39:14', '2025-06-18 22:39:14'),
+(119, 'Hansel Crackers', '12 pieces of creamy, sweet-salty plain crackers perfect for sharing with the family! Best paired with coffee, juice, spreads and toppings to cap off a long day with your loved ones!', 58.00, 150, 'Biscuits', 'https://i.ibb.co/TD3tB6wp/ee0a6c972314.png', '2025-06-18 22:40:24', '2025-06-18 22:40:24'),
+(120, 'Flavored Hansel', 'Hansel sandwiches are soft, salty-sweet biscuit sandwiches with a creamy filling, available in a variety of flavors. They are known for their distinct aroma and are a popular Filipino snack. The \"Flavor Bunch\" variety includes Mocha, Milk, Chocolate, Butter, and Milky Strawberry flavors. ', 0.00, 750, 'Biscuits', 'https://i.ibb.co/bMM1N0hJ/e97cce0da8f0.png', '2025-06-18 22:44:52', '2025-06-19 09:39:05'),
+(121, 'Combi', 'Combi biscuits, specifically the Rebisco Combi Triple Choco, are a snack consisting of a chocolate cream filling sandwiched between a crunchy chocolate cracker and a chocolate wafer.', 62.00, 60, 'Biscuits', 'https://i.ibb.co/1JjyTthp/80e642aa710b.png', '2025-06-18 22:45:46', '2025-06-18 22:45:46'),
+(122, 'Choco Mucho (per box)', 'Choco Mucho biscuits are bite-sized treats known for their combination of rolled wafer, caramel, rice crispies, and creamy chocolate. ', 0.00, 50, 'Biscuits', 'https://i.ibb.co/67LSfJWD/6addd661a002.png', '2025-06-18 22:48:20', '2025-06-18 23:29:31'),
+(123, 'Wafertime Rich Cream', 'Wafertime Rich Cream biscuits are flat wafer sandwiches with a rich, creamy filling. Rebisco\'s Wafertime Rich Cream in particular, features a deliciously rich chocolate filling abundantly present in every bite. ', 70.00, 20, 'Biscuits', 'https://i.ibb.co/G3ftYQdJ/3ee6834bd091.png', '2025-06-18 22:50:17', '2025-06-18 22:50:17'),
+(124, 'Super Thin ', 'Super thin biscuits are light, crispy, and delicate crackers, often described as having the texture of a chip. They are known for their thinness and satisfying crunch, often paired with a subtle sweetness and a hint of milk flavor. ', 0.00, 20, 'Biscuits', 'https://i.ibb.co/5X7t0yFM/8fb7551ce701.png', '2025-06-18 22:51:38', '2025-06-18 23:20:35'),
+(125, 'Bravo Biscuit', 'known for their unique sweet-salty taste and are packed with vitamins B1, B2, and E. They feature a blend of sugar and sesame seeds, offering a distinctive flavor profile', 58.00, 20, 'Biscuits', 'https://i.ibb.co/Kc304qg6/fd1dbaceef5e.png', '2025-06-18 22:52:55', '2025-06-18 22:52:55'),
+(126, 'Rebisco Honey Butter', 'Rebisco Honey Butter Crackers are crunchy, sweet and savory biscuits. They are flavored with honey and butter, and have a subtle sweetness from the honey and a rich, buttery taste.', 58.00, 10, 'Biscuits', 'https://i.ibb.co/WvyTfVmf/b17663b06ee9.png', '2025-06-18 23:07:04', '2025-06-18 23:07:04'),
+(127, 'Fudgee Bar', 'Fudgee Barr is a popular Philippine snack, Fudgee Barr is available in various flavors, including chocolate, macapuno (coconut), milk, vanilla, mocha, and salted caramel. A combo pack with assorted flavors is also available. ', 0.00, 200, 'Biscuits', 'https://i.ibb.co/W4FMNyVL/6c0d792aad26.png', '2025-06-18 23:11:39', '2025-06-19 09:39:32'),
+(128, 'Cupp Keyk Assorted', 'Cupp Keyk Assorted is a selection of Filipino-style mini cupcakes with a variety of flavors, known for their moist and delicious cake base and enjoyable toppings.', 67.00, 10, 'Biscuits', 'https://i.ibb.co/dJzzQhZQ/f0fd56b261e3.png', '2025-06-18 23:13:43', '2025-06-18 23:13:43'),
+(129, 'Topps Sarap ', 'Topps Sarap is a brand of compact, single-serving cupcakes that are known for their rich and creamy filling, thick frosting, and toppings like star sprinkles', 0.00, 30, 'Biscuits', 'https://i.ibb.co/JFxPhLw5/3f865e3665f4.png', '2025-06-18 23:15:47', '2025-06-18 23:20:00'),
+(130, 'Brownie Break', 'Brownie Break is a brand of individually wrapped, chewy, bite-sized brownies.', 75.00, 30, 'Biscuits', 'https://i.ibb.co/Ld2y9y6C/3f859b3e89e7.png', '2025-06-18 23:17:49', '2025-06-18 23:17:49'),
+(131, '555 Karne Norte', ' a locally manufactured corned beef, known for its quality and affordability, made with selected beef, hashed, and hygienically processed under international standards, ready to eat. ', 0.00, 100, 'Canned Goods', 'https://i.ibb.co/XxwWhW35/12816c9121e9.png', '2025-06-19 00:18:16', '2025-06-19 00:18:42'),
+(132, 'Ligo Sardines', 'Ligo sardines, a popular Filipino brand, are known for their high-quality sardines packed in a flavorful tomato sauce.', 0.00, 200, 'Canned Goods', 'https://i.ibb.co/xtf07ypV/9d9995cb1592.png', '2025-06-19 00:22:41', '2025-06-19 09:40:05'),
+(133, 'Mega Sardines', 'Mega Sardines, the number one sardine brand in the Philippines, is known for its fresh, high-quality sardines caught and canned within 12 hours.', 0.00, 1000, 'Canned Goods', 'https://i.ibb.co/m5N1MgKp/dd37d6c182e1.png', '2025-06-19 00:24:18', '2025-06-19 00:24:30');
 
 -- --------------------------------------------------------
 
@@ -578,7 +613,62 @@ INSERT INTO `product_choices` (`choice_id`, `product_id`, `name`, `price`, `stoc
 (32, 92, '750ml', 90.00, 39, NULL),
 (33, 95, 'Large (480g)', 43.00, 40, 'https://i.ibb.co/3m4qpq3D/c34918e1868b.jpg'),
 (34, 95, '750ml', 50.00, 21, 'https://i.ibb.co/prhX6DF0/1bbb34d00de0.jpg'),
-(35, 96, 'Large (480g)', 43.00, 40, 'https://i.ibb.co/TxfPY88k/89af1b0efc5c.webp');
+(35, 96, 'Large (480g)', 43.00, 40, 'https://i.ibb.co/TxfPY88k/89af1b0efc5c.webp'),
+(36, 97, '155g', 35.50, 100, NULL),
+(37, 97, '425g', 81.00, 20, NULL),
+(38, 99, 'Red', 26.00, 100, NULL),
+(39, 99, 'Green', 26.00, 100, NULL),
+(40, 100, '155g', 54.00, 50, NULL),
+(41, 100, '425g', 118.00, 20, NULL),
+(42, 101, '155', 42.00, 20, NULL),
+(43, 101, '425', 110.00, 10, NULL),
+(44, 102, 'Red', 26.50, 50, NULL),
+(45, 102, 'Green', 26.50, 50, NULL),
+(46, 103, '170g', 67.00, 24, NULL),
+(47, 103, '397g', 131.00, 24, NULL),
+(48, 104, '155g', 45.00, 50, NULL),
+(49, 104, '425g', 100.00, 12, NULL),
+(50, 105, '85g', 31.00, 100, NULL),
+(51, 105, '230g', 66.00, 60, NULL),
+(52, 107, 'Orange', 84.00, 50, NULL),
+(53, 107, 'Grape', 84.00, 50, NULL),
+(54, 107, 'Apple', 84.00, 100, NULL),
+(55, 113, 'Coke Mismo', 203.00, 100, 'https://i.ibb.co/ksMvMh8H/eccf0110a173.png'),
+(56, 113, 'Royal Mismo', 203.00, 50, 'https://i.ibb.co/MyFbvKfP/02fb6e4955f6.png'),
+(57, 113, 'Sprite Mismo', 203.00, 50, 'https://i.ibb.co/B5hQp3zB/c63551d74bd7.png'),
+(58, 114, '1.5 Coke', 722.00, 10, 'https://i.ibb.co/Y7W1c1pc/5ca33bf6a13a.png'),
+(59, 114, '1.5 Royal', 722.00, 10, 'https://i.ibb.co/Zz4TfDHM/de4e35523721.png'),
+(60, 114, '1.5 Sprite', 722.00, 10, 'https://i.ibb.co/wh1VqzsT/8fb0e340de7e.png'),
+(61, 116, 'Cream', 58.00, 18, 'https://i.ibb.co/jZRLqpqn/eaa546f3ae49.png'),
+(62, 116, 'Butter', 58.00, 18, 'https://i.ibb.co/S4mX2Mvc/042caf0a567d.png'),
+(63, 116, 'Strawberry', 18.00, 18, 'https://i.ibb.co/8yHnyym/0b6268a1f20a.png'),
+(64, 116, 'Chocolate', 58.00, 18, 'https://i.ibb.co/Gvm29r3N/954f9a2f6be6.png'),
+(65, 116, 'Flavor Bunch Assorted', 58.00, 18, 'https://i.ibb.co/9k7PNJ5m/4a91171d5a1d.png'),
+(66, 120, 'Hansel Choco', 58.00, 150, 'https://i.ibb.co/nN97krfx/bac16d385dc5.png'),
+(67, 120, 'Hansel Mocha', 58.00, 150, 'https://i.ibb.co/JwMyJZk2/c84e1afc4c18.png'),
+(68, 120, 'Hansel Milk', 58.00, 150, 'https://i.ibb.co/bMM1N0hJ/e97cce0da8f0.png'),
+(69, 120, 'Hansel Butter', 58.00, 150, 'https://i.ibb.co/B5TpHvGS/2960fc9474a9.png'),
+(70, 120, 'Hansel Flavor Bunch', 58.00, 150, 'https://i.ibb.co/Q3vg9YCW/e073221a0f74.png'),
+(71, 122, 'White', 72.00, 25, 'https://i.ibb.co/qFpjX1V7/cfbb7c1d9246.png'),
+(72, 122, 'Choco', 72.00, 25, 'https://i.ibb.co/67LSfJWD/6addd661a002.png'),
+(73, 124, 'Milk', 58.00, 10, 'https://i.ibb.co/5X7t0yFM/8fb7551ce701.png'),
+(74, 124, 'Choco', 58.00, 10, 'https://i.ibb.co/vyTkmP6/3ad414c49332.png'),
+(75, 127, 'Choco', 78.00, 25, 'https://i.ibb.co/fbyDy02/9cc0f97653cc.png'),
+(76, 127, 'Macapuno', 78.00, 25, 'https://i.ibb.co/Y75qVX93/3605d4abd7d2.png'),
+(77, 127, 'Salted Caramel', 78.00, 25, 'https://i.ibb.co/fGBj52Gg/5ef06f784445.png'),
+(78, 127, 'Vanilla', 78.00, 25, 'https://i.ibb.co/DPkvSbpv/4caa36155d8f.png'),
+(79, 127, 'Dark Chocolate', 78.00, 25, 'https://i.ibb.co/pBVXKVtH/6f547241c025.png'),
+(80, 127, 'Mocha', 78.00, 25, 'https://i.ibb.co/TD9sHc57/0c4b2440c6b1.png'),
+(81, 127, 'Milk', 78.00, 25, 'https://i.ibb.co/xty6BCmM/3f789d502d97.png'),
+(82, 127, 'Assorted', 78.00, 25, 'https://i.ibb.co/W4FMNyVL/6c0d792aad26.png'),
+(83, 129, 'Choco', 77.00, 20, 'https://i.ibb.co/JFxPhLw5/3f865e3665f4.png'),
+(84, 129, 'Assorted', 96.00, 10, 'https://i.ibb.co/Z6qVpQcN/f3db2131b5b5.png'),
+(85, 131, '100g', 20.00, 50, NULL),
+(86, 131, '150g', 25.00, 50, NULL),
+(87, 132, 'Green', 26.00, 100, NULL),
+(88, 132, 'Red', 26.00, 100, NULL),
+(89, 133, 'Green', 25.00, 500, NULL),
+(90, 133, 'Red', 25.00, 500, NULL);
 
 -- --------------------------------------------------------
 
@@ -858,7 +948,8 @@ INSERT INTO `user_rewards` (`id`, `user_id`, `order_id`, `points`, `description`
 (380, 58, '9922841', 7, 'Earned points from order #9922841', '2025-06-14 21:08:09'),
 (381, 58, NULL, -100, 'Redeemed for Bronze Rewardz', '2025-06-14 23:23:10'),
 (382, 58, '1276483', 1, 'Earned points from order #1276483', '2025-06-15 21:16:32'),
-(383, 58, '5716938', 11, 'Earned points from order #5716938', '2025-06-15 21:21:18');
+(383, 58, '5716938', 11, 'Earned points from order #5716938', '2025-06-15 21:21:18'),
+(384, 58, NULL, -200, 'Redeemed for Silver Reward', '2025-06-19 08:43:55');
 
 --
 -- Indexes for dumped tables
@@ -976,7 +1067,7 @@ ALTER TABLE `user_rewards`
 -- AUTO_INCREMENT for table `available_discounts`
 --
 ALTER TABLE `available_discounts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT for table `cart`
@@ -1000,19 +1091,19 @@ ALTER TABLE `order_reports`
 -- AUTO_INCREMENT for table `order_reviews`
 --
 ALTER TABLE `order_reviews`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `products_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=97;
+  MODIFY `products_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=134;
 
 --
 -- AUTO_INCREMENT for table `product_choices`
 --
 ALTER TABLE `product_choices`
-  MODIFY `choice_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
+  MODIFY `choice_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
 
 --
 -- AUTO_INCREMENT for table `product_reports`
@@ -1042,7 +1133,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_rewards`
 --
 ALTER TABLE `user_rewards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=384;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=385;
 
 --
 -- Constraints for dumped tables
