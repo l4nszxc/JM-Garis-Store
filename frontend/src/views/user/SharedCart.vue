@@ -30,8 +30,7 @@
                         <h3>{{ item.name }}</h3>
                         <p v-if="item.choice_name" class="choice-info">
                             <i class="fas fa-tag"></i> Option: {{ item.choice_name }}
-                        </p>
-                        <p class="price">Price: ₱{{ (item.price || 0).toFixed(2) }}</p>
+                        </p>                        <p class="price">Price: ₱{{ (parseFloat(item.price) || 0).toFixed(2) }}</p>
                         <p class="quantity">Quantity: {{ item.quantity }}</p>
                     </div>
                 </div>
