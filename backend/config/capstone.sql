@@ -101,7 +101,6 @@ CREATE TABLE `orders` (
 --
 -- Dumping data for table `orders`
 --
-
 INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_at`, `updated_at`, `cancel_reason`, `accepted_by`, `accepted_at`, `cash_amount`, `change_amount`, `customer_name`, `is_physical_order`) VALUES
 ('0049544', 56, 378.00, 'paid', '2025-06-07 13:39:44', '2025-06-15 21:06:47', NULL, 23, NULL, 1111.00, 733.00, NULL, 0),
 ('0062958', 56, 320.50, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
@@ -214,6 +213,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('9868934', 56, 513.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
 ('9922841', 58, 790.00, 'paid', '2025-06-14 21:08:09', '2025-06-15 21:25:09', 'Changed my mind', NULL, NULL, 800.00, 10.00, NULL, 0);
 
+
 -- --------------------------------------------------------
 
 --
@@ -292,7 +292,6 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (1631, '3464693', 31, 1, 301.00, NULL),
 (1632, '3464693', 32, 1, 0.00, NULL),
 (1633, '2734169', 90, 3, 23.00, NULL),
-(1635, '0318801', 85, 1, 20.00, NULL),
 (1636, '0318801', 51, 1, 0.00, NULL),
 (1637, '0318801', 37, 1, 189.00, NULL),
 (1638, '1782065', 61, 1, 599.00, NULL),
@@ -335,7 +334,6 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (1676, '6304317', 74, 1, 93.00, NULL),
 (1677, '1917367', 51, 2, 0.00, NULL),
 (1678, '1917367', 53, 1, 55.00, NULL),
-(1679, '0078361', 85, 3, 20.00, NULL),
 (1680, '3505083', 41, 2, 23.00, NULL),
 (1681, '3505083', 52, 2, 270.00, NULL),
 (1682, '0166286', 34, 1, 141.00, NULL),
@@ -374,7 +372,6 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (1715, '5682030', 75, 10, 54.00, NULL),
 (1716, '5682030', 74, 5, 93.00, NULL),
 (1717, '5682030', 63, 100, 23.00, NULL),
-(1718, '8634793', 85, 20, 20.00, NULL),
 (1719, '8634793', 82, 20, 8.00, NULL),
 (1720, '8436968', 63, 1, 23.00, NULL),
 (1721, '4970734', 50, 3, 185.00, NULL),
@@ -532,7 +529,7 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (71, 'Hunts Pork and Beans', '#1 brand of Pork & Beans in the Philippines. It is made from high quality Great Northern Beans and real pork bits covered in rich, thick, sweet tomato sauce.', 25.00, 50, 'Canned Goods', 'https://i.ibb.co/rGVdMcgd/716c7cd11ed1.png', '2025-04-08 22:39:42', '2025-04-08 22:40:04'),
 (72, 'Bear Brand', ' a Nestlé-owned milk brand, particularly popular in the Philippines, offering both sterilized milk and fortified powdered milk drinks, known for providing essential nutrients and supporting overall health and well-being. ', 37.00, 50, 'Milk and Chocolate Drink', 'https://i.ibb.co/1fKNBZTT/b2969e594b9d.png', '2025-04-08 22:52:24', '2025-04-08 22:52:24'),
 (73, 'Bear Brand Adult', 'a powdered milk drink specially formulated for adults aged 19-29, designed to provide essential nutrients, including calcium, vitamin D, and B-vitamins, to support energy and immunity, and help close daily nutrition gaps. ', 98.00, 14, 'Milk and Chocolate Drink', 'https://i.ibb.co/3mr1fM35/60153400556e.png', '2025-04-08 22:58:08', '2025-04-20 17:00:51'),
-(74, 'Bear Brand Choco', ' a chocolate-flavored powdered milk drink fortified with essential nutrients like iron, zinc, and vitamin C, designed for individuals aged 3 and up to support strong immunity and overall well-being', 93.00, 20, 'Milk and Chocolate Drink', 'https://i.ibb.co/nMPC557v/b9527d3d54b3.png', '2025-04-08 23:00:50', '2025-06-11 16:38:11'),
+(74, 'Bear Brand Choco (per tie)', ' a chocolate-flavored powdered milk drink fortified with essential nutrients like iron, zinc, and vitamin C, designed for individuals aged 3 and up to support strong immunity and overall well-being', 93.00, 0, 'Milk and Chocolate Drink', 'https://i.ibb.co/nMPC557v/b9527d3d54b3.png', '2025-04-08 23:00:50', '2025-06-19 07:42:14'),
 (75, 'Milo', 'a chocolate-flavored malted beverage powder created by Nestlé, known for its unique choco-malty flavor and often mixed with milk or water to create a nutritious and delicious drink, especially popular among children and those seeking an energy boost. ', 54.00, 5, 'Milk and Chocolate Drink', 'https://i.ibb.co/7NrmLyxz/6d157cac0a1f.png', '2025-04-08 23:05:20', '2025-06-11 15:29:15'),
 (76, 'Birch Tree', ' known for its affordable price and high-quality nutrition, with a focus on fortified milk for children and adults. ', 51.00, 22, 'Milk and Chocolate Drink', 'https://i.ibb.co/xK9CjyBV/e407420a9dcb.png', '2025-04-08 23:10:11', '2025-04-20 17:03:16'),
 (77, 'Del Monte Ketchup', 'made from real, high-quality tomatoes, naturally contains lycopene, and is guaranteed to have no preservatives, offering a rich tomato flavor and a sweet-sour taste for delicious dips and meals', 49.00, 18, 'Condiments', 'https://i.ibb.co/jmzv3ZM/728ac9940fe7.png', '2025-04-09 06:48:17', '2025-06-14 01:16:24'),
@@ -543,12 +540,12 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (82, 'Laurel per Tie', 'is an evergreen plant used to add flavor to dishes. It is used in cuisines all over the world for flavoring especially stews and broths, marinades, meat and fish dishes, gravies, and game.', 8.00, 30, 'Condiments', 'https://i.ibb.co/1Gg3Rqmt/c68fa580806f.png', '2025-04-09 07:11:30', '2025-06-11 15:32:15'),
 (83, 'Mafran Banana Catsup', 'formulated from choice spices, natural flavor and aroma of banana', 95.00, 12, 'Condiments', 'https://i.ibb.co/jP5X36rq/dc20ac6e0fce.png', '2025-04-09 07:13:42', '2025-04-09 07:13:42'),
 (84, 'Dip Catsup Gallon', 'often used as a dip or a topping for various dishes, characterized by its sweet and tangy flavor', 99.00, 12, 'Condiments', 'https://i.ibb.co/KjDjv9WP/00bb85cf904b.png', '2025-04-09 07:15:01', '2025-04-09 07:15:01'),
-(85, '555 Karne Norte', ' a locally manufactured corned beef, known for its quality and affordability, made with selected beef, hashed, and hygienically processed under international standards, ready to eat. ', 20.00, 30, 'Canned Goods', 'https://i.ibb.co/xtWHP4pc/d786693a1768.png', '2025-04-09 07:17:10', '2025-06-11 15:32:15'),
 (86, '555 Tausi', 'a popular Filipino canned food featuring fried sardines in a savory-sweet sauce with the distinct flavor of fermented black beans (tausi)', 33.00, 10, 'Canned Goods', 'https://i.ibb.co/B5zmwwY5/47dcc1b0cebc.png', '2025-04-09 07:18:12', '2025-04-09 07:18:12'),
 (89, 'Lucky 7 Sardines', ' a budget-friendly, canned sardine option in tomato sauce, known for their savory taste and affordability, making them a popular choice for daily meals. ', 21.50, 45, 'Canned Goods', 'https://i.ibb.co/JRzY9m7R/054a358ac5dc.png', '2025-04-09 07:26:01', '2025-04-22 06:34:17'),
 (90, 'Atami Sardines', 'A delightful and flavorful seafood choice that combines the natural goodness of sardines', 23.00, 50, 'Canned Goods', 'https://i.ibb.co/sdNR2j4f/0f5b60542f2a.png', '2025-04-09 07:28:21', '2025-04-09 07:28:21'),
 (91, 'Master Sardines', 'known for their premium quality, sourced from the depths of the ocean and expertly preserved to retain natural flavors and nutritional goodness, with a focus on a quick catch-to-can process. ', 25.50, 99, 'Canned Goods', 'https://i.ibb.co/ksGrTmWD/8c3590d7e350.png', '2025-04-09 07:31:56', '2025-06-13 18:46:19'),
 (92, 'trytry test', 'jm garis', 100.00, 20, 'Beverages', 'https://i.ibb.co/pjrnNm07/59cc32c572c3.jpg', '2025-05-19 07:05:23', '2025-06-11 16:38:19'),
+
 (95, 'trytryzxczxc', 'zxc', 0.00, 100, 'Coffee and Creamer', 'https://i.ibb.co/gbgf00bt/65560c328868.jpg', '2025-06-14 01:53:44', '2025-06-15 20:47:37'),
 (96, 'trytryzxczxctry', 'zxcxzcxzczx', 100.00, 40, 'Coffee and Creamer', 'https://i.ibb.co/DH46fpwY/16f540a83f32.jpg', '2025-06-14 02:05:40', '2025-06-15 20:55:01'),
 (97, 'Saba Mackarel', 'Saba mackerel, also known as Japanese mackerel or blue mackerel, is a flavorful and oily fish, particularly prized in Japanese cuisine', 0.00, 120, 'Canned Goods', 'https://i.ibb.co/ZRkbT3RJ/0e0921a17a8a.png', '2025-06-18 20:49:21', '2025-06-18 23:20:57'),
@@ -588,6 +585,7 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (131, '555 Karne Norte', ' a locally manufactured corned beef, known for its quality and affordability, made with selected beef, hashed, and hygienically processed under international standards, ready to eat. ', 0.00, 100, 'Canned Goods', 'https://i.ibb.co/XxwWhW35/12816c9121e9.png', '2025-06-19 00:18:16', '2025-06-19 00:18:42'),
 (132, 'Ligo Sardines', 'Ligo sardines, a popular Filipino brand, are known for their high-quality sardines packed in a flavorful tomato sauce.', 0.00, 200, 'Canned Goods', 'https://i.ibb.co/xtf07ypV/9d9995cb1592.png', '2025-06-19 00:22:41', '2025-06-19 09:40:05'),
 (133, 'Mega Sardines', 'Mega Sardines, the number one sardine brand in the Philippines, is known for its fresh, high-quality sardines caught and canned within 12 hours.', 0.00, 1000, 'Canned Goods', 'https://i.ibb.co/m5N1MgKp/dd37d6c182e1.png', '2025-06-19 00:24:18', '2025-06-19 00:24:30');
+
 
 -- --------------------------------------------------------
 
@@ -1140,73 +1138,12 @@ ALTER TABLE `user_rewards`
 --
 
 --
--- Constraints for table `available_discounts`
---
-ALTER TABLE `available_discounts`
-  ADD CONSTRAINT `available_discounts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `available_discounts_ibfk_2` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`);
-
---
 -- Constraints for table `cart`
 --
 ALTER TABLE `cart`
   ADD CONSTRAINT `cart_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `cart_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`products_id`),
   ADD CONSTRAINT `cart_ibfk_3` FOREIGN KEY (`choice_id`) REFERENCES `product_choices` (`choice_id`);
-
---
--- Constraints for table `orders`
---
-ALTER TABLE `orders`
-  ADD CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `orders_ibfk_2` FOREIGN KEY (`accepted_by`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `order_items`
---
-ALTER TABLE `order_items`
-  ADD CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
-  ADD CONSTRAINT `order_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`products_id`);
-
---
--- Constraints for table `order_reports`
---
-ALTER TABLE `order_reports`
-  ADD CONSTRAINT `order_reports_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
-  ADD CONSTRAINT `order_reports_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `order_reviews`
---
-ALTER TABLE `order_reviews`
-  ADD CONSTRAINT `order_reviews_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
-  ADD CONSTRAINT `order_reviews_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `product_choices`
---
-ALTER TABLE `product_choices`
-  ADD CONSTRAINT `product_choices_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`products_id`);
-
---
--- Constraints for table `product_reports`
---
-ALTER TABLE `product_reports`
-  ADD CONSTRAINT `product_reports_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`products_id`),
-  ADD CONSTRAINT `product_reports_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `shared_carts`
---
-ALTER TABLE `shared_carts`
-  ADD CONSTRAINT `shared_carts_ibfk_1` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `shared_carts_ibfk_2` FOREIGN KEY (`shared_with`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `user_rewards`
---
-ALTER TABLE `user_rewards`
-  ADD CONSTRAINT `user_rewards_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
