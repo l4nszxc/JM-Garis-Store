@@ -200,10 +200,20 @@
                         <label for="description">Description</label>
                         <textarea id="description" v-model="editingProduct.description" required></textarea>
                     </div>
-                    
-                    <div class="form-group">
+                      <div class="form-group">
                         <label for="price">Price</label>
-                        <input type="number" id="price" v-model="editingProduct.price" step="0.01" required>
+                        <input 
+                            type="number" 
+                            id="price" 
+                            v-model="editingProduct.price" 
+                            step="0.01" 
+                            required
+                            :disabled="editingChoices.length > 0"
+                            :title="editingChoices.length > 0 ? 'Base price is disabled when using product options' : ''"
+                        >
+                        <small v-if="editingChoices.length > 0" class="help-text">
+                            <i class="fas fa-info-circle"></i> Base price is disabled when using product options
+                        </small>
                     </div>
                     
                     <div class="form-group">
@@ -509,19 +519,30 @@ export default {
         },
         toggleSortDirection() {
             this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-        },
-        addChoice() {
+        },        addChoice() {
             this.editingChoices.push({
                 name: '',
                 price: null,
                 stock: null
             });
             this.newChoiceImages.push(null);
+            
+            // Set base price to 0 when adding the first choice
+            if (this.editingChoices.length === 1) {
+                this.editingProduct.price = 0;
+            }
         },
-        
-        removeChoice(index) {
+          removeChoice(index) {
             this.editingChoices.splice(index, 1);
             this.newChoiceImages.splice(index, 1);
+            
+            // Re-enable base price if all choices are removed
+            if (this.editingChoices.length === 0) {
+                // Only reset if it was previously 0
+                if (parseFloat(this.editingProduct.price) === 0) {
+                    this.editingProduct.price = '';  // Reset to empty so user can enter a valid price
+                }
+            }
         },
         
         handleNewChoiceImageUpload(event, index) {
@@ -686,11 +707,16 @@ export default {
         handleImageError(e) {
             e.target.src = '/img/placeholder.jpg';
         },
-        
-        showEditModal(product) {
+          showEditModal(product) {
             this.editingProduct = { ...product };
             // Load existing choices
             this.editingChoices = product.choices ? [...product.choices] : [];
+            
+            // If there are choices, set base price to 0
+            if (this.editingChoices.length > 0) {
+                this.editingProduct.price = 0;
+            }
+            
             this.newChoiceImages = new Array(this.editingChoices.length).fill(null);
             this.showModal = true;
         },
@@ -742,11 +768,11 @@ export default {
                 
                 // Store current category for later
                 const currentCategory = this.selectedCategory;
-                
-                // Add existing form data
+                  // Add existing form data
                 formData.append('name', this.editingProduct.name);
                 formData.append('description', this.editingProduct.description);
-                formData.append('price', parseFloat(this.editingProduct.price));
+                // Set price to 0 when there are choices
+                formData.append('price', this.editingChoices.length > 0 ? 0 : parseFloat(this.editingProduct.price));
                 formData.append('stock_quantity', parseInt(this.editingProduct.stock_quantity));
                 formData.append('category', this.editingProduct.category);
 
