@@ -16,9 +16,17 @@ class Product {
 
     static async createChoice({ productId, name, price, stock, image }) {
         try {
+            const safe = v => v === undefined ? null : v;
+
             const [result] = await db.execute(
                 'INSERT INTO product_choices (product_id, name, price, stock, image) VALUES (?, ?, ?, ?, ?)',
-                [productId, name, price, stock, image]
+                [
+                    safe(productId),
+                    safe(name),
+                    safe(price),
+                    safe(stock),
+                    safe(image)
+                ]
             );
             return result.insertId;
         } catch (error) {
