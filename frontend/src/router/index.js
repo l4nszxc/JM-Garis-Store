@@ -211,6 +211,15 @@ const routes = [
     component: AdminReports,
     meta: { requiresAuth: true, requiredRole: 'admin' }
   },
+  {
+    path: '/admin/analytics',
+    name: 'AdminAnalytics',
+    component: () => import('../views/admin/AdminAnalytics.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+
+
+
   // Staff Routes
   {
     path: '/staff',

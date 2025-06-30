@@ -23,7 +23,7 @@
       
       <!-- Main Metrics Cards -->
       <div class="metrics-grid">
-        <div class="metric-card income">
+        <div class="metric-card income clickable-card" @click="goToAnalytics('income')">
           <div class="metric-icon">
             <i class="fas fa-money-bill-wave"></i>
           </div>
@@ -34,10 +34,14 @@
               <i :class="stats.salesGrowth >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down'"></i> 
               {{ Math.abs(stats.salesGrowth).toFixed(1) }}% vs previous {{ timeFilter }}
             </p>
+            <div class="card-overlay">
+              <i class="fas fa-chart-line"></i>
+              <span>View Analytics</span>
+            </div>
           </div>
         </div>
         
-        <div class="metric-card daily-income">
+        <div class="metric-card daily-income clickable-card" @click="goToAnalytics('daily')">
           <div class="metric-icon">
             <i class="fas fa-calendar-day"></i>
           </div>
@@ -48,10 +52,14 @@
               <i :class="stats.dailyGrowth >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down'"></i> 
               {{ Math.abs(stats.dailyGrowth).toFixed(1) }}% vs yesterday
             </p>
+            <div class="card-overlay">
+              <i class="fas fa-chart-line"></i>
+              <span>View Analytics</span>
+            </div>
           </div>
         </div>
         
-        <div class="metric-card growth">
+        <div class="metric-card growth clickable-card" @click="goToAnalytics('growth')">
           <div class="metric-icon">
             <i class="fas fa-chart-line"></i>
           </div>
@@ -59,10 +67,14 @@
             <h3>Potential Growth</h3>
             <p class="number">{{ stats.potentialGrowth }}%</p>
             <p class="subtext">Based on 3-month projection</p>
+            <div class="card-overlay">
+              <i class="fas fa-chart-line"></i>
+              <span>View Analytics</span>
+            </div>
           </div>
         </div>
         
-        <div class="metric-card users">
+        <div class="metric-card users clickable-card" @click="goToUsersList()">
           <div class="metric-icon">
             <i class="fas fa-users"></i>
           </div>
@@ -70,6 +82,10 @@
             <h3>Total Users</h3>
             <p class="number">{{ stats.totalUsers }}</p>
             <p class="subtext">{{ stats.newUsers }} new this {{ timeFilter }}</p>
+            <div class="card-overlay">
+              <i class="fas fa-users"></i>
+              <span>View All Users</span>
+            </div>
           </div>
         </div>
       </div>
@@ -309,6 +325,18 @@ export default {
     }
   },
   methods: {
+    goToAnalytics(type) {
+      this.$router.push({
+        path: '/admin/analytics',
+        query: { focus: type }
+      });
+    },
+
+    // Add this new method to navigate to users list
+    goToUsersList() {
+      this.$router.push('/admin/users');
+    },
+
     async changeTopSellingPeriod(period) {
       this.selectedTopSellingPeriod = period;
       await this.fetchTopSellingProducts();
@@ -1183,7 +1211,47 @@ export default {
     gap: 0.5rem;
     z-index: 5;
   }
+.clickable-card {
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
 
+.clickable-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.clickable-card .card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.clickable-card:hover .card-overlay {
+  opacity: 1;
+}
+
+.card-overlay i {
+  font-size: 2rem;
+}
+
+.card-overlay span {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
   /* Responsive Design */
   @media (max-width: 1280px) {
     .metrics-grid {

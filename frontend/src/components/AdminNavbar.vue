@@ -18,6 +18,13 @@
           <span>Dashboard</span>
         </router-link>
 
+        <router-link to="/admin/analytics" class="menu-item" active-class="active">
+          <div class="icon-container analytics-icon">
+            <i class="fas fa-chart-pie"></i>
+          </div>
+          <span>Analytics</span>
+        </router-link>
+
         <router-link to="/admin/forecast" class="menu-item" active-class="active">
           <div class="icon-container forecast-icon">
             <i class="fas fa-chart-bar"></i>
@@ -467,6 +474,10 @@ export default {
   justify-content: center;
   padding: 0 4px;
   border: 2px solid #2c3e50;
+}
+.analytics-icon {
+  background-color: #17a2b8;
+  color: white;
 }
 /* Responsive Styles */
 @media (max-width: 768px) {

@@ -1120,3 +1120,167 @@ exports.getPublicReceiptSettings = async (req, res) => {
         });
     }
 };
+exports.getProductInsights = async (req, res) => {
+  try {
+    // Get highest rated product
+    const [highestRated] = await db.execute(`
+      SELECT 
+        p.products_id,
+        p.name,
+        p.image,
+        AVG(r.rating) as avg_rating,
+        COUNT(r.id) as review_count
+      FROM products p
+      JOIN order_items oi ON p.products_id = oi.product_id
+      JOIN orders o ON oi.order_id = o.order_id
+      JOIN order_reviews r ON o.order_id = r.order_id
+      WHERE o.status = 'paid'
+      GROUP BY p.products_id, p.name, p.image
+      HAVING review_count > 0
+      ORDER BY avg_rating DESC, review_count DESC
+      LIMIT 1
+    `);
+
+    // Get lowest rated product
+    const [lowestRated] = await db.execute(`
+      SELECT 
+        p.products_id,
+        p.name,
+        p.image,
+        AVG(r.rating) as avg_rating,
+        COUNT(r.id) as review_count
+      FROM products p
+      JOIN order_items oi ON p.products_id = oi.product_id
+      JOIN orders o ON oi.order_id = o.order_id
+      JOIN order_reviews r ON o.order_id = r.order_id
+      WHERE o.status = 'paid'
+      GROUP BY p.products_id, p.name, p.image
+      HAVING review_count > 0
+      ORDER BY avg_rating ASC, review_count ASC
+      LIMIT 1
+    `);
+
+    // Get most sold product
+    const [mostSold] = await db.execute(`
+      SELECT 
+        p.products_id,
+        p.name,
+        p.image,
+        SUM(oi.quantity) as total_sold,
+        SUM(oi.price * oi.quantity) as total_revenue
+      FROM products p
+      JOIN order_items oi ON p.products_id = oi.product_id
+      JOIN orders o ON oi.order_id = o.order_id
+      WHERE o.status = 'paid'
+      GROUP BY p.products_id, p.name, p.image
+      ORDER BY total_sold DESC
+      LIMIT 1
+    `);
+
+    // Get least sold product (but has at least 1 sale)
+    const [leastSold] = await db.execute(`
+      SELECT 
+        p.products_id,
+        p.name,
+        p.image,
+        SUM(oi.quantity) as total_sold,
+        SUM(oi.price * oi.quantity) as total_revenue
+      FROM products p
+      JOIN order_items oi ON p.products_id = oi.product_id
+      JOIN orders o ON oi.order_id = o.order_id
+      WHERE o.status = 'paid'
+      GROUP BY p.products_id, p.name, p.image
+      HAVING total_sold > 0
+      ORDER BY total_sold ASC
+      LIMIT 1
+    `);
+
+    res.json({
+      highestRated: highestRated[0] ? {
+        name: highestRated[0].name,
+        image: highestRated[0].image,
+        rating: parseFloat(highestRated[0].avg_rating),
+        reviewCount: parseInt(highestRated[0].review_count)
+      } : null,
+      lowestRated: lowestRated[0] ? {
+        name: lowestRated[0].name,
+        image: lowestRated[0].image,
+        rating: parseFloat(lowestRated[0].avg_rating),
+        reviewCount: parseInt(lowestRated[0].review_count)
+      } : null,
+      mostSold: mostSold[0] ? {
+        name: mostSold[0].name,
+        image: mostSold[0].image,
+        totalSold: parseInt(mostSold[0].total_sold),
+        revenue: parseFloat(mostSold[0].total_revenue)
+      } : null,
+      leastSold: leastSold[0] ? {
+        name: leastSold[0].name,
+        image: leastSold[0].image,
+        totalSold: parseInt(leastSold[0].total_sold),
+        revenue: parseFloat(leastSold[0].total_revenue)
+      } : null
+    });
+  } catch (error) {
+    console.error('Error fetching product insights:', error);
+    res.status(500).json({ message: 'Error fetching product insights' });
+  }
+};
+
+exports.getCustomerMetrics = async (req, res) => {
+  try {
+    // Calculate average order value
+    const [avgOrderValue] = await db.execute(`
+      SELECT AVG(total_amount) as avg_order_value
+      FROM orders
+      WHERE status = 'paid'
+    `);
+
+    // Calculate customer retention rate (customers who made more than one order)
+    const [retentionRate] = await db.execute(`
+      SELECT 
+        COUNT(DISTINCT CASE WHEN order_count > 1 THEN user_id END) as returning_customers,
+        COUNT(DISTINCT user_id) as total_customers,
+        (COUNT(DISTINCT CASE WHEN order_count > 1 THEN user_id END) / COUNT(DISTINCT user_id)) * 100 as retention_rate
+      FROM (
+        SELECT user_id, COUNT(*) as order_count
+        FROM orders
+        WHERE status = 'paid'
+        GROUP BY user_id
+      ) as customer_orders
+    `);
+
+    // Calculate repeat purchase rate
+    const [repeatPurchaseRate] = await db.execute(`
+      SELECT 
+        (COUNT(DISTINCT CASE WHEN order_count > 1 THEN user_id END) / COUNT(DISTINCT user_id)) * 100 as repeat_purchase_rate
+      FROM (
+        SELECT user_id, COUNT(*) as order_count
+        FROM orders
+        WHERE status = 'paid' AND created_at >= DATE_SUB(NOW(), INTERVAL 3 MONTH)
+        GROUP BY user_id
+      ) as recent_customer_orders
+    `);
+
+    // Calculate customer lifetime value
+    const [lifetimeValue] = await db.execute(`
+      SELECT AVG(customer_total) as avg_lifetime_value
+      FROM (
+        SELECT user_id, SUM(total_amount) as customer_total
+        FROM orders
+        WHERE status = 'paid'
+        GROUP BY user_id
+      ) as customer_totals
+    `);
+
+    res.json({
+      avgOrderValue: parseFloat(avgOrderValue[0]?.avg_order_value || 0),
+      retentionRate: parseFloat(retentionRate[0]?.retention_rate || 0),
+      repeatPurchaseRate: parseFloat(repeatPurchaseRate[0]?.repeat_purchase_rate || 0),
+      lifetimeValue: parseFloat(lifetimeValue[0]?.avg_lifetime_value || 0)
+    });
+  } catch (error) {
+    console.error('Error fetching customer metrics:', error);
+    res.status(500).json({ message: 'Error fetching customer metrics' });
+  }
+};
