@@ -1,160 +1,260 @@
 <template>
-  <div class="rewards-page min-h-screen bg-gray-100">
+  <div class="rewards-page">
     <Navbar :username="username" @logout="showLogoutModal = true" />
     
-    <div v-if="loading" class="flex justify-center items-center h-screen">
-      <div class="loader"></div>
+    <div v-if="loading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading your rewards...</p>
     </div>
 
-    <div v-else class="max-w-4xl mx-auto p-6">
-      <!-- Header Card - Updated to center content -->
-      <div class="bg-white rounded-lg shadow-md p-8 mb-6">
-        <div class="text-center">
-          <h1 class="text-3xl font-bold text-green-700 mb-4">Rewards Program</h1>
-          <div class="flex justify-center items-center"> <!-- Changed to center -->
-            <div class="text-center"> <!-- Added text-center -->
-              <h2 class="text-xl font-semibold text-gray-700">Your Current Points: <span class="font-bold text-green-600">{{ points }}</span></h2>
-              <p class="text-gray-500">
-                Total Points Earned: {{ totalPointsEarned }}
-              </p>
-              <p class="text-gray-500">Earn 1 point for every ₱100 spent</p>
+    <div v-else class="container">
+      <!-- Header Section -->
+      <div class="header-section">
+        <div class="header-content">
+          <div class="title-section">
+            <h1>Rewards Center</h1>
+            <p class="subtitle">Earn points with every purchase and unlock exclusive rewards</p>
+          </div>
+          
+          <div class="points-display">
+            <div class="points-card">
+              <div class="points-number">{{ points }}</div>
+              <div class="points-label">Available Points</div>
+              <div class="points-value">Worth ₱{{ (points * 0.5).toFixed(0) }}</div>
             </div>
           </div>
+        </div>
+        
+        <div class="stats-row">
+          <div class="stat-item">
+            <div class="stat-number">{{ totalPointsEarned }}</div>
+            <div class="stat-label">Total Earned</div>
+          </div>
+          <div class="divider"></div>
+          <div class="stat-item">
+            <div class="stat-number">30:100</div>
+            <div class="stat-label">Point Ratio</div>
+          </div>
+          <div class="divider"></div>
+          <div class="stat-item">
+            <div class="stat-number">10:₱5</div>
+            <div class="stat-label">Redemption Rate</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loyalty Status -->
+      <div class="loyalty-section">
+        <div class="loyalty-header">
+          <h2>Loyalty Status</h2>
+          <div class="tier-badge" :class="getTierClass(getCurrentTierName())">
+            <span class="tier-icon">{{ getTierIcon(getCurrentTierName()) }}</span>
+            {{ getCurrentTierName() }}
+          </div>
+        </div>
+        
+        <div class="loyalty-stats">
+          <div class="loyalty-stat">
+            <div class="loyalty-stat-value">+{{ getCurrentTierBonus() }}%</div>
+            <div class="loyalty-stat-label">Bonus Points</div>
+          </div>
+          <div class="loyalty-stat">
+            <div class="loyalty-stat-value">₱{{ formatNumber(loyaltyStatus?.current_month_spend || 0) }}</div>
+            <div class="loyalty-stat-label">This Month</div>
+          </div>
+        </div>
+        
+        <div class="progress-section">
+          <div class="progress-header">
+            <span>Progress to Next Tier</span>
+            <span class="progress-text">{{ getNextTierInfo() }}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: getTierProgress() + '%' }"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tier Information -->
+      <div class="tiers-section">
+        <h2>Loyalty Tiers</h2>
+        <div class="tiers-grid">
+          <div class="tier-card" :class="{ active: isCurrentTier('Bronze') }">
+            <div class="tier-header bronze">
+              <div class="tier-icon">🥉</div>
+              <div class="tier-info">
+                <h3>Bronze</h3>
+                <p>₱10K - ₱15K/month</p>
+              </div>
+              <div class="tier-bonus">+5%</div>
+            </div>
+            <ul class="tier-benefits">
+              <li>+5% bonus points on purchases</li>
+            </ul>
+          </div>
+          
+          <div class="tier-card" :class="{ active: isCurrentTier('Silver') }">
+            <div class="tier-header silver">
+              <div class="tier-icon">🥈</div>
+              <div class="tier-info">
+                <h3>Silver</h3>
+                <p>₱16K - ₱20K/month</p>
+              </div>
+              <div class="tier-bonus">+10%</div>
+            </div>
+            <ul class="tier-benefits">
+              <li>+10% bonus points on purchases</li>
+            </ul>
+          </div>
+          
+          <div class="tier-card" :class="{ active: isCurrentTier('Gold') }">
+            <div class="tier-header gold">
+              <div class="tier-icon">🥇</div>
+              <div class="tier-info">
+                <h3>Gold</h3>
+                <p>₱21K+/month</p>
+              </div>
+              <div class="tier-bonus">+15%</div>
+            </div>
+            <ul class="tier-benefits">
+              <li>+15% bonus points on purchases</li>
+              <li>Free product each month</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="tier-note">
+          <i class="info-icon">ℹ️</i>
+          <p>Tier status is based on monthly spending. Maintain spending for 2+ months to keep your tier.</p>
         </div>
       </div>
 
       <!-- Available Rewards -->
-      <div class="bg-white rounded-lg shadow-md p-8 mb-6">
-        <h2 class="text-xl font-bold text-gray-700 mb-4 text-center">Available Rewards</h2>
-        <div v-if="availableRewards.length" class="grid md:grid-cols-3 gap-6">
-          <div v-for="reward in availableRewards" :key="reward.id" 
-               class="bg-gray-50 rounded-lg p-4 text-center relative hover:shadow-lg transition-shadow">
-            <div class="text-2xl font-bold text-green-700 mb-2">{{ reward.points_required }} points</div>
-            <div class="text-xl font-semibold text-gray-700 mb-2">₱{{ reward.discount_amount }} off</div>
-            <p class="text-gray-500 mb-4">{{ reward.description }}</p>
-            <button @click="showRedemptionConfirmation(reward)"
-                    :disabled="points < reward.points_required"
-                    :class="[
-                      'w-full py-2 px-4 rounded-md transition-colors',
-                      points >= reward.points_required 
-                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    ]">
-              {{ points >= reward.points_required ? 'Redeem' : 'Not Enough Points' }}
+      <div class="rewards-section">
+        <div class="section-header">
+          <h2>Redeem Rewards</h2>
+          <div class="conversion-info">10 points = ₱5 discount</div>
+        </div>
+        
+        <div v-if="availableRewards.length" class="rewards-grid">
+          <div v-for="reward in availableRewards" :key="reward.id" class="reward-card">
+            <div class="reward-header">
+              <div class="reward-points">{{ reward.points_required }}</div>
+              <div class="reward-points-label">points</div>
+            </div>
+            <div class="reward-amount">₱{{ reward.discount_amount }} OFF</div>
+            <div class="reward-description">{{ reward.description }}</div>
+            <div class="reward-value">Value: ₱{{ (reward.points_required * 0.5).toFixed(0) }}</div>
+            <button 
+              @click="showRedemptionConfirmation(reward)"
+              :disabled="points < reward.points_required"
+              class="reward-button"
+              :class="{ disabled: points < reward.points_required }"
+            >
+              <span v-if="points >= reward.points_required">Redeem Now</span>
+              <span v-else>Need {{ reward.points_required - points }} more</span>
             </button>
           </div>
         </div>
-        <div v-else class="text-center text-gray-500 py-8">
-          No rewards available at the moment
+        
+        <div v-else class="empty-state">
+          <div class="empty-icon">🎁</div>
+          <h3>No rewards available</h3>
+          <p>Check back later for new rewards</p>
         </div>
       </div>
 
       <!-- Reward History -->
-      <div class="bg-white rounded-lg shadow-md p-8">
-        <h2 class="text-xl font-bold text-gray-700 mb-4 text-center">Reward History</h2>
-        <div class="overflow-x-auto reward-history-container">
-          <table v-if="rewardHistory.length" class="min-w-full bg-white">
-            <thead>
-              <tr>
-                <th class="py-2 px-4 border-b border-gray-200 text-left text-gray-600">Date</th>
-                <th class="py-2 px-4 border-b border-gray-200 text-left text-gray-600">Description</th>
-                <th class="py-2 px-4 border-b border-gray-200 text-left text-gray-600">Points</th>
-              </tr>
-            </thead>
-            <tbody>
-                <tr v-for="item in rewardHistory" :key="item.id" class="hover:bg-gray-50">
-                    <td class="py-2 px-4 border-b border-gray-200">
-                        {{ formatDate(item.created_at || item.date) }}
-                    </td>
-                    <td class="py-2 px-4 border-b border-gray-200">{{ item.description }}</td>
-                    <td :class="[
-                        'py-2 px-4 border-b border-gray-200 font-semibold',
-                        item.points > 0 ? 'text-green-600' : 'text-red-600'
-                    ]">
-                        {{ item.points > 0 ? '+' : '' }}{{ item.points }}
-                    </td>
-                </tr>
-            </tbody>
-          </table>
-          <div v-else class="text-center text-gray-500 py-8">
-            No reward history available
+      <div class="history-section">
+        <h2>Recent Activity</h2>
+        <div class="history-container">
+          <div v-if="rewardHistory.length" class="history-list">
+            <div v-for="item in rewardHistory.slice(0, 10)" :key="item.id" class="history-item">
+              <div class="history-icon" :class="{ earned: item.points > 0, redeemed: item.points < 0 }">
+                <span v-if="item.points > 0">+</span>
+                <span v-else>−</span>
+              </div>
+              <div class="history-content">
+                <div class="history-description">{{ item.description }}</div>
+                <div class="history-date">{{ formatDate(item.created_at || item.date) }}</div>
+              </div>
+              <div class="history-points" :class="{ earned: item.points > 0, redeemed: item.points < 0 }">
+                {{ Math.abs(item.points) }} pts
+              </div>
+            </div>
+          </div>
+          
+          <div v-else class="empty-state">
+            <div class="empty-icon">📋</div>
+            <h3>No activity yet</h3>
+            <p>Start shopping to earn your first points</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Enhanced Redeem Confirmation Modal -->
-    <div v-if="showConfirmModal" class="fixed inset-0 flex items-center justify-center modal-container z-50">
-      <div class="modal-backdrop absolute inset-0 bg-black bg-opacity-50" @click="cancelRedemption"></div>
-      <div class="confirmation-modal bg-white rounded-2xl p-8 shadow-xl max-w-md w-11/12 relative animate-modal">
-        <div class="text-center">
-          <div class="confirmation-icon-wrapper">
-            <i class="fas fa-gift confirmation-icon"></i>
-          </div>
-          <h3 class="text-2xl font-bold text-green-700 mb-4">Confirm Redemption</h3>
-          <div class="text-gray-600 mb-6">
-            <p class="mb-4">
-              Are you sure you want to redeem 
-              <span class="font-bold text-green-600 text-xl">{{ selectedReward?.points_required }}</span> 
-              points for a 
-              <span class="font-bold text-green-600 text-xl">₱{{ selectedReward?.discount_amount }}</span> 
-              discount?
-            </p>
-            <div class="confirmation-info bg-gray-50 p-3 rounded-lg border border-gray-200">
-              <p class="text-sm text-gray-500">
-                <i class="fas fa-info-circle mr-2"></i>
-                This action cannot be undone and the points will be deducted from your account immediately.
-              </p>
+    <!-- ...existing modals... -->
+    <!-- Redemption Confirmation Modal -->
+    <div v-if="showConfirmModal" class="modal-overlay" @click="cancelRedemption">
+      <div class="modal" @click.stop>
+        <div class="modal-header">
+          <div class="modal-icon">🎁</div>
+          <h3>Confirm Redemption</h3>
+        </div>
+        
+        <div class="modal-content">
+          <div class="redemption-summary">
+            <div class="summary-row">
+              <span>Points to redeem:</span>
+              <strong>{{ selectedReward?.points_required }}</strong>
+            </div>
+            <div class="summary-row">
+              <span>Discount value:</span>
+              <strong>₱{{ selectedReward?.discount_amount }}</strong>
+            </div>
+            <div class="summary-row">
+              <span>Points value:</span>
+              <span>₱{{ (selectedReward?.points_required * 0.5).toFixed(0) }}</span>
             </div>
           </div>
-          <!-- Updated button container for better centering -->
-          <div class="flex justify-center gap-4 buttons-container">
-            <button @click="cancelRedemption" 
-                    class="flex-1 py-3 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium flex items-center justify-center">
-              <i class="fas fa-times mr-2"></i> Cancel
-            </button>
-            <button @click="confirmRedemption" 
-                    class="flex-1 py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center">
-              <i class="fas fa-check-circle mr-2"></i> Confirm
-            </button>
+          
+          <div class="modal-note">
+            <i class="info-icon">ℹ️</i>
+            <p>This discount will be available for 30 days and can be used during checkout.</p>
           </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button @click="cancelRedemption" class="btn-secondary">Cancel</button>
+          <button @click="confirmRedemption" class="btn-primary">Confirm Redemption</button>
         </div>
       </div>
     </div>
 
-    <!-- Redemption Success Modal -->
-    <div v-if="showRedeemModal" class="fixed inset-0 flex items-center justify-center modal-container z-50">
-      <div class="modal-backdrop absolute inset-0 bg-black bg-opacity-50" @click="closeRedeemModal"></div>
-      <div class="confirmation-modal bg-white rounded-2xl p-8 shadow-xl max-w-md w-11/12 relative animate-modal">
-        <div class="text-center">
-          <div class="success-icon-wrapper">
-            <i class="fas fa-check-circle success-icon"></i>
+    <!-- Success Modal -->
+    <div v-if="showRedeemModal" class="modal-overlay" @click="closeRedeemModal">
+      <div class="modal success-modal" @click.stop>
+        <div class="modal-header">
+          <div class="modal-icon success">✅</div>
+          <h3>Redemption Successful!</h3>
+        </div>
+        
+        <div class="modal-content">
+          <p>You've successfully redeemed <strong>{{ redeemedPoints }} points</strong> for a <strong>₱{{ redeemedAmount }} discount</strong>.</p>
+          
+          <div class="usage-steps">
+            <h4>How to use your discount:</h4>
+            <ol>
+              <li>Add items to your cart</li>
+              <li>Look for the discount during checkout</li>
+              <li>Apply it to your order</li>
+              <li>Enjoy your savings!</li>
+            </ol>
           </div>
-          <h3 class="text-2xl font-bold text-green-700 mb-4">Reward Redeemed!</h3>
-          <div class="text-gray-600 mb-6">
-            <p class="mb-4">
-              You have successfully redeemed 
-              <span class="font-bold text-green-600">{{ redeemedPoints }}</span> 
-              points for
-              <span class="font-bold text-green-600">₱{{ redeemedAmount }}</span> 
-              off your next purchase.
-            </p>
-            <div class="bg-gray-50 p-4 rounded-lg text-sm border border-gray-200">
-              <p class="font-semibold mb-2 text-gray-700">
-                <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
-                How to use your discount:
-              </p>
-              <ol class="text-left list-decimal pl-6 space-y-2">
-                <li>Add items to your cart</li>
-                <li>During checkout, you'll see this discount (₱{{ redeemedAmount }}) available</li>
-                <li>Select it to apply the discount to your order</li>
-              </ol>
-            </div>
-          </div>
-          <button @click="closeRedeemModal" 
-                  class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center">
-            <i class="fas fa-check mr-2"></i> Got it!
-          </button>
+        </div>
+        
+        <div class="modal-actions">
+          <button @click="closeRedeemModal" class="btn-primary full-width">Got it!</button>
         </div>
       </div>
     </div>
@@ -169,7 +269,6 @@
 </template>
 
 <script>
-// Script section remains unchanged
 import Navbar from '../../components/Navbar.vue';
 import LogoutModal from '../../components/LogoutModal.vue';
 
@@ -186,6 +285,12 @@ export default {
       totalPointsEarned: 0,
       rewardHistory: [],
       availableRewards: [],
+      loyaltyStatus: null,
+      loyaltyTiers: [
+        { name: 'Bronze', min_spend: 10000, max_spend: 15000, bonus_percentage: 5, has_free_product: false },
+        { name: 'Silver', min_spend: 16000, max_spend: 20000, bonus_percentage: 10, has_free_product: false },
+        { name: 'Gold', min_spend: 21000, max_spend: null, bonus_percentage: 15, has_free_product: true }
+      ],
       showRedeemModal: false,
       showLogoutModal: false,
       showConfirmModal: false,
@@ -202,7 +307,6 @@ export default {
     }
   },
   methods: {
-    // All methods remain unchanged
     async fetchWithAuth(url, options = {}) {
       try {
         const token = localStorage.getItem('token');
@@ -235,20 +339,15 @@ export default {
         throw error;
       }
     },
+
     handleApiError(error, action) {
       console.error(`Error ${action}:`, error);
       if (error.response?.status === 401) {
         localStorage.removeItem('token');
         this.$router.push('/login');
-      } else {
-        const message = error.response?.data?.message || `Failed to ${action}`;
-        this.showError(message);
       }
     },
-    handleAuthError() {
-      localStorage.removeItem('token');
-      this.$router.push('/login');
-    },
+
     initializeUser() {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -261,7 +360,8 @@ export default {
         return true;
       } catch (error) {
         console.error('Token validation error:', error);
-        this.handleAuthError();
+        localStorage.removeItem('token');
+        this.$router.push('/login');
         return false;
       }
     },
@@ -269,16 +369,11 @@ export default {
     async fetchUserData() {
       this.loading = true;
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          this.$router.push('/login');
-          return;
-        }
-
         await Promise.all([
           this.fetchUserPoints(),
           this.fetchRewardHistory(),
-          this.fetchAvailableRewards()
+          this.fetchAvailableRewards(),
+          this.fetchLoyaltyStatus()
         ]);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -304,7 +399,6 @@ export default {
         const data = await this.fetchWithAuth('/api/rewards/history');
         this.rewardHistory = data.history.map(item => ({
           ...item,
-          // Ensure we have a valid date by using created_at or date
           date: item.created_at || item.date,
           points: Number(item.points),
           description: item.description || 'Reward transaction'
@@ -325,10 +419,147 @@ export default {
       }
     },
 
-    showRedemptionConfirmation(reward) {
-      if (this.points < reward.points_required) {
-        return;
+    async fetchLoyaltyStatus() {
+      try {
+        const response = await fetch('http://localhost:7904/api/rewards/loyalty-status', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          this.loyaltyStatus = await response.json();
+        }
+      } catch (error) {
+        console.error('Error fetching loyalty status:', error);
+        this.loyaltyStatus = {
+          tier_name: null,
+          bonus_percentage: 0,
+          current_month_spend: 0,
+          has_free_product: false
+        };
       }
+    },
+
+    getTierClass(tierName) {
+      const classes = {
+        'Bronze': 'bronze',
+        'Silver': 'silver',
+        'Gold': 'gold'
+      };
+      return classes[tierName] || 'member';
+    },
+
+    getTierIcon(tierName) {
+      const icons = {
+        'Bronze': '🥉',
+        'Silver': '🥈',
+        'Gold': '🥇'
+      };
+      return icons[tierName] || '👤';
+    },
+
+    // Get the current tier name based on actual spending
+    getCurrentTierName() {
+      if (!this.loyaltyStatus || !this.loyaltyStatus.current_month_spend) {
+        return 'Member';
+      }
+
+      const spend = this.loyaltyStatus.current_month_spend;
+      
+      // Check tier based on actual spending thresholds
+      if (spend >= 21000) {
+        return 'Gold';
+      } else if (spend >= 16000) {
+        return 'Silver';
+      } else if (spend >= 10000) {
+        return 'Bronze';
+      } else {
+        return 'Member';
+      }
+    },
+
+    // Get current tier bonus based on actual tier
+    getCurrentTierBonus() {
+      const currentTier = this.getCurrentTierName();
+      const tier = this.loyaltyTiers.find(t => t.name === currentTier);
+      return tier ? tier.bonus_percentage : 0;
+    },
+
+    // Check if user is at current tier (based on actual spending)
+    isCurrentTier(tierName) {
+      return this.getCurrentTierName() === tierName;
+    },
+
+    // Fixed tier progress calculation based on actual spending
+    getTierProgress() {
+      if (!this.loyaltyStatus || !this.loyaltyStatus.current_month_spend) return 0;
+      
+      const currentSpend = this.loyaltyStatus.current_month_spend;
+      const currentTier = this.getCurrentTierName();
+      
+      // If already at Gold tier, return 100%
+      if (currentTier === 'Gold') return 100;
+      
+      let nextTierMin = 0;
+      let currentTierMin = 0;
+      
+      if (currentTier === 'Member') {
+        currentTierMin = 0;
+        nextTierMin = 10000; // Bronze threshold
+      } else if (currentTier === 'Bronze') {
+        currentTierMin = 10000;
+        nextTierMin = 16000; // Silver threshold
+      } else if (currentTier === 'Silver') {
+        currentTierMin = 16000;
+        nextTierMin = 21000; // Gold threshold
+      }
+      
+      if (nextTierMin === 0) return 100;
+      
+      const progressRange = nextTierMin - currentTierMin;
+      const currentProgress = currentSpend - currentTierMin;
+      
+      return Math.min(Math.max((currentProgress / progressRange) * 100, 0), 100);
+    },
+
+    // Fixed next tier info based on actual spending
+    getNextTierInfo() {
+      if (!this.loyaltyStatus) return 'Spend ₱10,000 for Bronze tier';
+      
+      const currentSpend = this.loyaltyStatus.current_month_spend;
+      const currentTier = this.getCurrentTierName();
+      
+      if (currentTier === 'Gold') {
+        return 'Highest tier achieved!';
+      }
+      
+      let nextTierName = '';
+      let nextTierMin = 0;
+      
+      if (currentTier === 'Member') {
+        nextTierName = 'Bronze';
+        nextTierMin = 10000;
+      } else if (currentTier === 'Bronze') {
+        nextTierName = 'Silver';
+        nextTierMin = 16000;
+      } else if (currentTier === 'Silver') {
+        nextTierName = 'Gold';
+        nextTierMin = 21000;
+      }
+      
+      const needed = nextTierMin - currentSpend;
+      
+      if (needed <= 0) {
+        return `Qualified for ${nextTierName}!`;
+      }
+      
+      return `₱${this.formatNumber(needed)} to ${nextTierName}`;
+    },
+
+    showRedemptionConfirmation(reward) {
+      if (this.points < reward.points_required) return;
       this.selectedReward = reward;
       this.showConfirmModal = true;
     },
@@ -371,10 +602,8 @@ export default {
           this.redeemedAmount = reward.discount_amount;
           this.showRedeemModal = true;
           
-          // Create and save a notification for reward redemption
           this.createRewardRedemptionNotification(reward);
-          
-          await this.fetchUserData(); // Refresh all data
+          await this.fetchUserData();
         }
       } catch (error) {
         console.error('Redemption error:', error);
@@ -384,13 +613,11 @@ export default {
     
     createRewardRedemptionNotification(reward) {
       try {
-        // Get existing notifications
         const savedNotifications = localStorage.getItem('userNotifications');
         let notifications = savedNotifications ? JSON.parse(savedNotifications) : [];
         
-        // Create new notification
         const newNotification = {
-          id: Date.now().toString(), // Use timestamp as unique ID
+          id: Date.now().toString(),
           type: 'reward',
           rewardId: reward.id,
           read: false,
@@ -398,16 +625,11 @@ export default {
           message: `You redeemed ${reward.points_required} points for ₱${reward.discount_amount} discount.`
         };
         
-        // Add to beginning of array
         notifications.unshift(newNotification);
-        
-        // Keep only the 20 most recent notifications
         notifications = notifications.slice(0, 20);
         
-        // Save to localStorage
         localStorage.setItem('userNotifications', JSON.stringify(notifications));
         
-        // Dispatch event to update other components
         window.dispatchEvent(new CustomEvent('notifications-updated', {
           detail: { notifications }
         }));
@@ -452,9 +674,7 @@ export default {
         
       try {
         const date = new Date(dateString);
-        if (isNaN(date.getTime())) {
-          return 'Invalid Date';
-        }
+        if (isNaN(date.getTime())) return 'Invalid Date';
             
         return new Intl.DateTimeFormat('en-US', {
           year: 'numeric',
@@ -467,217 +687,835 @@ export default {
         console.error('Error formatting date:', error);
         return 'Invalid Date';
       }
+    },
+
+    formatNumber(num) {
+      return Number(num).toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      });
     }
   }
 };
 </script>
 
 <style scoped>
+/* ...existing styles remain the same... */
 .rewards-page {
+  min-height: 100vh;
+  background: #fafafa;
   font-family: Arial, sans-serif;
 }
 
-.loader {
-  border: 3px solid rgba(74, 222, 128, 0.3);
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #10b981;
   border-radius: 50%;
-  border-top: 3px solid #4ade80;
-  width: 40px;
-  height: 40px;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
 }
 
-/* Enhanced Modal Animation */
-@keyframes modalFade {
-  from { opacity: 0; transform: scale(0.95) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.animate-modal {
-  animation: modalFade 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-/* Modal Container & Backdrop */
-.modal-container {
-  z-index: 100;
-}
-
-.modal-backdrop {
-  backdrop-filter: blur(3px);
-  transition: all 0.3s ease;
-}
-
-/* Modal Design Enhancements */
-.confirmation-modal {
-  max-width: 450px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(22, 163, 74, 0.2);
-}
-
-.confirmation-icon-wrapper, .success-icon-wrapper {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  margin: 0 auto 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(45deg, #16a34a, #22c55e);
-  box-shadow: 0 10px 15px -3px rgba(22, 163, 74, 0.3);
-}
-
-.confirmation-icon {
-  font-size: 2.5rem;
-  color: white;
-}
-
-.success-icon-wrapper {
-  background: linear-gradient(45deg, #15803d, #22c55e);
-}
-
-.success-icon {
-  font-size: 2.5rem;
-  color: white;
-}
-
-.confirmation-info {
-  margin-top: 1rem;
-  border-left: 4px solid #16a34a;
-}
-
-/* New styles for buttons container */
-.buttons-container {
-  max-width: 400px;
+.container {
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-/* Rest of the styles unchanged */
-.min-h-screen { min-height: 100vh; }
-.bg-gray-100 { background-color: #f3f4f6; }
-.bg-white { background-color: #ffffff; }
-.rounded-lg { border-radius: 0.5rem; }
-.rounded-2xl { border-radius: 1rem; }
-.shadow-md { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-.shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
-.hover\:shadow-lg:hover { box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); }
-
-/* Flex Utilities */
-.flex { display: flex; }
-.items-center { align-items: center; }
-.justify-center { justify-content: center; }
-
-/* Text Colors */
-.text-green-700 { color: #047857; }
-.text-green-600 { color: #059669; }
-.text-gray-700 { color: #374151; }
-.text-gray-600 { color: #4b5563; }
-.text-gray-500 { color: #6b7280; }
-.text-red-600 { color: #dc2626; }
-.text-yellow-500 { color: #eab308; }
-
-/* Font Weights */
-.font-bold { font-weight: 700; }
-.font-semibold { font-weight: 600; }
-.font-medium { font-weight: 500; }
-
-/* Spacing */
-.p-6 { padding: 1.5rem; }
-.p-8 { padding: 2rem; }
-.px-4 { padding-left: 1rem; padding-right: 1rem; }
-.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-.py-8 { padding-top: 2rem; padding-bottom: 2rem; }
-.mr-2 { margin-right: 0.5rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mb-6 { margin-bottom: 1.5rem; }
-
-/* Sizing */
-.w-11\/12 { width: 91.666667%; }
-.max-w-md { max-width: 28rem; }
-
-/* Layout */
-.max-w-4xl { max-width: 56rem; }
-.mx-auto { margin-left: auto; margin-right: auto; }
-.grid { display: grid; }
-.md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.gap-6 { gap: 1.5rem; }
-.gap-4 { gap: 1rem; }
-.relative { position: relative; }
-.absolute { position: absolute; }
-.fixed { position: fixed; }
-.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
-.z-50 { z-index: 50; }
-
-/* Table Styles */
-.overflow-x-auto { overflow-x: auto; }
-.table-auto { table-layout: auto; }
-.w-full { width: 100%; }
-.border-b { border-bottom-width: 1px; }
-.border { border-width: 1px; }
-.border-gray-200 { border-color: #e5e7eb; }
-.text-left { text-align: left; }
-.text-center { text-align: center; }
-
-/* Transitions */
-.transition-colors { transition-property: background-color, border-color, color, fill, stroke; transition-duration: 150ms; }
-
-.reward-history-container {
-  max-height: 400px;
-  overflow-y: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
+/* Header Section */
+.header-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.reward-history-container::-webkit-scrollbar {
-  width: 8px;
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
 }
 
-.reward-history-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 0.5rem;
+.title-section h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
 }
 
-.reward-history-container::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 0.5rem;
+.subtitle {
+  color: #6b7280;
+  font-size: 1rem;
+  margin: 0;
 }
 
-.reward-history-container::-webkit-scrollbar-thumb:hover {
-  background: #666;
+.points-display {
+  flex-shrink: 0;
 }
 
-/* List Styles */
-.list-decimal {
-  list-style-type: decimal;
+.points-card {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+  min-width: 160px;
 }
 
-.pl-6 {
-  padding-left: 1.5rem;
+.points-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.space-y-2 > * + * {
+.points-label {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  margin-top: 0.25rem;
+}
+
+.points-value {
+  font-size: 0.75rem;
+  opacity: 0.8;
   margin-top: 0.5rem;
 }
 
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .confirmation-modal {
-    width: 95%;
+.stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.divider {
+  width: 1px;
+  height: 32px;
+  background: #e5e7eb;
+}
+
+/* Loyalty Section */
+.loyalty-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.loyalty-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.loyalty-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.tier-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.tier-badge.bronze {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.tier-badge.silver {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.tier-badge.gold {
+  background: #fbbf24;
+  color: #92400e;
+}
+
+.tier-badge.member {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.loyalty-stats {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.loyalty-stat {
+  text-align: center;
+}
+
+.loyalty-stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.loyalty-stat-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.progress-section {
+  margin-top: 1.5rem;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.progress-text {
+  color: #6b7280;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Tiers Section */
+.tiers-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tiers-section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 1.5rem 0;
+}
+
+.tiers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.tier-card {
+  border: 2px solid #f3f4f6;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.tier-card:hover {
+  border-color: #d1d5db;
+  transform: translateY(-2px);
+}
+
+.tier-card.active {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tier-card.active:has(.tier-header.bronze) {
+  border-color: #d97706;
+  background: #fef3c7;
+}
+
+.tier-card.active:has(.tier-header.silver) {
+  border-color: #64748b;
+  background: #f1f5f9;
+}
+
+.tier-card.active:has(.tier-header.gold) {
+  border-color: #f59e0b;
+  background: #fef3c7;
+}
+
+.tier-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.tier-icon {
+  font-size: 1.5rem;
+}
+
+.tier-info h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.tier-info p {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0.25rem 0 0 0;
+}
+
+.tier-bonus {
+  margin-left: auto;
+  background: #10b981;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.tier-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tier-benefits li {
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+  position: relative;
+  padding-left: 1rem;
+}
+
+.tier-benefits li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.tier-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #fef3c7;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #92400e;
+}
+
+.tier-note p {
+  margin: 0;
+}
+
+/* Rewards Section */
+.rewards-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.conversion-info {
+  background: #f0f9ff;
+  color: #0369a1;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.reward-card {
+  border: 2px solid #f3f4f6;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.reward-card:hover {
+  border-color: #d1d5db;
+  transform: translateY(-2px);
+}
+
+.reward-header {
+  margin-bottom: 1rem;
+}
+
+.reward-points {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #10b981;
+  line-height: 1;
+}
+
+.reward-points-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.reward-amount {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.reward-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.reward-value {
+  color: #10b981;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.reward-button {
+  width: 100%;
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reward-button:hover:not(.disabled) {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.reward-button.disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* History Section */
+.history-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.history-section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 1.5rem 0;
+}
+
+.history-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.history-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.history-icon.earned {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.history-icon.redeemed {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.history-content {
+  flex: 1;
+}
+
+.history-description {
+  font-size: 0.875rem;
+  color: #111827;
+  font-weight: 500;
+}
+
+.history-date {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.history-points {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.history-points.earned {
+  color: #10b981;
+}
+
+.history-points.redeemed {
+  color: #dc2626;
+}
+
+/* Empty States */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-state p {
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.2s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-header {
+  text-align: center;
+  padding: 2rem 2rem 1rem;
+}
+
+.modal-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.modal-icon.success {
+  color: #10b981;
+}
+
+.modal-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.modal-content {
+  padding: 0 2rem 1rem;
+}
+
+.redemption-summary {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.summary-row:not(:last-child) {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #fef3c7;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #92400e;
+}
+
+.modal-note p {
+  margin: 0;
+}
+
+.usage-steps {
+  margin-top: 1rem;
+}
+
+.usage-steps h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.75rem 0;
+}
+
+.usage-steps ol {
+  padding-left: 1rem;
+  margin: 0;
+}
+
+.usage-steps li {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.modal-actions {
+  padding: 1rem 2rem 2rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-primary {
+  background: #10b981;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #059669;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.full-width {
+  flex: none;
+  width: 100%;
+}
+
+.info-icon {
+  font-size: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.5rem;
+  }
+
+  .points-card {
+    align-self: center;
+  }
+
+  .stats-row {
+    gap: 1rem;
+  }
+
+  .loyalty-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .tier-badge {
+    align-self: center;
+  }
+
+  .loyalty-stats {
+    justify-content: center;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .conversion-info {
+    align-self: center;
+  }
+
+  .tiers-grid,
+  .rewards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-section,
+  .loyalty-section,
+  .tiers-section,
+  .rewards-section,
+  .history-section {
     padding: 1.5rem;
   }
-  
-  .confirmation-icon-wrapper, .success-icon-wrapper {
-    width: 70px;
-    height: 70px;
+
+  .title-section h1 {
+    font-size: 1.5rem;
   }
-  
-  .confirmation-icon, .success-icon {
+
+  .points-number {
     font-size: 2rem;
+  }
+
+  .stats-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .divider {
+    width: 100%;
+    height: 1px;
   }
 }
 </style>

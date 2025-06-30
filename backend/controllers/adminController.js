@@ -1284,3 +1284,176 @@ exports.getCustomerMetrics = async (req, res) => {
     res.status(500).json({ message: 'Error fetching customer metrics' });
   }
 };
+exports.getLoyaltyTiers = async (req, res) => {
+    try {
+        const [tiers] = await db.query('SELECT * FROM loyalty_tiers ORDER BY min_spend ASC');
+        res.json(tiers);
+    } catch (error) {
+        console.error('Error getting loyalty tiers:', error);
+        res.status(500).json({ message: 'Error getting loyalty tiers' });
+    }
+};
+
+exports.createLoyaltyTier = async (req, res) => {
+    try {
+        const { name, min_spend, max_spend, bonus_percentage, has_free_product } = req.body;
+        
+        if (!name || !min_spend || !bonus_percentage) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+        
+        const [result] = await db.query(
+            'INSERT INTO loyalty_tiers (name, min_spend, max_spend, bonus_percentage, has_free_product) VALUES (?, ?, ?, ?, ?)',
+            [name, min_spend, max_spend, bonus_percentage, has_free_product || false]
+        );
+        
+        res.status(201).json({ 
+            message: 'Loyalty tier created successfully',
+            tierId: result.insertId
+        });
+    } catch (error) {
+        console.error('Error creating loyalty tier:', error);
+        res.status(500).json({ message: 'Error creating loyalty tier' });
+    }
+};
+exports.getAllLoyaltyTiers = async (req, res) => {
+    try {
+        const [tiers] = await db.query('SELECT * FROM loyalty_tiers ORDER BY min_spend ASC');
+        res.json(tiers);
+    } catch (error) {
+        console.error('Error getting loyalty tiers:', error);
+        res.status(500).json({ message: 'Error getting loyalty tiers' });
+    }
+};
+exports.updateLoyaltyTier = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, min_spend, max_spend, bonus_percentage, has_free_product } = req.body;
+        
+        if (!name || !min_spend || !bonus_percentage) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+        
+        await db.query(
+            'UPDATE loyalty_tiers SET name = ?, min_spend = ?, max_spend = ?, bonus_percentage = ?, has_free_product = ? WHERE id = ?',
+            [name, min_spend, max_spend, bonus_percentage, has_free_product || false, id]
+        );
+        
+        res.json({ message: 'Loyalty tier updated successfully' });
+    } catch (error) {
+        console.error('Error updating loyalty tier:', error);
+        res.status(500).json({ message: 'Error updating loyalty tier' });
+    }
+};
+
+exports.deleteLoyaltyTier = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.query('DELETE FROM loyalty_tiers WHERE id = ?', [id]);
+        res.json({ message: 'Loyalty tier deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting loyalty tier:', error);
+        res.status(500).json({ message: 'Error deleting loyalty tier' });
+    }
+};
+
+exports.getLoyaltyStatistics = async (req, res) => {
+    try {
+        // Get active loyalty members
+        const [activeMembers] = await db.query(
+            'SELECT COUNT(*) as count FROM user_loyalty_status WHERE loyalty_tier_id IS NOT NULL AND tier_end_date >= CURDATE()'
+        );
+        
+        // Get monthly loyalty points awarded
+        const [monthlyPoints] = await db.query(
+            `SELECT COALESCE(SUM(points), 0) as total 
+             FROM user_rewards 
+             WHERE description LIKE '%loyalty bonus%' 
+             AND created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)`
+        );
+        
+        // Get tier distribution
+        const [tierDistribution] = await db.query(
+            `SELECT lt.name as tier_name, COUNT(uls.user_id) as user_count
+             FROM loyalty_tiers lt
+             LEFT JOIN user_loyalty_status uls ON lt.id = uls.loyalty_tier_id 
+             AND uls.tier_end_date >= CURDATE()
+             GROUP BY lt.id, lt.name
+             ORDER BY lt.min_spend ASC`
+        );
+        
+        res.json({
+            activeMembers: activeMembers[0].count,
+            monthlyLoyaltyPoints: monthlyPoints[0].total,
+            tierDistribution
+        });
+    } catch (error) {
+        console.error('Error getting loyalty statistics:', error);
+        res.status(500).json({ message: 'Error getting loyalty statistics' });
+    }
+};
+exports.getUserLoyaltyStatus = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const loyaltyStatus = await Reward.getUserLoyaltyStatus(userId);
+        res.json(loyaltyStatus);
+    } catch (error) {
+        console.error('Error getting user loyalty status:', error);
+        res.status(500).json({ message: 'Error getting user loyalty status' });
+    }
+};
+exports.getRewardsSettings = async (req, res) => {
+    try {
+        const [settings] = await db.query('SELECT * FROM rewards_settings ORDER BY id DESC LIMIT 1');
+        
+        if (settings.length === 0) {
+            // Return default settings if none exist
+            return res.json({
+                id: null,
+                points_per_amount: 1,
+                amount_threshold: 100.00,
+                point_value: 0.50,
+                description: 'Customers earn 1 point per ₱100 spent • They can redeem points for discounts'
+            });
+        }
+        
+        res.json(settings[0]);
+    } catch (error) {
+        console.error('Error getting rewards settings:', error);
+        res.status(500).json({ message: 'Error getting rewards settings' });
+    }
+};
+
+// Update rewards settings
+exports.updateRewardsSettings = async (req, res) => {
+    try {
+        const { points_per_amount, amount_threshold, point_value, description } = req.body;
+        const adminId = req.user.id;
+        
+        if (!points_per_amount || !amount_threshold || !point_value) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+        
+        // Check if settings exist
+        const [existingSettings] = await db.query('SELECT id FROM rewards_settings LIMIT 1');
+        
+        if (existingSettings.length === 0) {
+            // Create new settings
+            await db.query(
+                'INSERT INTO rewards_settings (points_per_amount, amount_threshold, point_value, description, updated_by) VALUES (?, ?, ?, ?, ?)',
+                [points_per_amount, amount_threshold, point_value, description, adminId]
+            );
+        } else {
+            // Update existing settings
+            await db.query(
+                'UPDATE rewards_settings SET points_per_amount = ?, amount_threshold = ?, point_value = ?, description = ?, updated_by = ? WHERE id = ?',
+                [points_per_amount, amount_threshold, point_value, description, adminId, existingSettings[0].id]
+            );
+        }
+        
+        res.json({ message: 'Rewards settings updated successfully' });
+    } catch (error) {
+        console.error('Error updating rewards settings:', error);
+        res.status(500).json({ message: 'Error updating rewards settings' });
+    }
+};

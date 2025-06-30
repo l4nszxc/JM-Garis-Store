@@ -26,7 +26,7 @@ router.get('/forecasts', adminController.getProductForecasts);
 router.get('/low-stock', authenticate, isAdmin, adminController.getLowStockItems);
 router.get('/receipt-settings', authenticate, isAdmin, adminController.getReceiptSettings);
 router.post('/receipt-settings', authenticate, isAdmin, adminController.saveReceiptSettings);
-router.get('/sales-chart',authenticate, isAdmin, adminController.getSalesChartData);
+router.get('/sales-chart', authenticate, isAdmin, adminController.getSalesChartData);
 router.get('/dashboard-stats', authenticate, isAdmin, adminController.getDashboardStats);
 router.get('/top-customers', authenticate, isAdmin, adminController.getTopCustomers);
 router.get('/top-products', authenticate, isAdmin, adminController.getTopProducts);
@@ -39,4 +39,13 @@ router.get('/receipt-settings/public', adminController.getPublicReceiptSettings)
 router.get('/product-insights', adminController.getProductInsights);
 router.get('/customer-metrics', adminController.getCustomerMetrics);
 
+// Loyalty tier routes
+router.get('/loyalty/tiers', authenticate, isAdmin, adminController.getAllLoyaltyTiers);
+router.post('/loyalty/tiers', authenticate, isAdmin, adminController.createLoyaltyTier);
+router.put('/loyalty/tiers/:id', authenticate, isAdmin, adminController.updateLoyaltyTier);
+router.delete('/loyalty/tiers/:id', authenticate, isAdmin, adminController.deleteLoyaltyTier);
+router.get('/loyalty/statistics', authenticate, isAdmin, adminController.getLoyaltyStatistics);
+
+router.get('/rewards/settings', authenticate, isAdmin, adminController.getRewardsSettings);
+router.put('/rewards/settings',authenticate, isAdmin,  adminController.updateRewardsSettings);
 module.exports = router;
