@@ -31,6 +31,13 @@
                     </div>
                     <span>Create Order</span>
                 </router-link>
+
+                <router-link to="/staff/profile" class="menu-item" exact-active-class="active">
+                    <div class="icon-container profile-management-icon">
+                        <i class="fas fa-user-cog"></i>
+                    </div>
+                    <span>Profile</span>
+                </router-link>
             </div>
 
             <div class="sidebar-footer">
@@ -74,22 +81,18 @@ export default {
         toggleSidebar() {
             this.isSidebarCollapsed = !this.isSidebarCollapsed;
             this.updateOverlay();
-            // Emit event to notify parent components
             this.$emit('sidebar-toggle', this.isSidebarCollapsed);
-            // Add a body class to control the main container padding
             document.body.classList.toggle('sidebar-collapsed', this.isSidebarCollapsed);
         },
         closeSidebar() {
             if (window.innerWidth <= 768) {
                 this.isSidebarCollapsed = true;
                 this.showOverlay = false;
-                // Emit event when sidebar is closed
                 this.$emit('sidebar-toggle', true);
                 document.body.classList.add('sidebar-collapsed');
             }
         },
         updateOverlay() {
-            // Only show overlay on mobile when sidebar is expanded
             this.showOverlay = window.innerWidth <= 768 && !this.isSidebarCollapsed;
         },
         handleResize() {
@@ -98,7 +101,6 @@ export default {
                 this.isSidebarCollapsed = true;
                 this.showOverlay = false;
             }
-            // Only emit event if state changed
             if (wasSidebarCollapsed !== this.isSidebarCollapsed) {
                 this.$emit('sidebar-toggle', this.isSidebarCollapsed);
                 document.body.classList.toggle('sidebar-collapsed', this.isSidebarCollapsed);
@@ -107,12 +109,10 @@ export default {
     },
     mounted() {
         window.addEventListener('resize', this.handleResize);
-        // Set initial body class
         document.body.classList.toggle('sidebar-collapsed', this.isSidebarCollapsed);
     },
     beforeUnmount() {
         window.removeEventListener('resize', this.handleResize);
-        // Clean up body class when component is removed
         document.body.classList.remove('sidebar-collapsed');
     }
 }
@@ -202,7 +202,6 @@ export default {
     overflow: hidden;
 }
 
-/* Colorful icon containers */
 .icon-container {
     width: 32px;
     height: 32px;
@@ -230,6 +229,11 @@ export default {
 
 .create-order-icon {
     background-color: #f39c12;
+    color: white;
+}
+
+.profile-management-icon {
+    background-color: #8e44ad;
     color: white;
 }
 
@@ -310,7 +314,6 @@ export default {
     z-index: 999;
 }
 
-/* Responsive Styles */
 @media (max-width: 768px) {
     .staff-sidebar {
         transform: translateX(-100%);
@@ -332,7 +335,6 @@ export default {
     }
 }
 
-/* When sidebar is collapsed */
 .staff-sidebar.collapsed .sidebar-header h1,
 .staff-sidebar.collapsed .menu-item span,
 .staff-sidebar.collapsed .staff-name,

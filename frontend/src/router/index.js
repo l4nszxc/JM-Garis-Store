@@ -239,6 +239,12 @@ const routes = [
     component: CreateOrder,
     meta: { requiresAuth: true, role: 'staff' }
   },
+  {
+    path: '/staff/profile',
+    name: 'StaffProfile',
+    component: () => import('../views/staff/StaffProfile.vue'),
+    meta: { requiresAuth: true, role: 'staff' }
+  },
 ]
 
 const router = createRouter({

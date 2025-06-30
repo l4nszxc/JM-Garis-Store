@@ -173,6 +173,18 @@ static async updateProfilePicture(userId, imageUrl) {
         throw error;
     }
 }
+static async changePassword(userId, newPassword) {
+        try {
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            const [result] = await db.execute(
+                'UPDATE users SET password = ? WHERE id = ?',
+                [hashedPassword, userId]
+            );
+            return result;
+        } catch (error) {
+            throw error;
+        }
+    }
 }
 
 
