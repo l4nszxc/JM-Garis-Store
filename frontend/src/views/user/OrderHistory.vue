@@ -31,12 +31,23 @@
                         <div class="order-summary">
                             <div class="order-primary-info">
                                 <h3>Order #{{ order.order_id }}</h3>
-                                <span :class="['status-badge', order.status.toLowerCase()]">
-                                    <template v-if="order.status === 'paid'">
-                                        <i class="fas fa-check-circle"></i>
-                                    </template>
-                                    {{ order.status }}
-                                </span>
+                                <div class="status-container">
+                                    <span :class="['status-badge', order.status.toLowerCase()]">
+                                        <template v-if="order.status === 'paid'">
+                                            <i class="fas fa-check-circle"></i>
+                                        </template>
+                                        {{ order.status }}
+                                    </span>
+                                    <!-- Add View Receipt button for paid orders -->
+                                    <button 
+                                        v-if="order.status === 'paid'" 
+                                        @click="viewReceipt(order.order_id)"
+                                        class="receipt-btn"
+                                        title="View Receipt"
+                                    >
+                                        <i class="fas fa-receipt"></i> View Receipt
+                                    </button>
+                                </div>
                                 <!-- Updated staff info display -->
                                 <span v-if="order.status === 'preparing' && order.staff_name" class="staff-info">
                                     <i class="fas fa-user"></i> 
@@ -111,6 +122,7 @@
     </div>
 </template>
   
+  
   <script>
   import Navbar from '../../components/Navbar.vue'
   import LogoutModal from '../../components/LogoutModal.vue'
@@ -141,6 +153,9 @@
         }
     },
     methods: {
+        viewReceipt(orderId) {
+            this.$router.push(`/receipt/${orderId}`);
+        },
         formatPrice(price) {
             return new Intl.NumberFormat('en-PH', {
                 style: 'currency',
@@ -635,6 +650,35 @@
     padding: 0.5rem;
     border-radius: 4px;
     width: fit-content;
+}
+.status-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.receipt-btn {
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    padding: 0.5rem 0.875rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.receipt-btn:hover {
+    background-color: #138496;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(23, 162, 184, 0.3);
+}
+
+.receipt-btn i {
+    font-size: 0.8rem;
 }
   @media (max-width: 768px) {
       .order-history-content {

@@ -35,5 +35,6 @@ router.get('/order-reports', authenticate, isAdmin, adminController.getOrderRepo
 router.get('/product-reports', authenticate, isAdmin, adminController.getProductReports);
 router.put('/order-reports/:id', authenticate, isAdmin, adminController.updateOrderReport);
 router.put('/product-reports/:id', authenticate, isAdmin, adminController.updateProductReport);
+router.get('/receipt-settings/public', adminController.getPublicReceiptSettings);
 
 module.exports = router;

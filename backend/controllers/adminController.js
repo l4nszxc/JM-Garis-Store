@@ -1080,3 +1080,43 @@ exports.updateProductReport = async (req, res) => {
     res.status(500).json({ message: 'Error updating report' });
   }
 };
+exports.getPublicReceiptSettings = async (req, res) => {
+    try {
+        // Check if receipt settings exist in the database
+        const [settings] = await db.query('SELECT * FROM receipt_settings LIMIT 1');
+        
+        if (settings && settings.length > 0) {
+            // Return only the necessary fields for public access
+            const publicSettings = {
+                storeName: settings[0].storeName,
+                storeTagline: settings[0].storeTagline,
+                storeAddress: settings[0].storeAddress,
+                contactNumber: settings[0].contactNumber,
+                thankyouMessage: settings[0].thankyouMessage,
+                footerText: settings[0].footerText
+            };
+            res.json(publicSettings);
+        } else {
+            // Return default settings if none exist
+            res.json({
+                storeName: 'JM Garis Store',
+                storeTagline: 'Official Receipt',
+                storeAddress: '',
+                contactNumber: '',
+                thankyouMessage: 'Thank you for your purchase!\nPlease come again!',
+                footerText: ''
+            });
+        }
+    } catch (error) {
+        console.error('Error getting public receipt settings:', error);
+        // Return default settings on error
+        res.json({
+            storeName: 'JM Garis Store',
+            storeTagline: 'Official Receipt',
+            storeAddress: '',
+            contactNumber: '',
+            thankyouMessage: 'Thank you for your purchase!\nPlease come again!',
+            footerText: ''
+        });
+    }
+};
