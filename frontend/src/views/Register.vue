@@ -173,32 +173,87 @@
           <label for="password">Password</label>
           <div class="input-group">
             <i class="fas fa-lock input-icon"></i>
-            <input
-              type="password"
-              id="password"
-              v-model="formData.password"
-              required
-              placeholder="Create a password"
-            />
+            <div class="password-input-container">
+              <input
+                :type="showPassword ? 'text' : 'password'"
+                id="password"
+                v-model="formData.password"
+                required
+                placeholder="Create a password"
+                @input="validatePassword"
+                class="password-input"
+              />
+              <button 
+                type="button" 
+                @click="showPassword = !showPassword"
+                class="password-toggle"
+              >
+                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </button>
+            </div>
+          </div>
+          <!-- Password Requirements -->
+          <div v-if="passwordValidation.show" class="password-requirements">
+            <div class="password-strength">
+              <div class="strength-label">Password Strength: 
+                <span :class="['strength-text', passwordStrengthClass]">
+                  {{ passwordStrengthText }}
+                </span>
+              </div>
+              <div class="strength-bar">
+                <div 
+                  :class="['strength-fill', passwordStrengthClass]"
+                  :style="{ width: passwordStrengthWidth + '%' }"
+                ></div>
+              </div>
+            </div>
+            <div class="requirements-list">
+              <div :class="['requirement', { 'valid': passwordValidation.length }]">
+                <i :class="passwordValidation.length ? 'fas fa-check' : 'fas fa-times'"></i>
+                At least 8 characters
+              </div>
+              <div :class="['requirement', { 'valid': passwordValidation.number }]">
+                <i :class="passwordValidation.number ? 'fas fa-check' : 'fas fa-times'"></i>
+                Contains at least one number
+              </div>
+              <div :class="['requirement', { 'valid': passwordValidation.letter }]">
+                <i :class="passwordValidation.letter ? 'fas fa-check' : 'fas fa-times'"></i>
+                Contains at least one letter
+              </div>
+            </div>
           </div>
         </div>
+        
         <div class="form-group">
           <label for="confirmPassword">Confirm Password</label>
           <div class="input-group">
             <i class="fas fa-lock input-icon"></i>
-            <input
-              type="password"
-              id="confirmPassword"
-              v-model="formData.confirmPassword"
-              required
-              placeholder="Confirm your password"
-            />
+            <div class="password-input-container">
+              <input
+                :type="showConfirmPassword ? 'text' : 'password'"
+                id="confirmPassword"
+                v-model="formData.confirmPassword"
+                required
+                placeholder="Confirm your password"
+                class="password-input"
+              />
+              <button 
+                type="button" 
+                @click="showConfirmPassword = !showConfirmPassword"
+                class="password-toggle"
+              >
+                <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </button>
+            </div>
+          </div>
+          <div v-if="formData.confirmPassword && formData.password !== formData.confirmPassword" class="password-error">
+            <i class="fas fa-times"></i> Passwords do not match
           </div>
         </div>
       </div>
     </div>
 
-    <button type="submit" class="register-btn">
+    <button type="submit" class="register-btn" :disabled="!isFormValid">
       <i class="fas fa-user-plus"></i>
       Create Account
     </button>
@@ -238,15 +293,96 @@ export default {
         password: '',
         confirmPassword: ''
       },
-      error: ''
+      error: '',
+      
+      // Password visibility toggles
+      showPassword: false,
+      showConfirmPassword: false,
+      
+      // Password validation
+      passwordValidation: {
+        show: false,
+        length: false,
+        number: false,
+        letter: false,
+        uppercase: false,
+        lowercase: false,
+        special: false
+      }
+    }
+  },
+  computed: {
+    isPasswordValid() {
+      return this.passwordValidation.length && 
+             this.passwordValidation.number && 
+             this.passwordValidation.letter;
+    },
+    
+    isFormValid() {
+      return this.isPasswordValid && 
+             this.formData.password === this.formData.confirmPassword &&
+             this.formData.username &&
+             this.formData.firstname &&
+             this.formData.lastname &&
+             this.formData.phoneNumber &&
+             this.formData.address &&
+             this.formData.email;
+    },
+    
+    passwordStrengthScore() {
+      let score = 0;
+      if (this.passwordValidation.length) score += 1;
+      if (this.passwordValidation.number) score += 1;
+      if (this.passwordValidation.letter) score += 1;
+      if (this.passwordValidation.uppercase) score += 1;
+      if (this.passwordValidation.lowercase) score += 1;
+      if (this.passwordValidation.special) score += 1;
+      return score;
+    },
+    
+    passwordStrengthText() {
+      const score = this.passwordStrengthScore;
+      if (score <= 2) return 'Weak';
+      if (score <= 4) return 'Medium';
+      if (score <= 5) return 'Strong';
+      return 'Very Strong';
+    },
+    
+    passwordStrengthClass() {
+      const score = this.passwordStrengthScore;
+      if (score <= 2) return 'weak';
+      if (score <= 4) return 'medium';
+      if (score <= 5) return 'strong';
+      return 'very-strong';
+    },
+    
+    passwordStrengthWidth() {
+      return (this.passwordStrengthScore / 6) * 100;
     }
   },
   methods: {
+    validatePassword() {
+      const password = this.formData.password;
+      this.passwordValidation.show = password.length > 0;
+      this.passwordValidation.length = password.length >= 8;
+      this.passwordValidation.number = /\d/.test(password);
+      this.passwordValidation.letter = /[a-zA-Z]/.test(password);
+      this.passwordValidation.uppercase = /[A-Z]/.test(password);
+      this.passwordValidation.lowercase = /[a-z]/.test(password);
+      this.passwordValidation.special = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    },
+    
     async handleRegister() {
       try {
         // Check if passwords match
         if (this.formData.password !== this.formData.confirmPassword) {
           this.error = 'Passwords do not match';
+          return;
+        }
+
+        // Check password requirements
+        if (!this.isPasswordValid) {
+          this.error = 'Password must be at least 8 characters long and contain at least one number and one letter';
           return;
         }
 
@@ -344,6 +480,7 @@ export default {
   top: 50%;
   transform: translateY(-50%);
   color: #4CAF50;
+  z-index: 2;
 }
 
 input {
@@ -359,6 +496,144 @@ input:focus {
   border-color: #4CAF50;
   outline: none;
   box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+/* Password Input Specific Styles */
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input {
+  width: 100%;
+  padding: 1rem 3rem 1rem 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.password-input:focus {
+  border-color: #4CAF50;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: color 0.2s ease;
+  z-index: 2;
+}
+
+.password-toggle:hover {
+  color: #4CAF50;
+}
+
+/* Password Requirements */
+.password-requirements {
+  margin-top: 0.75rem;
+}
+
+.password-strength {
+  margin-bottom: 0.75rem;
+}
+
+.strength-label {
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  color: #374151;
+}
+
+.strength-text {
+  font-weight: 600;
+}
+
+.strength-text.weak {
+  color: #dc3545;
+}
+
+.strength-text.medium {
+  color: #f59e0b;
+}
+
+.strength-text.strong {
+  color: #10b981;
+}
+
+.strength-text.very-strong {
+  color: #059669;
+}
+
+.strength-bar {
+  width: 100%;
+  height: 4px;
+  background-color: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.strength-fill {
+  height: 100%;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+.strength-fill.weak {
+  background-color: #dc3545;
+}
+
+.strength-fill.medium {
+  background-color: #f59e0b;
+}
+
+.strength-fill.strong {
+  background-color: #10b981;
+}
+
+.strength-fill.very-strong {
+  background-color: #059669;
+}
+
+.requirements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.requirement {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #dc3545;
+  transition: color 0.2s ease;
+}
+
+.requirement.valid {
+  color: #4CAF50;
+}
+
+.requirement i {
+  font-size: 0.7rem;
+}
+
+.password-error {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #dc3545;
 }
 
 .register-btn {
@@ -378,10 +653,17 @@ input:focus {
   gap: 0.5rem;
 }
 
-.register-btn:hover {
+.register-btn:hover:not(:disabled) {
   background: linear-gradient(45deg, #45a049, #3d8b40);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+}
+
+.register-btn:disabled {
+  background: #c8e6c9;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .error-message {
@@ -473,6 +755,14 @@ a:hover {
   }
 
   .register-btn {
+    width: 100%;
+  }
+  
+  .password-input-container {
+    width: 100%;
+  }
+  
+  .password-input {
     width: 100%;
   }
 }
