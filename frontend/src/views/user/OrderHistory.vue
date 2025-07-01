@@ -751,7 +751,7 @@ export default {
     font-size: 0.8rem;
 }
 .repeat-btn {
-    background-color: #17a2b8;
+    background-color: #3d83df;
     color: white;
     border: none;
     padding: 0.5rem 1rem;
@@ -766,7 +766,7 @@ export default {
 }
 
 .repeat-btn:hover {
-    background-color: #138496;
+    background-color: #0e30a0;
     transform: translateY(-1px);
 }
 
