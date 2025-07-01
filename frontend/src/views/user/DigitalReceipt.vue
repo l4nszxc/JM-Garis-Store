@@ -136,7 +136,6 @@ export default {
         const token = localStorage.getItem('token');
         const orderId = this.$route.params.orderId;
         
-        // Use the same endpoint pattern as other components - fetch all orders and filter
         const response = await fetch('http://localhost:7904/api/orders/history', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -166,7 +165,6 @@ export default {
 
     async fetchReceiptSettings() {
         try {
-            // Fix: Change the endpoint URL to match the actual route
             const response = await fetch('http://localhost:7904/api/admin/receipt-settings/public');
             
             if (response.ok) {
@@ -177,7 +175,6 @@ export default {
             }
         } catch (error) {
             console.error('Error fetching receipt settings:', error);
-            // Use default settings on error
             this.receiptSettings = {
             storeName: 'JM Garis Store',
             storeTagline: 'Official Receipt',
@@ -187,226 +184,279 @@ export default {
             footerText: ''
             };
         }
-        },
-
-    downloadReceipt() {
-      if (!this.order || !this.receiptSettings) return;
-
-      const receiptContent = this.generateReceiptHTML();
-      
-      // Create a blob with the HTML content
-      const blob = new Blob([receiptContent], { type: 'text/html' });
-      
-      // Create a download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Receipt_Order_${this.order.order_id}.html`;
-      
-      // Trigger the download
-      document.body.appendChild(link);
-      link.click();
-      
-      // Clean up
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
     },
 
-    generateReceiptHTML() {
-      const items = this.order.items.map(item => {
+    async downloadReceipt() {
+      if (!this.order || !this.receiptSettings) return;
+
+      try {
+        // Use the existing visible receipt preview instead of generating new HTML
+        const receiptPreview = document.querySelector('.preview-content');
+        
+        if (!receiptPreview) {
+          throw new Error('Receipt preview not found');
+        }
+
+        // Import html2canvas dynamically
+        const html2canvas = await import('html2canvas');
+        
+        // Add temporary styling to ensure proper rendering
+        const originalStyles = {
+          position: receiptPreview.style.position,
+          visibility: receiptPreview.style.visibility,
+          opacity: receiptPreview.style.opacity
+        };
+
+        // Ensure the element is visible and properly positioned
+        receiptPreview.style.position = 'relative';
+        receiptPreview.style.visibility = 'visible';
+        receiptPreview.style.opacity = '1';
+
+        // Wait for any pending DOM updates
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const canvas = await html2canvas.default(receiptPreview, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          logging: false,
+          width: receiptPreview.offsetWidth,
+          height: receiptPreview.offsetHeight,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: window.innerWidth,
+          windowHeight: window.innerHeight
+        });
+
+        // Restore original styles
+        Object.keys(originalStyles).forEach(key => {
+          if (originalStyles[key]) {
+            receiptPreview.style[key] = originalStyles[key];
+          } else {
+            receiptPreview.style.removeProperty(key);
+          }
+        });
+
+        // Convert canvas to blob and download
+        canvas.toBlob((blob) => {
+          if (blob && blob.size > 0) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Receipt_Order_${this.order.order_id}.png`;
+            link.style.display = 'none';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            URL.revokeObjectURL(url);
+          } else {
+            throw new Error('Generated image is empty');
+          }
+        }, 'image/png', 1.0);
+
+      } catch (error) {
+        console.error('Error generating receipt image:', error);
+        
+        // Alternative approach using a canvas-based receipt
+        try {
+          await this.generateCanvasReceipt();
+        } catch (fallbackError) {
+          console.error('Canvas fallback also failed:', fallbackError);
+          alert('Failed to generate receipt image. Please try taking a screenshot instead.');
+        }
+      }
+    },
+    async downloadReceiptFallback() {
+      // Fallback method using a visible element
+      const existingPreview = document.querySelector('.preview-content');
+      if (!existingPreview) {
+        throw new Error('No preview element found');
+      }
+
+      const html2canvas = await import('html2canvas');
+      
+      const canvas = await html2canvas.default(existingPreview, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        logging: false
+      });
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `Receipt_Order_${this.order.order_id}.png`;
+          link.style.display = 'none';
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          URL.revokeObjectURL(url);
+        }
+      }, 'image/png', 1.0);
+    },
+    async generateCanvasReceipt() {
+      // Create a canvas-based receipt as ultimate fallback
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Set canvas size
+      canvas.width = 400;
+      canvas.height = 600; // Will adjust based on content
+      
+      // Set white background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Set font and colors
+      ctx.fillStyle = '#333333';
+      ctx.font = '16px Courier New, monospace';
+      ctx.textAlign = 'center';
+      
+      let y = 30;
+      const lineHeight = 20;
+      const margin = 20;
+      
+      // Store name
+      ctx.font = 'bold 20px Courier New, monospace';
+      ctx.fillText(this.receiptSettings.storeName, canvas.width / 2, y);
+      y += lineHeight + 5;
+      
+      // Store tagline
+      if (this.receiptSettings.storeTagline) {
+        ctx.font = '14px Courier New, monospace';
+        ctx.fillText(this.receiptSettings.storeTagline, canvas.width / 2, y);
+        y += lineHeight;
+      }
+      
+      // Store address
+      if (this.receiptSettings.storeAddress) {
+        ctx.fillText(this.receiptSettings.storeAddress, canvas.width / 2, y);
+        y += lineHeight;
+      }
+      
+      // Contact number
+      if (this.receiptSettings.contactNumber) {
+        ctx.fillText(`Tel: ${this.receiptSettings.contactNumber}`, canvas.width / 2, y);
+        y += lineHeight;
+      }
+      
+      // Divider
+      y += 10;
+      ctx.beginPath();
+      ctx.setLineDash([5, 5]);
+      ctx.moveTo(margin, y);
+      ctx.lineTo(canvas.width - margin, y);
+      ctx.stroke();
+      y += 20;
+      
+      // Order details
+      ctx.textAlign = 'left';
+      ctx.font = '14px Courier New, monospace';
+      ctx.fillText(`Order #: ${this.order.order_id}`, margin, y);
+      y += lineHeight;
+      ctx.fillText(`Date: ${this.formatDate(this.order.created_at)}`, margin, y);
+      y += lineHeight;
+      ctx.fillText(`Customer: ${this.order.customer_name || this.username}`, margin, y);
+      y += lineHeight + 10;
+      
+      // Items
+      this.order.items.forEach(item => {
         const displayName = item.choice_name 
           ? `${item.name} (${item.choice_name})`
           : item.name;
+        
+        ctx.fillText(displayName, margin, y);
+        y += lineHeight;
+        
+        const calculation = `${item.quantity} × ${this.formatPrice(item.price)} = ${this.formatPrice(item.price * item.quantity)}`;
+        ctx.textAlign = 'right';
+        ctx.fillText(calculation, canvas.width - margin, y);
+        ctx.textAlign = 'left';
+        y += lineHeight + 5;
+      });
+      
+      // Totals
+      y += 10;
+      ctx.textAlign = 'right';
+      ctx.fillText(`Subtotal: ${this.formatPrice(this.order.subtotal)}`, canvas.width - margin, y);
+      y += lineHeight;
+      
+      if (this.order.discount_amount > 0) {
+        ctx.fillText(`Discount: -${this.formatPrice(this.order.discount_amount)}`, canvas.width - margin, y);
+        y += lineHeight;
+      }
+      
+      ctx.font = 'bold 16px Courier New, monospace';
+      ctx.fillText(`Total: ${this.formatPrice(this.order.total_amount)}`, canvas.width - margin, y);
+      y += lineHeight + 10;
+      
+      // Payment info
+      if (this.order.cash_amount) {
+        ctx.font = '14px Courier New, monospace';
+        ctx.fillText(`Cash: ${this.formatPrice(this.order.cash_amount)}`, canvas.width - margin, y);
+        y += lineHeight;
+        ctx.fillText(`Change: ${this.formatPrice(this.order.change_amount || 0)}`, canvas.width - margin, y);
+        y += lineHeight;
+      }
+      
+      // Thank you message
+      y += 20;
+      ctx.textAlign = 'center';
+      ctx.font = '12px Courier New, monospace';
+      const thankYouLines = this.receiptSettings.thankyouMessage.split('\n');
+      thankYouLines.forEach(line => {
+        ctx.fillText(line, canvas.width / 2, y);
+        y += lineHeight;
+      });
+      
+      // Footer
+      if (this.receiptSettings.footerText) {
+        y += 10;
+        ctx.fillText(this.receiptSettings.footerText, canvas.width / 2, y);
+        y += lineHeight;
+      }
+      
+      // Generated timestamp
+      y += 10;
+      ctx.fillText(`Generated on: ${new Date().toLocaleString()}`, canvas.width / 2, y);
+      
+      // Adjust canvas height to fit content
+      const finalCanvas = document.createElement('canvas');
+      const finalCtx = finalCanvas.getContext('2d');
+      finalCanvas.width = canvas.width;
+      finalCanvas.height = y + 30;
+      
+      finalCtx.fillStyle = '#ffffff';
+      finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+      finalCtx.drawImage(canvas, 0, 0);
+      
+      // Download the canvas as image
+      finalCanvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `Receipt_Order_${this.order.order_id}.png`;
+          link.style.display = 'none';
           
-        return `
-          <div class="receipt-item">
-            <div class="item-name">${displayName}</div>
-            <div class="item-calculation">${item.quantity} × ${this.formatPrice(item.price)} = ${this.formatPrice(item.price * item.quantity)}</div>
-          </div>
-        `;
-      }).join('');
-
-      const thankyouMessage = this.receiptSettings.thankyouMessage
-        ? this.receiptSettings.thankyouMessage.replace(/\n/g, '<br>')
-        : 'Thank you for your purchase!<br>Please come again!';
-
-      return `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Receipt - Order #${this.order.order_id}</title>
-          <style>
-            body {
-              font-family: 'Courier New', Courier, monospace;
-              max-width: 400px;
-              margin: 20px auto;
-              padding: 20px;
-              background-color: #f5f5f5;
-              color: #333;
-              line-height: 1.4;
-            }
-            
-            .receipt-container {
-              background-color: white;
-              padding: 30px;
-              border-radius: 8px;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-            
-            .receipt-header {
-              text-align: center;
-              margin-bottom: 25px;
-              padding-bottom: 15px;
-              border-bottom: 2px dashed #ccc;
-            }
-            
-            .receipt-header h1 {
-              margin: 0 0 8px 0;
-              font-size: 24px;
-              font-weight: bold;
-              color: #2c3e50;
-            }
-            
-            .receipt-header p {
-              margin: 4px 0;
-              font-size: 14px;
-              color: #666;
-            }
-            
-            .receipt-details {
-              margin-bottom: 20px;
-              padding-bottom: 15px;
-              border-bottom: 1px solid #eee;
-            }
-            
-            .receipt-details p {
-              margin: 8px 0;
-              font-size: 14px;
-            }
-            
-            .receipt-items {
-              margin-bottom: 20px;
-            }
-            
-            .receipt-item {
-              border-bottom: 1px dotted #ddd;
-              padding: 12px 0;
-            }
-            
-            .item-name {
-              font-weight: 500;
-              margin-bottom: 4px;
-              font-size: 14px;
-            }
-            
-            .item-calculation {
-              text-align: right;
-              color: #666;
-              font-size: 13px;
-            }
-            
-            .receipt-totals {
-              margin-top: 25px;
-              text-align: right;
-              border-top: 2px solid #333;
-              padding-top: 15px;
-            }
-            
-            .receipt-totals p {
-              margin: 8px 0;
-              font-size: 14px;
-            }
-            
-            .receipt-total {
-              font-size: 18px !important;
-              font-weight: bold !important;
-              margin-top: 15px !important;
-              color: #2c3e50;
-            }
-            
-            .receipt-payment {
-              margin-top: 15px;
-              padding-top: 12px;
-              border-top: 1px dashed #ccc;
-            }
-            
-            .receipt-footer {
-              text-align: center;
-              margin-top: 30px;
-              padding-top: 20px;
-              border-top: 2px dashed #ccc;
-              font-size: 13px;
-              line-height: 1.6;
-            }
-            
-            .receipt-footer p {
-              margin: 8px 0;
-              color: #666;
-            }
-            
-            .store-info {
-              font-size: 12px;
-              color: #888;
-              margin-top: 15px;
-            }
-            
-            @media print {
-              body { 
-                background-color: white;
-                margin: 0;
-                padding: 10px;
-              }
-              .receipt-container {
-                box-shadow: none;
-                padding: 0;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="receipt-container">
-            <div class="receipt-header">
-              <h1>${this.receiptSettings.storeName}</h1>
-              ${this.receiptSettings.storeTagline ? `<p>${this.receiptSettings.storeTagline}</p>` : ''}
-              ${this.receiptSettings.storeAddress ? `<p>${this.receiptSettings.storeAddress}</p>` : ''}
-              ${this.receiptSettings.contactNumber ? `<p>Tel: ${this.receiptSettings.contactNumber}</p>` : ''}
-            </div>
-            
-            <div class="receipt-details">
-              <p><strong>Order #:</strong> ${this.order.order_id}</p>
-              <p><strong>Date:</strong> ${this.formatDate(this.order.created_at)}</p>
-              <p><strong>Customer:</strong> ${this.order.customer_name || this.username}</p>
-            </div>
-            
-            <div class="receipt-items">
-              ${items}
-            </div>
-            
-            <div class="receipt-totals">
-              <p>Subtotal: ${this.formatPrice(this.order.subtotal)}</p>
-              ${this.order.discount_amount > 0 ? `<p>Discount: -${this.formatPrice(this.order.discount_amount)}</p>` : ''}
-              <p class="receipt-total">Total: ${this.formatPrice(this.order.total_amount)}</p>
-              
-              ${this.order.cash_amount ? `
-                <div class="receipt-payment">
-                  <p>Cash: ${this.formatPrice(this.order.cash_amount)}</p>
-                  <p>Change: ${this.formatPrice(this.order.change_amount || 0)}</p>
-                </div>
-              ` : ''}
-            </div>
-            
-            <div class="receipt-footer">
-              <p>${thankyouMessage}</p>
-              ${this.receiptSettings.footerText ? `<p class="store-info">${this.receiptSettings.footerText}</p>` : ''}
-              <p class="store-info">Generated on: ${new Date().toLocaleString()}</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          URL.revokeObjectURL(url);
+        }
+      }, 'image/png', 1.0);
     },
+
+    
 
     async handleLogout() {
       try {
@@ -441,20 +491,17 @@ export default {
       this.username = decoded.username;
     }
 
-    // Check if order ID exists
     const orderId = this.$route.params.orderId;
     if (!orderId) {
       this.$router.push('/order-history');
       return;
     }
 
-    // Fetch data
     await Promise.all([
       this.fetchOrderDetails(),
       this.fetchReceiptSettings()
     ]);
 
-    // Check if order was found and is paid
     if (!this.order) {
       this.$router.push('/order-history');
       return;
