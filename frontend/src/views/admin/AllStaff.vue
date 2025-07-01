@@ -21,6 +21,11 @@
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
+            <!-- NEW: Create Staff Account Button -->
+            <button @click="goToCreateStaff" class="create-staff-btn">
+              <i class="fas fa-user-plus"></i>
+              Create Staff Account
+            </button>
           </div>
         </div>
   
@@ -196,6 +201,12 @@
         if (!str) return '';
         return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
       },
+      
+      // NEW: Method to navigate to create staff page
+      goToCreateStaff() {
+        this.$router.push('/admin/recruit-staff');
+      },
+      
       editStaff(staff) {
         this.selectedStaff = staff;
         // Properly populate edit form data
@@ -453,6 +464,33 @@
     border-radius: 6px;
     font-size: 0.95rem;
   }
+
+  /* NEW: Create Staff Button Styles */
+  .create-staff-btn {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .create-staff-btn:hover {
+    background-color: #219a52;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+  }
+
+  .create-staff-btn i {
+    font-size: 0.9rem;
+  }
   
   .table-container {
   background: white;
@@ -566,10 +604,16 @@ td {
     
     .filters {
       flex-direction: column;
+      gap: 0.5rem;
     }
     
     .status-filter {
       width: 100%;
+    }
+
+    .create-staff-btn {
+      width: 100%;
+      justify-content: center;
     }
   }
   </style>

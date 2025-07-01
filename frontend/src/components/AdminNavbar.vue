@@ -69,12 +69,7 @@
           <span>Insert Products</span>
         </router-link>
 
-        <router-link to="/admin/recruit-staff" class="menu-item" active-class="active">
-          <div class="icon-container recruit-icon">
-            <i class="fas fa-user-plus"></i>
-          </div>
-          <span>Recruit Staff</span>
-        </router-link>
+        <!-- REMOVED: Recruit Staff menu item -->
         
         <router-link to="/admin/users" class="menu-item" active-class="active">
           <div class="icon-container users-icon">
@@ -383,11 +378,6 @@ export default {
   color: white;
 }
 
-.recruit-icon {
-  background-color: #16a085;
-  color: white;
-}
-
 .rewards-icon {
   background-color: #d35400;
   color: white;
@@ -398,7 +388,7 @@ export default {
   color: white;
 }
 
-/* NEW: Settings icon style */
+/* Settings icon style */
 .settings-icon {
   background-color: #607d8b;
   color: white;
