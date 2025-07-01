@@ -17,5 +17,6 @@ router.get('/:id/reports', authenticate, orderController.getOrderReports);
 router.post('/:id/review', authenticate, orderController.submitOrderReview);
 router.put('/:id/review', authenticate, orderController.updateOrderReview);
 router.get('/:id/review', authenticate, orderController.getOrderReview);
+router.post('/:orderId/repeat', authenticate, orderController.repeatOrder);
 
 module.exports = router;

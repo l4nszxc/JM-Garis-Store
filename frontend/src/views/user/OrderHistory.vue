@@ -47,6 +47,15 @@
                                     >
                                         <i class="fas fa-receipt"></i> View Receipt
                                     </button>
+                                    <!-- Add Repeat Order button for paid orders -->
+                                    <button 
+                                        v-if="order.status === 'paid'" 
+                                        @click="showRepeatOrderModal(order)"
+                                        class="repeat-btn"
+                                        title="Repeat Order"
+                                    >
+                                        <i class="fas fa-redo"></i> Repeat Order
+                                    </button>
                                 </div>
                                 <!-- Updated staff info display -->
                                 <span v-if="order.status === 'preparing' && order.staff_name" class="staff-info">
@@ -59,20 +68,7 @@
                             </div>
                             <div class="order-secondary-info">
                                 <p class="order-date">{{ formatDate(order.created_at) }}</p>
-                                <div class="price-breakdown">
-                                    <p class="subtotal">
-                                        <i class="fas fa-receipt"></i> Subtotal: {{ formatPrice(order.subtotal || order.total_amount) }}
-                                    </p>
-                                    <p v-if="order.discount_amount" class="discount-amount">
-                                        <i class="fas fa-tag"></i> Discount: -{{ formatPrice(order.discount_amount) }}
-                                    </p>
-                                    <p class="total-amount">
-                                        <i class="fas fa-peso-sign"></i> Total: {{ formatPrice(order.total_amount) }}
-                                    </p>
-                                </div>
-                                <p v-if="order.status === 'cancelled'" class="cancel-reason">
-                                    Reason: {{ order.cancel_reason }}
-                                </p>
+                                <p class="total-amount">{{ formatPrice(order.total_amount) }}</p>
                                 <button class="toggle-btn" @click="toggleOrderDetails(order.order_id)">
                                     <i :class="['fas', expandedOrders.has(order.order_id) ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
                                     {{ expandedOrders.has(order.order_id) ? 'Hide Details' : 'Show Details' }}
@@ -103,35 +99,57 @@
                         </div>
                     </div>
                 </div>
-                
                 <div v-else class="no-orders">
                     <i class="fas fa-box-open"></i>
                     <p>No orders found</p>
                     <router-link to="/products" class="shop-now-btn">
-                        <i class="fas fa-shopping-cart"></i> Shop Now
+                        <i class="fas fa-shopping-cart"></i> Start Shopping
                     </router-link>
                 </div>
             </div>
         </div>
 
+        <!-- Add Repeat Order Modal -->
+        <RepeatOrderModal
+            :show="showRepeatModal"
+            :orderId="selectedOrderForRepeat?.order_id || ''"
+            :orderItems="selectedOrderForRepeat?.items || []"
+            @close="closeRepeatModal"
+            @success="handleRepeatSuccess"
+            @error="handleRepeatError"
+        />
+
+        <!-- Notification -->
+        <div v-if="notification.show" :class="['notification', notification.type]">
+            <div class="notification-content">
+                <i :class="notification.icon"></i>
+                {{ notification.message }}
+            </div>
+            <button class="notification-close" @click="hideNotification">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
         <LogoutModal 
-            :show="showLogoutModal"
-            @confirm="handleLogout"
-            @cancel="showLogoutModal = false"
+            :show="showLogoutModal" 
+            @confirm="handleLogout" 
+            @cancel="showLogoutModal = false" 
         />
     </div>
 </template>
   
   
   <script>
-  import Navbar from '../../components/Navbar.vue'
-  import LogoutModal from '../../components/LogoutModal.vue'
-  
-  export default {
+import Navbar from '../../components/Navbar.vue';
+import LogoutModal from '../../components/LogoutModal.vue';
+import RepeatOrderModal from '../../components/RepeatOrderModal.vue';
+
+export default {
     name: 'OrderHistory',
     components: {
-      Navbar,
-      LogoutModal
+        Navbar,
+        LogoutModal,
+        RepeatOrderModal
     },
     data() {
         return {
@@ -140,7 +158,15 @@
             orders: [],
             expandedOrders: new Set(),
             searchQuery: '',
-            selectedStatus: ''
+            selectedStatus: '',
+            showRepeatModal: false,
+            selectedOrderForRepeat: null,
+            notification: {
+                show: false,
+                message: '',
+                type: 'success',
+                icon: 'fas fa-check-circle'
+            }
         }
     },
     computed: {
@@ -155,6 +181,44 @@
     methods: {
         viewReceipt(orderId) {
             this.$router.push(`/receipt/${orderId}`);
+        },
+        showRepeatOrderModal(order) {
+            this.selectedOrderForRepeat = order;
+            this.showRepeatModal = true;
+        },
+        closeRepeatModal() {
+            this.showRepeatModal = false;
+            this.selectedOrderForRepeat = null;
+        },
+        handleRepeatSuccess(data) {
+            this.showNotification(data.message, 'success');
+            // Dispatch event to update cart count
+            window.dispatchEvent(new CustomEvent('cart-updated'));
+            
+            // Optionally redirect to cart if user replaced cart
+            if (data.replaceCart) {
+                setTimeout(() => {
+                    this.$router.push('/cart');
+                }, 1500);
+            }
+        },
+        handleRepeatError(message) {
+            this.showNotification(message, 'error');
+        },
+        showNotification(message, type = 'success') {
+            this.notification = {
+                show: true,
+                message,
+                type,
+                icon: type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'
+            };
+            
+            setTimeout(() => {
+                this.hideNotification();
+            }, 5000);
+        },
+        hideNotification() {
+            this.notification.show = false;
         },
         formatPrice(price) {
             return new Intl.NumberFormat('en-PH', {
@@ -172,74 +236,80 @@
             }
         },
       formatDate(dateString) {
-        return new Date(dateString).toLocaleString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        })
+        if (!dateString) return 'Not available';
+        
+        try {
+            return new Date(dateString).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return 'Invalid date';
+        }
       },
       handleImageError(e) {
-        e.target.src = '/img/placeholder.jpg'
+        e.target.src = '/img/placeholder.jpg';
+      },
+      async getUserData() {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) {
+            this.$router.push('/login');
+            return;
+          }
+
+          // Get username from token
+          const decodedToken = JSON.parse(atob(token.split('.')[1]));
+          this.username = decodedToken.username;
+        } catch (error) {
+          console.error('Error getting user data:', error);
+          this.$router.push('/login');
+        }
+      },
+      async fetchOrders() {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch('http://localhost:7904/api/orders/user', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            this.orders = data;
+          }
+        } catch (error) {
+          console.error('Error fetching orders:', error);
+        }
       },
       async handleLogout() {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:7904/api/users/logout', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-            });
-
-            if (response.ok) {
-                localStorage.removeItem('token');
-                this.$router.push('/login');
-            } else {
-                throw new Error('Logout failed');
+          const token = localStorage.getItem('token');
+          await fetch('http://localhost:7904/api/users/logout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
             }
+          });
         } catch (error) {
-            console.error('Error during logout:', error);
+          console.error('Error during logout:', error);
         } finally {
-            this.showLogoutModal = false;
+          localStorage.removeItem('token');
+          this.$router.push('/login');
         }
-    },
-    async fetchOrders() {
-        try {
-            const token = localStorage.getItem('token')
-            const response = await fetch('http://localhost:7904/api/orders/history', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const orders = await response.json();
-                this.orders = orders.map(order => ({
-                    ...order,
-                    subtotal: order.items.reduce((sum, item) => 
-                        sum + (parseFloat(item.price) * item.quantity), 0
-                    )
-                }));
-            }
-        } catch (error) {
-            console.error('Error fetching orders:', error)
-        }
-    }
+      }
     },
     async mounted() {
-      const token = localStorage.getItem('token')
-      if (token) {
-        const decoded = JSON.parse(atob(token.split('.')[1]))
-        this.username = decoded.username
-      }
-      await this.fetchOrders()
+      await this.getUserData();
+      await this.fetchOrders();
     }
-  }
-  </script>
+}
+</script>
   
   <style scoped>
   .staff-info {
@@ -680,6 +750,80 @@
 .receipt-btn i {
     font-size: 0.8rem;
 }
+.repeat-btn {
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.3s ease;
+    margin-left: 0.5rem;
+}
+
+.repeat-btn:hover {
+    background-color: #138496;
+    transform: translateY(-1px);
+}
+
+.notification {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 1000;
+    max-width: 400px;
+    animation: slideIn 0.3s ease;
+}
+
+.notification.success {
+    background-color: #4CAF50;
+}
+
+.notification.error {
+    background-color: #f44336;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.notification-close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
   @media (max-width: 768px) {
       .order-history-content {
           padding: 1rem;

@@ -121,6 +121,14 @@
           >
             <i class="fas fa-times-circle"></i> Cancel Order
           </button>
+
+          <button 
+            v-if="order.status.toLowerCase() === 'paid'" 
+            @click="showRepeatOrderModal"
+            class="repeat-button"
+          >
+            <i class="fas fa-redo"></i> Repeat Order
+          </button>
           
           <button 
             @click="reportIssue"
@@ -257,6 +265,14 @@
         </div>
       </div>
     </div>
+    <RepeatOrderModal
+      :show="showRepeatModal"
+      :orderId="orderId"
+      :orderItems="order?.items || []"
+      @close="closeRepeatModal"
+      @success="handleRepeatSuccess"
+      @error="handleRepeatError"
+    />
 
     <LogoutModal 
       :show="showLogoutModal" 
@@ -275,12 +291,14 @@
 <script>
 import Navbar from '../../components/Navbar.vue';
 import LogoutModal from '../../components/LogoutModal.vue';
+import RepeatOrderModal from '../../components/RepeatOrderModal.vue';
 
 export default {
   name: 'OrderDetails',
   components: {
     Navbar,
-    LogoutModal
+    LogoutModal,
+    RepeatOrderModal
   },
   data() {
     return {
@@ -293,6 +311,7 @@ export default {
       showReportModal: false,
       showReviewModal: false,
       showUpdateReviewModal: false,
+      showRepeatModal: false,
       reportData: {
         issueType: 'missing-items',
         description: ''
@@ -319,6 +338,30 @@ export default {
     }
   },
   methods: {
+    showRepeatOrderModal() {
+      this.showRepeatModal = true;
+    },
+    
+    closeRepeatModal() {
+      this.showRepeatModal = false;
+    },
+    
+    handleRepeatSuccess(data) {
+      this.showNotification(data.message, 'success');
+      // Dispatch event to update cart count
+      window.dispatchEvent(new CustomEvent('cart-updated'));
+      
+      // Optionally redirect to cart if user replaced cart
+      if (data.replaceCart) {
+        setTimeout(() => {
+          this.$router.push('/cart');
+        }, 1500);
+      }
+    },
+    
+    handleRepeatError(message) {
+      this.showNotification(message, 'error');
+    },
     markOrderNotificationAsRead() {
       try {
           const saved = localStorage.getItem('userNotifications');
@@ -1308,7 +1351,25 @@ textarea.form-input {
   color: #721c24;
   border-left: 4px solid #dc3545;
 }
+.repeat-button {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
 
+.repeat-button:hover {
+  background-color: #138496;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
+}
 @keyframes slide-in {
   from {
     transform: translateX(100%);

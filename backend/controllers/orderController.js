@@ -312,3 +312,113 @@ exports.getOrderReview = async (req, res) => {
     res.status(500).json({ message: 'Error getting order review' });
   }
 };
+exports.repeatOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { replaceCart = false } = req.body;
+    const userId = req.user.id;
+
+    // Get the order details and items
+    const [orderResult] = await db.execute(
+      `SELECT o.*, u.username 
+       FROM orders o 
+       JOIN users u ON o.user_id = u.id 
+       WHERE o.order_id = ? AND o.user_id = ? AND o.status = 'paid'`,
+      [orderId, userId]
+    );
+
+    if (orderResult.length === 0) {
+      return res.status(404).json({ message: 'Order not found or not eligible for repeat' });
+    }
+
+    // Get order items
+    const [items] = await db.execute(
+      `SELECT oi.product_id, oi.quantity, oi.choice_id, p.name, p.stock_quantity,
+              pc.stock as choice_stock, pc.name as choice_name
+       FROM order_items oi
+       JOIN products p ON oi.product_id = p.products_id
+       LEFT JOIN product_choices pc ON oi.choice_id = pc.choice_id
+       WHERE oi.order_id = ?`,
+      [orderId]
+    );
+
+    if (items.length === 0) {
+      return res.status(404).json({ message: 'No items found for this order' });
+    }
+
+    // Check stock availability for all items
+    const unavailableItems = [];
+    for (const item of items) {
+      const availableStock = item.choice_id ? item.choice_stock : item.stock_quantity;
+      if (availableStock < item.quantity) {
+        unavailableItems.push({
+          name: item.name,
+          choice_name: item.choice_name,
+          requested: item.quantity,
+          available: availableStock
+        });
+      }
+    }
+
+    if (unavailableItems.length > 0) {
+      return res.status(400).json({ 
+        message: 'Some items are not available in requested quantities',
+        unavailableItems 
+      });
+    }
+
+    // Start transaction
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // If replace cart is true, clear existing cart
+      if (replaceCart) {
+        await connection.execute(
+          'DELETE FROM cart WHERE user_id = ?',
+          [userId]
+        );
+      }
+
+      // Add items to cart
+      for (const item of items) {
+        // Check if item already exists in cart
+        const [existing] = await connection.execute(
+          'SELECT id, quantity FROM cart WHERE user_id = ? AND product_id = ? AND (choice_id = ? OR (choice_id IS NULL AND ? IS NULL))',
+          [userId, item.product_id, item.choice_id, item.choice_id]
+        );
+
+        if (existing.length > 0 && !replaceCart) {
+          // Update existing cart item quantity
+          await connection.execute(
+            'UPDATE cart SET quantity = quantity + ? WHERE id = ?',
+            [item.quantity, existing[0].id]
+          );
+        } else {
+          // Insert new cart item
+          await connection.execute(
+            'INSERT INTO cart (user_id, product_id, quantity, choice_id) VALUES (?, ?, ?, ?)',
+            [userId, item.product_id, item.quantity, item.choice_id]
+          );
+        }
+      }
+
+      await connection.commit();
+      connection.release();
+
+      res.json({ 
+        message: replaceCart ? 'Cart replaced with repeated order' : 'Items added to cart from repeated order',
+        itemsAdded: items.length
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      connection.release();
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Error repeating order:', error);
+    res.status(500).json({ message: 'Error repeating order' });
+  }
+};
