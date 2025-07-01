@@ -131,39 +131,88 @@
                     <div class="form-grid password-grid">
                         <div class="form-group">
                             <label><i class="fas fa-key"></i> Current Password</label>
-                            <input
-                                type="password"
-                                v-model="passwordData.currentPassword"
-                                placeholder="Enter current password"
-                                required
-                                class="form-input"
-                            />
+                            <div class="password-input-container">
+                                <input
+                                    :type="showCurrentPassword ? 'text' : 'password'"
+                                    v-model="passwordData.currentPassword"
+                                    placeholder="Enter current password"
+                                    required
+                                    class="password-input"
+                                />
+                                <button 
+                                    type="button" 
+                                    @click="showCurrentPassword = !showCurrentPassword"
+                                    class="password-toggle"
+                                >
+                                    <i :class="showCurrentPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label><i class="fas fa-lock"></i> New Password</label>
-                            <input
-                                type="password"
-                                v-model="passwordData.newPassword"
-                                placeholder="Enter new password"
-                                required
-                                class="form-input"
-                            />
+                            <div class="password-input-container">
+                                <input
+                                    :type="showNewPassword ? 'text' : 'password'"
+                                    v-model="passwordData.newPassword"
+                                    placeholder="Enter new password"
+                                    required
+                                    class="password-input"
+                                    @input="validatePassword"
+                                />
+                                <button 
+                                    type="button" 
+                                    @click="showNewPassword = !showNewPassword"
+                                    class="password-toggle"
+                                >
+                                    <i :class="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                </button>
+                            </div>
+                            <div v-if="passwordValidation.show" class="password-requirements">
+                                <div :class="['requirement', { 'valid': passwordValidation.length }]">
+                                    <i :class="passwordValidation.length ? 'fas fa-check' : 'fas fa-times'"></i>
+                                    At least 8 characters
+                                </div>
+                                <div :class="['requirement', { 'valid': passwordValidation.number }]">
+                                    <i :class="passwordValidation.number ? 'fas fa-check' : 'fas fa-times'"></i>
+                                    Contains at least one number
+                                </div>
+                                <div :class="['requirement', { 'valid': passwordValidation.letter }]">
+                                    <i :class="passwordValidation.letter ? 'fas fa-check' : 'fas fa-times'"></i>
+                                    Contains at least one letter
+                                </div>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label><i class="fas fa-lock"></i> Confirm New Password</label>
-                            <input
-                                type="password"
-                                v-model="passwordData.confirmPassword"
-                                placeholder="Confirm new password"
-                                required
-                                class="form-input"
-                            />
+                            <div class="password-input-container">
+                                <input
+                                    :type="showConfirmPassword ? 'text' : 'password'"
+                                    v-model="passwordData.confirmPassword"
+                                    placeholder="Confirm new password"
+                                    required
+                                    class="password-input"
+                                />
+                                <button 
+                                    type="button" 
+                                    @click="showConfirmPassword = !showConfirmPassword"
+                                    class="password-toggle"
+                                >
+                                    <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                                </button>
+                            </div>
+                            <div v-if="passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword" class="password-error">
+                                <i class="fas fa-times"></i> Passwords do not match
+                            </div>
                         </div>
                     </div>
                     <div class="password-actions">
-                        <button type="submit" class="password-btn">
-                            <i class="fas fa-shield-alt"></i>
-                            Update Password
+                        <button 
+                            type="submit" 
+                            class="password-btn"
+                            :disabled="!isPasswordValid || isChangingPassword"
+                        >
+                            <i :class="isChangingPassword ? 'fas fa-spinner fa-spin' : 'fas fa-shield-alt'"></i>
+                            {{ isChangingPassword ? 'Updating...' : 'Update Password' }}
                         </button>
                     </div>
                 </form>
@@ -203,6 +252,13 @@ export default {
             username: '',
             showLogoutModal: false,
             isEditing: false,
+            isChangingPassword: false,
+            
+            // Password visibility toggles
+            showCurrentPassword: false,
+            showNewPassword: false,
+            showConfirmPassword: false,
+            
             profileData: {
                 username: '',
                 firstname: '',
@@ -221,6 +277,15 @@ export default {
                 newPassword: '',
                 confirmPassword: ''
             },
+            
+            // Password validation
+            passwordValidation: {
+                show: false,
+                length: false,
+                number: false,
+                letter: false
+            },
+            
             notification: {
                 show: false,
                 message: '',
@@ -229,7 +294,24 @@ export default {
             }
         }
     },
+    computed: {
+        isPasswordValid() {
+            return this.passwordValidation.length && 
+                   this.passwordValidation.number && 
+                   this.passwordValidation.letter &&
+                   this.passwordData.newPassword === this.passwordData.confirmPassword &&
+                   this.passwordData.currentPassword.length > 0;
+        }
+    },
     methods: {
+        validatePassword() {
+            const password = this.passwordData.newPassword;
+            this.passwordValidation.show = password.length > 0;
+            this.passwordValidation.length = password.length >= 8;
+            this.passwordValidation.number = /\d/.test(password);
+            this.passwordValidation.letter = /[a-zA-Z]/.test(password);
+        },
+        
         async fetchProfile() {
             try {
                 const token = localStorage.getItem('token');
@@ -320,14 +402,11 @@ export default {
 
         async changePassword() {
             try {
-                if (this.passwordData.newPassword !== this.passwordData.confirmPassword) {
-                    throw new Error('New passwords do not match');
+                if (!this.isPasswordValid) {
+                    throw new Error('Please ensure all password requirements are met');
                 }
 
-                if (this.passwordData.newPassword.length < 6) {
-                    throw new Error('Password must be at least 6 characters long');
-                }
-
+                this.isChangingPassword = true;
                 const token = localStorage.getItem('token');
                 const response = await fetch('http://localhost:7904/api/users/change-password', {
                     method: 'PUT',
@@ -349,13 +428,16 @@ export default {
                         newPassword: '',
                         confirmPassword: ''
                     };
-                    this.showNotification('Password updated successfully', 'success', 'fas fa-check-circle');
+                    this.passwordValidation.show = false;
+                    this.showNotification('Password updated successfully! Your account is now more secure.', 'success', 'fas fa-shield-alt');
                 } else {
                     throw new Error(data.message || 'Failed to update password');
                 }
             } catch (error) {
                 console.error('Error changing password:', error);
-                this.showNotification(error.message || 'Failed to update password. Please try again.', 'error', 'fas fa-times-circle');
+                this.showNotification(error.message || 'Failed to update password. Please try again.', 'error', 'fas fa-exclamation-triangle');
+            } finally {
+                this.isChangingPassword = false;
             }
         },
 
@@ -562,6 +644,79 @@ export default {
     min-height: 80px;
 }
 
+/* Password Section */
+.password-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input {
+    width: 100%;
+    padding: 0.75rem 3rem 0.75rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    background-color: white;
+    box-sizing: border-box;
+}
+
+.password-input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.password-toggle {
+    position: absolute;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+    color: #3498db;
+}
+
+.password-requirements {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.requirement {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #dc3545;
+    transition: color 0.2s ease;
+}
+
+.requirement.valid {
+    color: #4CAF50;
+}
+
+.requirement i {
+    font-size: 0.75rem;
+}
+
+.password-error {
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #dc3545;
+}
+
 .password-actions {
     margin-top: 1.5rem;
     display: flex;
@@ -583,9 +738,15 @@ export default {
     transition: all 0.3s ease;
 }
 
-.password-btn:hover {
+.password-btn:hover:not(:disabled) {
     background-color: #45a049;
     transform: translateY(-1px);
+}
+
+.password-btn:disabled {
+    background-color: #c8e6c9;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .notification {
