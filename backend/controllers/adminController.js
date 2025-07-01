@@ -1514,3 +1514,351 @@ exports.addAdmin = async (req, res) => {
         res.status(500).json({ message: 'Error creating admin account' });
     }
 };
+exports.getDetailedReports = async (req, res) => {
+  try {
+    const { fromDate, toDate, category, type } = req.query;
+    
+    // Build date filter
+    let dateFilter = '';
+    if (fromDate && toDate) {
+      dateFilter = `AND o.created_at BETWEEN '${fromDate} 00:00:00' AND '${toDate} 23:59:59'`;
+    }
+    
+    // Build category filter
+    let categoryFilter = '';
+    if (category) {
+      categoryFilter = `AND p.category = '${category}'`;
+    }
+    
+    if (type === 'sales') {
+      // Sales Summary
+      const [salesSummary] = await db.execute(`
+        SELECT 
+          COUNT(DISTINCT o.order_id) as totalOrders,
+          COALESCE(SUM(o.total_amount), 0) as totalSales,
+          COALESCE(AVG(o.total_amount), 0) as avgOrderValue
+        FROM orders o
+        WHERE o.status = 'paid' ${dateFilter}
+      `);
+      
+      // Sales by Product
+      const [salesByProduct] = await db.execute(`
+        SELECT 
+          p.products_id as product_id,
+          p.name as product_name,
+          p.category,
+          SUM(oi.quantity) as units_sold,
+          SUM(oi.price * oi.quantity) as revenue,
+          AVG(oi.price) as avg_price
+        FROM products p
+        JOIN order_items oi ON p.products_id = oi.product_id
+        JOIN orders o ON oi.order_id = o.order_id
+        WHERE o.status = 'paid' ${dateFilter} ${categoryFilter}
+        GROUP BY p.products_id, p.name, p.category
+        ORDER BY revenue DESC
+      `);
+      
+      // Daily Sales
+      const [dailySales] = await db.execute(`
+        SELECT 
+          DATE(o.created_at) as date,
+          COUNT(o.order_id) as orders,
+          SUM(o.total_amount) as revenue,
+          AVG(o.total_amount) as avg_order_value
+        FROM orders o
+        WHERE o.status = 'paid' ${dateFilter}
+        GROUP BY DATE(o.created_at)
+        ORDER BY date DESC
+      `);
+      
+      res.json({
+        summary: salesSummary[0],
+        details: {
+          byProduct: salesByProduct,
+          daily: dailySales
+        }
+      });
+      
+    } else if (type === 'inventory') {
+      // Inventory Summary
+      const [inventorySummary] = await db.execute(`
+        SELECT 
+          COUNT(*) as totalProducts,
+          SUM(stock_quantity * price) as totalValue,
+          SUM(CASE WHEN stock_quantity <= 30 THEN 1 ELSE 0 END) as lowStockCount
+        FROM products
+        WHERE 1=1 ${categoryFilter}
+      `);
+      
+      // Current Inventory
+      const [currentInventory] = await db.execute(`
+        SELECT 
+          products_id as product_id,
+          name as product_name,
+          category,
+          stock_quantity as stock,
+          price,
+          (stock_quantity * price) as total_value
+        FROM products
+        WHERE 1=1 ${categoryFilter}
+        ORDER BY stock_quantity ASC
+      `);
+      
+      // Stock Movement (simplified - you might want to track actual stock movements)
+      const [stockMovement] = await db.execute(`
+        SELECT 
+          p.products_id as product_id,
+          p.name as product_name,
+          p.stock_quantity as current_stock,
+          (p.stock_quantity + COALESCE(sold.total_sold, 0)) as opening_stock,
+          COALESCE(sold.total_sold, 0) as units_sold,
+          CASE 
+            WHEN (p.stock_quantity + COALESCE(sold.total_sold, 0)) > 0 
+            THEN ROUND((COALESCE(sold.total_sold, 0) / (p.stock_quantity + COALESCE(sold.total_sold, 0))) * 100, 2)
+            ELSE 0 
+          END as turnover_rate
+        FROM products p
+        LEFT JOIN (
+          SELECT 
+            oi.product_id,
+            SUM(oi.quantity) as total_sold
+          FROM order_items oi
+          JOIN orders o ON oi.order_id = o.order_id
+          WHERE o.status = 'paid' ${dateFilter}
+          GROUP BY oi.product_id
+        ) sold ON p.products_id = sold.product_id
+        WHERE 1=1 ${categoryFilter}
+        ORDER BY turnover_rate DESC
+      `);
+      
+      res.json({
+        summary: inventorySummary[0],
+        details: {
+          current: currentInventory,
+          movement: stockMovement
+        }
+      });
+      
+    } else if (type === 'combined') {
+      // Combined Analysis
+      const [combinedData] = await db.execute(`
+        SELECT 
+          p.products_id as product_id,
+          p.name as product_name,
+          p.category,
+          COALESCE(sales.units_sold, 0) as units_sold,
+          COALESCE(sales.revenue, 0) as revenue,
+          p.stock_quantity as current_stock,
+          (p.stock_quantity * p.price) as stock_value,
+          CASE 
+            WHEN (p.stock_quantity + COALESCE(sales.units_sold, 0)) > 0 
+            THEN ROUND((COALESCE(sales.units_sold, 0) / (p.stock_quantity + COALESCE(sales.units_sold, 0))) * 100, 2)
+            ELSE 0 
+          END as turnover_rate,
+          CASE 
+            WHEN COALESCE(sales.units_sold, 0) >= 100 AND p.stock_quantity > 50 THEN 90
+            WHEN COALESCE(sales.units_sold, 0) >= 50 AND p.stock_quantity > 20 THEN 75
+            WHEN COALESCE(sales.units_sold, 0) >= 20 AND p.stock_quantity > 10 THEN 60
+            WHEN COALESCE(sales.units_sold, 0) >= 10 THEN 45
+            ELSE 30
+          END as performance_score
+        FROM products p
+        LEFT JOIN (
+          SELECT 
+            oi.product_id,
+            SUM(oi.quantity) as units_sold,
+            SUM(oi.price * oi.quantity) as revenue
+          FROM order_items oi
+          JOIN orders o ON oi.order_id = o.order_id
+          WHERE o.status = 'paid' ${dateFilter}
+          GROUP BY oi.product_id
+        ) sales ON p.products_id = sales.product_id
+        WHERE 1=1 ${categoryFilter}
+        ORDER BY performance_score DESC, revenue DESC
+      `);
+      
+      // Calculate summary metrics
+      const totalRevenue = combinedData.reduce((sum, item) => sum + parseFloat(item.revenue || 0), 0);
+      const totalItems = combinedData.length;
+      const revenuePerItem = totalItems > 0 ? totalRevenue / totalItems : 0;
+      
+      const totalUnits = combinedData.reduce((sum, item) => sum + parseInt(item.units_sold || 0), 0);
+      const totalStock = combinedData.reduce((sum, item) => sum + parseInt(item.current_stock || 0), 0);
+      const inventoryTurnover = totalStock > 0 ? (totalUnits / totalStock).toFixed(2) : 0;
+      
+      const avgPerformance = combinedData.reduce((sum, item) => sum + parseFloat(item.performance_score || 0), 0) / totalItems;
+      
+      res.json({
+        summary: {
+          revenuePerItem: revenuePerItem,
+          inventoryTurnover: inventoryTurnover,
+          profitMargin: Math.round(avgPerformance) // Simplified profit margin based on performance
+        },
+        details: {
+          performance: combinedData
+        }
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error fetching detailed reports:', error);
+    res.status(500).json({ message: 'Error fetching detailed reports' });
+  }
+};
+exports.getCategories = async (req, res) => {
+  try {
+    const [categories] = await db.execute(`
+      SELECT DISTINCT category 
+      FROM products 
+      WHERE category IS NOT NULL AND category != ''
+      ORDER BY category
+    `);
+    
+    res.json(categories.map(row => row.category));
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ message: 'Error fetching categories' });
+  }
+};
+
+// Download reports as Excel
+exports.downloadReports = async (req, res) => {
+  try {
+    const ExcelJS = require('exceljs');
+    const { fromDate, toDate, category, type } = req.query;
+    
+    const workbook = new ExcelJS.Workbook();
+    
+    // Set workbook properties
+    workbook.creator = 'JM Garis Store';
+    workbook.lastModifiedBy = 'Admin';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+    
+    if (type === 'sales' || type === 'combined') {
+      // Create Sales worksheet
+      const salesSheet = workbook.addWorksheet('Sales Report');
+      
+      // Add header information
+      salesSheet.addRow(['JM Garis Store - Sales Report']);
+      salesSheet.addRow([`Period: ${fromDate} to ${toDate}`]);
+      salesSheet.addRow(['Generated:', new Date().toLocaleString()]);
+      salesSheet.addRow([]); // Empty row
+      
+      // Add sales by product data
+      salesSheet.addRow(['Product Name', 'Category', 'Units Sold', 'Revenue', 'Average Price']);
+      
+      // Get the same data as the API
+      let dateFilter = '';
+      if (fromDate && toDate) {
+        dateFilter = `AND o.created_at BETWEEN '${fromDate} 00:00:00' AND '${toDate} 23:59:59'`;
+      }
+      
+      let categoryFilter = '';
+      if (category) {
+        categoryFilter = `AND p.category = '${category}'`;
+      }
+      
+      const [salesData] = await db.execute(`
+        SELECT 
+          p.name as product_name,
+          p.category,
+          SUM(oi.quantity) as units_sold,
+          SUM(oi.price * oi.quantity) as revenue,
+          AVG(oi.price) as avg_price
+        FROM products p
+        JOIN order_items oi ON p.products_id = oi.product_id
+        JOIN orders o ON oi.order_id = o.order_id
+        WHERE o.status = 'paid' ${dateFilter} ${categoryFilter}
+        GROUP BY p.products_id, p.name, p.category
+        ORDER BY revenue DESC
+      `);
+      
+      salesData.forEach(row => {
+        salesSheet.addRow([
+          row.product_name,
+          row.category,
+          row.units_sold,
+          parseFloat(row.revenue || 0),
+          parseFloat(row.avg_price || 0)
+        ]);
+      });
+      
+      // Style the header
+      salesSheet.getRow(1).font = { bold: true, size: 16 };
+      salesSheet.getRow(5).font = { bold: true };
+      
+      // Auto-fit columns
+      salesSheet.columns.forEach(column => {
+        column.width = 20;
+      });
+    }
+    
+    if (type === 'inventory' || type === 'combined') {
+      // Create Inventory worksheet
+      const inventorySheet = workbook.addWorksheet('Inventory Report');
+      
+      // Add header information
+      inventorySheet.addRow(['JM Garis Store - Inventory Report']);
+      inventorySheet.addRow([`Generated: ${new Date().toLocaleString()}`]);
+      inventorySheet.addRow([]); // Empty row
+      
+      // Add inventory data
+      inventorySheet.addRow(['Product Name', 'Category', 'Current Stock', 'Unit Price', 'Total Value', 'Status']);
+      
+      let categoryFilter = '';
+      if (category) {
+        categoryFilter = `WHERE p.category = '${category}'`;
+      } else {
+        categoryFilter = 'WHERE 1=1';
+      }
+      
+      const [inventoryData] = await db.execute(`
+        SELECT 
+          name as product_name,
+          category,
+          stock_quantity as stock,
+          price,
+          (stock_quantity * price) as total_value
+        FROM products ${categoryFilter}
+        ORDER BY stock_quantity ASC
+      `);
+      
+      inventoryData.forEach(row => {
+        let status = 'Normal';
+        if (row.stock <= 10) status = 'Critical';
+        else if (row.stock <= 30) status = 'Low';
+        
+        inventorySheet.addRow([
+          row.product_name,
+          row.category,
+          row.stock,
+          parseFloat(row.price || 0),
+          parseFloat(row.total_value || 0),
+          status
+        ]);
+      });
+      
+      // Style the header
+      inventorySheet.getRow(1).font = { bold: true, size: 16 };
+      inventorySheet.getRow(4).font = { bold: true };
+      
+      // Auto-fit columns
+      inventorySheet.columns.forEach(column => {
+        column.width = 20;
+      });
+    }
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${type}_report_${Date.now()}.xlsx"`);
+    
+    // Write to response
+    await workbook.xlsx.write(res);
+    res.end();
+    
+  } catch (error) {
+    console.error('Error generating Excel report:', error);
+    res.status(500).json({ message: 'Error generating Excel report' });
+  }
+};

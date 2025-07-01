@@ -223,6 +223,12 @@ const routes = [
     component: () => import('../views/admin/AdminSettings.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
   },
+  {
+    path: '/admin/sales-inventory-reports',
+    name: 'AdminSalesInventoryReports',
+    component: () => import('../views/admin/AdminSalesInventoryReports.vue'),
+    meta: { requiresAuth: true, roles: ['admin'] }
+  },
 
 
 

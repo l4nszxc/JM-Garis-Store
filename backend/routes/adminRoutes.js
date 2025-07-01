@@ -50,4 +50,8 @@ router.get('/rewards/settings', authenticate, isAdmin, adminController.getReward
 router.put('/rewards/settings',authenticate, isAdmin,  adminController.updateRewardsSettings);
 router.post('/add-admin', authenticate, isAdmin, adminController.addAdmin);
 
+router.get('/detailed-reports', authenticate, isAdmin, adminController.getDetailedReports);
+router.get('/categories', authenticate, isAdmin, adminController.getCategories);
+router.get('/download-reports', authenticate, isAdmin, adminController.downloadReports);
+
 module.exports = router;

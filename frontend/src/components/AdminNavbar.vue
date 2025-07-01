@@ -98,6 +98,12 @@
           </div>
           <span>Reports</span>
         </router-link>
+        <router-link to="/admin/sales-inventory-reports" class="menu-item" active-class="active">
+          <div class="icon-container sales-reports-icon">
+            <i class="fas fa-chart-bar"></i>
+          </div>
+          <span>Sales & Inventory Reports</span>
+        </router-link>
 
         <!-- NEW: Admin Settings -->
         <router-link to="/admin/settings" class="menu-item" active-class="active">
@@ -233,7 +239,7 @@ export default {
   left: 0;
   top: 0;
   bottom: 0;
-  width: 250px;
+  width: 275px;
   background-color: #2c3e50;
   color: white;
   display: flex;
@@ -535,5 +541,9 @@ export default {
 .admin-sidebar.collapsed .logout-btn {
   padding: 0.5rem;
   justify-content: center;
+}
+.sales-reports-icon {
+  background-color: #6366f1;
+  color: white;
 }
 </style>
