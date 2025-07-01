@@ -153,6 +153,15 @@
             @confirm="confirmAddToCart" 
             @cancel="cancelAddToCart" 
         />
+        <div v-if="notification.show" class="notification" :class="notification.type">
+            <div class="notification-content">
+                <i :class="notification.icon"></i>
+                {{ notification.message }}
+            </div>
+            <button class="notification-close" @click="hideNotification">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
     </div>
 </template>
 
@@ -193,6 +202,12 @@ export default {
             ],
             showLeftScroll: false,
             showRightScroll: false,
+            notification: {
+                show: false,
+                message: '',
+                type: 'success',
+                icon: 'fas fa-check-circle'
+            }
         };
     },
     computed: {
@@ -310,23 +325,38 @@ export default {
 
                 if (response.ok) {
                     await this.fetchCart();
-                    // Show a success notification instead of reloading
-                    this.showNotification('Product added to cart successfully!', 'success');
+                    // Show success notification
+                    this.showNotification('Product added to cart successfully', 'success', 'fas fa-check-circle');
+                    
+                    // Dispatch event to update cart count
+                    window.dispatchEvent(new CustomEvent('cart-updated'));
                 } else {
                     const error = await response.json();
-                    this.showNotification(error.message || 'Failed to add product to cart', 'error');
+                    this.showNotification(error.message || 'Failed to add product to cart', 'error', 'fas fa-times-circle');
                 }
             } catch (error) {
-                this.showNotification('Error adding product to cart', 'error');
+                console.error('Error adding product to cart:', error);
+                this.showNotification('Error adding product to cart', 'error', 'fas fa-times-circle');
             } finally {
                 this.showModal = false;
                 this.selectedProduct = null;
             }
         },
-        showNotification(message, type) {
-            // This is a placeholder - you'll need to implement a notification system
-            console.log(`${type.toUpperCase()}: ${message}`);
-            // You could add a toast notification component here
+        showNotification(message, type, icon) {
+            this.notification = {
+                show: true,
+                message,
+                type,
+                icon
+            };
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                this.hideNotification();
+            }, 5000);
+        },
+        hideNotification() {
+            this.notification.show = false;
         },
         async fetchCart() {
             try {
@@ -1098,7 +1128,66 @@ export default {
     transform: translateX(20px);
     opacity: 0;
 }
+.notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    z-index: 1001;
+    animation: slideIn 0.3s ease-out;
+    max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
 
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.notification.success {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.notification.error {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.notification.warning {
+    background-color: #f39c12;
+    color: white;
+}
+
+.notification-close {
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    font-size: 1rem;
+    transition: opacity 0.2s ease;
+}
+
+.notification-close:hover {
+    opacity: 0.8;
+}
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
 /* Responsive Design */
 @media (max-width: 1024px) {
     .product-content {
