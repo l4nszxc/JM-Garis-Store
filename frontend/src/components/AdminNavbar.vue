@@ -75,6 +75,7 @@
           </div>
           <span>Recruit Staff</span>
         </router-link>
+        
         <router-link to="/admin/users" class="menu-item" active-class="active">
           <div class="icon-container users-icon">
             <i class="fas fa-users"></i>
@@ -101,6 +102,14 @@
             <i class="fas fa-flag"></i>
           </div>
           <span>Reports</span>
+        </router-link>
+
+        <!-- NEW: Admin Settings -->
+        <router-link to="/admin/settings" class="menu-item" active-class="active">
+          <div class="icon-container settings-icon">
+            <i class="fas fa-cog"></i>
+          </div>
+          <span>Settings</span>
         </router-link>
       </div>
       
@@ -368,10 +377,12 @@ export default {
   background-color: #8e44ad;
   color: white;
 }
+
 .reports-icon {
   background-color: #ff5722;
   color: white;
 }
+
 .recruit-icon {
   background-color: #16a085;
   color: white;
@@ -384,6 +395,12 @@ export default {
 
 .profile-icon {
   background-color: #34495e;
+  color: white;
+}
+
+/* NEW: Settings icon style */
+.settings-icon {
+  background-color: #607d8b;
   color: white;
 }
 
@@ -458,6 +475,7 @@ export default {
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 999;
 }
+
 .alert-badge {
   position: absolute;
   top: -8px;
@@ -475,10 +493,12 @@ export default {
   padding: 0 4px;
   border: 2px solid #2c3e50;
 }
+
 .analytics-icon {
   background-color: #17a2b8;
   color: white;
 }
+
 /* Responsive Styles */
 @media (max-width: 768px) {
   .admin-sidebar {

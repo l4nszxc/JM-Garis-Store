@@ -5,13 +5,14 @@ const User = require('../models/userModel');
 const Reward = require('../models/rewardModel');
 const emailService = require('../services/emailService');
 const forecastService = require('../services/forecastService');
-const nodemailer = require('nodemailer'); 
+const nodemailer = require('nodemailer');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 async function sendEmailReceipt(order, settings) {
     try {
         // Create transporter (configure with your email service)
-        const transporter = nodemailer.createTransport({
+        const transporter = nodemailer.createTransporter({
             service: 'gmail',  // Replace with your email service
             auth: {
                 user: process.env.EMAIL_USER || 'lanslorence@gmail.com', // Use default if env not set
@@ -197,6 +198,7 @@ function generateEmailReceiptHTML(order, settings) {
         </html>
     `;
 }
+
 exports.getStats = async (req, res) => {
     try {
         const stats = await Admin.getUserStats();
@@ -216,6 +218,7 @@ exports.getAllUsers = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
 exports.getAllStaff = async (req, res) => {
     try {
         const staff = await Admin.getAllStaff();
@@ -225,6 +228,7 @@ exports.getAllStaff = async (req, res) => {
         res.status(500).json({ message: 'Error fetching staff' });
     }
 };
+
 exports.recruitStaff = async (req, res) => {
     try {
         const staffData = req.body;
@@ -246,6 +250,7 @@ exports.recruitStaff = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
 exports.getDashboardStats = async (req, res) => {
   try {
     const timeFilter = req.query.timeFilter || 'week';
@@ -399,6 +404,7 @@ exports.getDashboardStats = async (req, res) => {
     res.status(500).json({ message: 'Error getting dashboard stats' });
   }
 };
+
 exports.updateStaff = async (req, res) => {
     try {
         const staffId = req.params.id;
@@ -421,6 +427,7 @@ exports.deleteStaff = async (req, res) => {
         res.status(500).json({ message: 'Error deleting staff' });
     }
 };
+
 exports.getAllOrders = async (req, res) => {
     try {
         const orders = await Admin.getAllOrders();
@@ -446,6 +453,7 @@ exports.getOrderDetails = async (req, res) => {
         res.status(500).json({ message: 'Error fetching order details' });
     }
 };
+
 exports.processPayment = async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -560,6 +568,7 @@ exports.processPayment = async (req, res) => {
         res.status(500).json({ message: 'Error processing payment' });
     }
 };
+
 exports.deleteProduct = async (req, res) => {
     try {
         const productId = req.params.id;
@@ -570,6 +579,7 @@ exports.deleteProduct = async (req, res) => {
         res.status(500).json({ message: 'Error deleting product' });
     }
 };
+
 exports.getAllRewardTiers = async (req, res) => {
     try {
         const [tiers] = await db.query('SELECT * FROM reward_tiers ORDER BY points_required ASC');
@@ -674,6 +684,7 @@ exports.getRewardsStatistics = async (req, res) => {
         res.status(500).json({ message: 'Error getting rewards statistics' });
     }
 };
+
 exports.getProductForecasts = async (req, res) => {
     try {
         const { type = 'sales', days = 30, method = 'prophet' } = req.query;
@@ -763,6 +774,7 @@ exports.getProductForecasts = async (req, res) => {
         res.status(500).json({ message: 'Error generating forecasts' });
     }
 };
+
 exports.getLowStockItems = async (req, res) => {
     try {
         const lowStockItems = await Admin.getLowStockItems();
@@ -772,6 +784,7 @@ exports.getLowStockItems = async (req, res) => {
         res.status(500).json({ message: 'Failed to fetch low stock items' });
     }
 };
+
 exports.getReceiptSettings = async (req, res) => {
     try {
         // Check if receipt settings exist in the database
@@ -837,6 +850,7 @@ exports.saveReceiptSettings = async (req, res) => {
         res.status(500).json({ message: 'Error saving receipt settings' });
     }
 };
+
 exports.getSalesChartData = async (req, res) => {
   try {
     const period = req.query.period || 'week';
@@ -850,6 +864,7 @@ exports.getSalesChartData = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch sales chart data' });
   }
 };
+
 exports.getTopCustomers = async (req, res) => {
   try {
     const period = req.query.period || 'week';
@@ -957,6 +972,7 @@ exports.getTopProducts = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch top products' });
   }
 };
+
 exports.getOrderReports = async (req, res) => {
   try {
     const [reports] = await db.query(`
@@ -1080,6 +1096,7 @@ exports.updateProductReport = async (req, res) => {
     res.status(500).json({ message: 'Error updating report' });
   }
 };
+
 exports.getPublicReceiptSettings = async (req, res) => {
     try {
         // Check if receipt settings exist in the database
@@ -1455,5 +1472,45 @@ exports.updateRewardsSettings = async (req, res) => {
     } catch (error) {
         console.error('Error updating rewards settings:', error);
         res.status(500).json({ message: 'Error updating rewards settings' });
+    }
+};
+exports.addAdmin = async (req, res) => {
+    try {
+        const { username, email, firstname, lastname, password } = req.body;
+
+        // Validate required fields
+        if (!username || !email || !firstname || !lastname || !password) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+
+        // Check if user exists
+        const existingUser = await User.findByEmail(email);
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email already registered' });
+        }
+
+        // Check if username exists
+        const [existingUsername] = await db.query('SELECT id FROM users WHERE username = ?', [username]);
+        if (existingUsername.length > 0) {
+            return res.status(400).json({ message: 'Username already taken' });
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create admin user
+        const [result] = await db.query(
+            'INSERT INTO users (username, firstname, lastname, email, password, role, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [username, firstname, lastname, email, hashedPassword, 'admin', true]
+        );
+
+        res.status(201).json({ 
+            message: 'Admin account created successfully',
+            adminId: result.insertId
+        });
+
+    } catch (error) {
+        console.error('Error creating admin:', error);
+        res.status(500).json({ message: 'Error creating admin account' });
     }
 };

@@ -48,4 +48,6 @@ router.get('/loyalty/statistics', authenticate, isAdmin, adminController.getLoya
 
 router.get('/rewards/settings', authenticate, isAdmin, adminController.getRewardsSettings);
 router.put('/rewards/settings',authenticate, isAdmin,  adminController.updateRewardsSettings);
+router.post('/add-admin', authenticate, isAdmin, adminController.addAdmin);
+
 module.exports = router;
