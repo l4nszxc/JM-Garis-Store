@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jun 30, 2025 at 04:42 PM
+-- Generation Time: Jul 01, 2025 at 09:15 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -149,6 +149,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('0907455', 58, 1170.00, 'cancelled', '2025-06-11 21:49:58', '2025-06-11 21:50:03', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0),
 ('1042234', 56, 2554.00, 'paid', '2025-06-01 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
 ('1094201', 56, 165.00, 'paid', '2025-05-27 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('1246767', 58, 6490.00, 'paid', '2025-06-30 16:49:33', '2025-06-30 16:50:00', NULL, 23, '2025-07-01 00:49:41', 7000.00, 510.00, NULL, 0),
 ('1251674', 56, 270.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
 ('1276483', 58, 189.00, 'paid', '2025-06-15 21:16:32', '2025-06-15 21:17:11', NULL, 23, '2025-06-16 05:16:55', 200.00, 11.00, NULL, 0),
 ('1288891', 58, 3019.00, 'paid', '2025-06-12 10:37:08', '2025-06-12 10:37:36', NULL, 23, '2025-06-12 18:37:19', NULL, NULL, NULL, 0),
@@ -168,6 +169,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_
 ('2474222', 56, 38.00, 'paid', '2025-06-04 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
 ('2477674', 56, 562.00, 'paid', '2025-05-17 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
 ('2486554', 56, 423.00, 'paid', '2025-06-03 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
+('2493460', 1000, 649.00, 'paid', '2025-06-30 16:43:59', '2025-06-30 16:44:28', NULL, 23, '2025-07-01 00:44:10', 700.00, 51.00, NULL, 0),
 ('2657847', 56, 49.00, 'paid', '2025-06-10 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
 ('2734169', 56, 94.00, 'paid', '2025-05-19 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
 ('3049944', 56, 171.00, 'paid', '2025-06-02 13:39:44', '2025-06-11 13:39:44', NULL, 23, NULL, NULL, NULL, NULL, 0),
@@ -457,7 +459,9 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (1764, '9115238', 105, 4, 31.00, 50),
 (1765, '9251122', 34, 1, 141.00, NULL),
 (1766, '9251122', 32, 4, 234.00, NULL),
-(1767, '6613294', 33, 5, 649.00, NULL);
+(1767, '6613294', 33, 5, 649.00, NULL),
+(1768, '2493460', 33, 1, 649.00, NULL),
+(1769, '1246767', 33, 10, 649.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -515,7 +519,8 @@ INSERT INTO `order_reviews` (`id`, `order_id`, `user_id`, `rating`, `comment`, `
 (7, '7826305', 58, 5, NULL, '2025-06-14 00:17:58', '2025-06-14 00:17:58'),
 (8, '8510875', 58, 5, 'zxczxczxc', '2025-06-14 02:09:08', '2025-06-14 21:30:43'),
 (9, '9922841', 58, 5, NULL, '2025-06-16 09:04:58', '2025-06-16 09:04:58'),
-(10, '9115238', 58, 5, 'zxc', '2025-06-30 08:47:39', '2025-06-30 08:47:43');
+(10, '9115238', 58, 5, 'zxc', '2025-06-30 08:47:39', '2025-06-30 08:47:43'),
+(11, '1246767', 58, 4, 'zxczxc ty', '2025-06-30 16:51:12', '2025-06-30 16:51:12');
 
 -- --------------------------------------------------------
 
@@ -542,7 +547,7 @@ CREATE TABLE `products` (
 INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_quantity`, `category`, `image`, `created_at`, `updated_at`) VALUES
 (31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 998, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-04-01 07:21:29', '2025-06-12 10:36:15'),
 (32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 990, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-04-01 07:22:15', '2025-06-30 16:11:31'),
-(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 972, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-06-30 16:30:49'),
+(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 961, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-06-30 16:49:33'),
 (34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 70, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-06-30 16:11:31'),
 (35, 'GSM Mojito 1L', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 189.00, 972, 'Beverages', 'https://i.ibb.co/vvP01sRS/00058af3eb33.png', '2025-04-01 07:28:48', '2025-06-26 07:34:33'),
 (36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 79, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-04-01 07:34:49', '2025-06-13 18:26:04'),
@@ -788,7 +793,7 @@ CREATE TABLE `rewards_settings` (
 --
 
 INSERT INTO `rewards_settings` (`id`, `points_per_amount`, `amount_threshold`, `point_value`, `description`, `updated_at`, `updated_by`) VALUES
-(1, 30, 100.00, 0.50, '', '2025-06-30 16:30:11', 20);
+(1, 1, 100.00, 0.50, '', '2025-06-30 16:45:57', 20);
 
 -- --------------------------------------------------------
 
@@ -902,7 +907,8 @@ CREATE TABLE `user_loyalty_status` (
 --
 
 INSERT INTO `user_loyalty_status` (`id`, `user_id`, `loyalty_tier_id`, `current_month_spend`, `last_month_spend`, `two_months_ago_spend`, `tier_start_date`, `tier_end_date`, `last_updated`) VALUES
-(1, 58, 3, 4262.00, 0.00, 0.00, '2025-07-01', '2025-09-30', '2025-06-30 16:30:49');
+(1, 58, 1, 10752.00, 0.00, 0.00, '2025-07-01', '2025-09-30', '2025-06-30 16:49:33'),
+(2, 1000, 3, 649.00, 0.00, 0.00, '2025-07-01', '2025-09-30', '2025-06-30 16:44:00');
 
 -- --------------------------------------------------------
 
@@ -1051,7 +1057,10 @@ INSERT INTO `user_rewards` (`id`, `user_id`, `order_id`, `points`, `description`
 (388, 58, NULL, -20, 'Redeemed for Silver Reward - ₱10.00 discount', '2025-06-30 15:34:49'),
 (389, 58, '9251122', 10, 'Earned points from order #9251122 (₱1067)', '2025-06-30 16:11:31'),
 (390, 58, '6613294', 930, 'Earned points from order #6613294 (₱3195)', '2025-06-30 16:30:49'),
-(391, 58, '6613294', 46, 'Bronze loyalty bonus (+5.00%)', '2025-06-30 16:30:49');
+(391, 58, '6613294', 46, 'Bronze loyalty bonus (+5.00%)', '2025-06-30 16:30:49'),
+(392, 1000, '2493460', 180, 'Earned points from order #2493460 (₱649)', '2025-06-30 16:43:59'),
+(393, 58, '1246767', 64, 'Earned points from order #1246767 (₱6490)', '2025-06-30 16:49:33'),
+(394, 58, '1246767', 9, 'Gold loyalty bonus (+15.00%)', '2025-06-30 16:49:33');
 
 --
 -- Indexes for dumped tables
@@ -1196,7 +1205,7 @@ ALTER TABLE `available_discounts`
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491685;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491687;
 
 --
 -- AUTO_INCREMENT for table `loyalty_tiers`
@@ -1208,7 +1217,7 @@ ALTER TABLE `loyalty_tiers`
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1768;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1770;
 
 --
 -- AUTO_INCREMENT for table `order_reports`
@@ -1220,7 +1229,7 @@ ALTER TABLE `order_reports`
 -- AUTO_INCREMENT for table `order_reviews`
 --
 ALTER TABLE `order_reviews`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -1268,13 +1277,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_loyalty_status`
 --
 ALTER TABLE `user_loyalty_status`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `user_rewards`
 --
 ALTER TABLE `user_rewards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=392;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=395;
 
 --
 -- Constraints for dumped tables
