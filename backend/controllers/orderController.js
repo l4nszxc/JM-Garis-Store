@@ -4,79 +4,80 @@ const Reward = require('../models/rewardModel.js');
 const SharedCart = require('../models/sharedCartModel'); 
 
 exports.createOrder = async (req, res) => {
+    const connection = await db.getConnection();
+    
     try {
-        const { items, discountId, plasticPackaging } = req.body;
+        await connection.beginTransaction();
+
+        const { items, totalAmount, discountId } = req.body;
         const userId = req.user.id;
-        
-        // Determine packaging preference
-        const packagingPreference = plasticPackaging ? 'plastic' : 'eco';
-        
-        // Generate unique order ID
-        const orderId = Math.floor(1000000 + Math.random() * 9000000).toString();
-        
-        // Calculate total amount
-        let totalAmount = items.reduce((sum, item) => {
-            return sum + (parseFloat(item.price) * item.quantity);
-        }, 0);
-        
-        // Apply discount if provided
+
+        // Check if items array is valid
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ message: 'No items provided' });
+        }
+
+        // Debug log
+        console.log('Creating order with items:', items);
+
+        let finalAmount = totalAmount;
         let appliedDiscount = 0;
+
+        // Apply discount if provided
         if (discountId) {
-            const [discount] = await db.execute(
-                'SELECT amount FROM available_discounts WHERE id = ? AND user_id = ? AND used = 0 AND expires_at > NOW()',
-                [discountId, userId]
-            );
-            
-            if (discount.length > 0) {
-                appliedDiscount = discount[0].amount;
-                totalAmount = Math.max(0, totalAmount - appliedDiscount);
+            try {
+                appliedDiscount = await Reward.applyDiscount(userId, null, discountId);
+                finalAmount = Math.max(0, totalAmount - appliedDiscount);
+            } catch (error) {
+                console.error('Error applying discount:', error);
             }
         }
         
-        // Create the order FIRST - before updating discounts
-        await db.execute(
-            `INSERT INTO orders (order_id, user_id, total_amount, status, packaging_preference, created_at, updated_at) 
-             VALUES (?, ?, ?, 'pending', ?, NOW(), NOW())`,
-            [orderId, userId, totalAmount, packagingPreference]
-        );
-        
-        // THEN mark discount as used (after order is created)
+        // Use the Order model's create method to handle the order creation and stock update
+        const orderId = await Order.create(userId, items, finalAmount);
+
+        // If discount was applied, update the order_id in available_discounts
         if (discountId && appliedDiscount > 0) {
-            await db.execute(
-                'UPDATE available_discounts SET used = 1, order_id = ? WHERE id = ?',
+            await connection.execute(
+                'UPDATE available_discounts SET order_id = ?, used = TRUE WHERE id = ?',
                 [orderId, discountId]
             );
         }
-        
-        // Insert order items
-        for (const item of items) {
+
+        // Check if user has an active shared cart and terminate it
+        const activeShare = await SharedCart.getActiveSharedCart(userId);
+        if (activeShare && activeShare.shareId) {
+            // Terminate the shared cart (set status to "expired")
             await db.execute(
-                'INSERT INTO order_items (order_id, product_id, quantity, price, choice_id) VALUES (?, ?, ?, ?, ?)',
-                [orderId, item.product_id, item.quantity, item.price, item.choice_id || null]
-            );
-            
-            // Remove from cart
-            await db.execute(
-                'DELETE FROM cart WHERE id = ? AND user_id = ?',
-                [item.id, userId]
+                'UPDATE shared_carts SET status = "expired" WHERE share_id = ? AND status = "active"',
+                [activeShare.shareId]
             );
         }
-        
-        res.status(201).json({
-            success: true,
+
+        await connection.commit();
+
+        // Add reward points for the final amount paid
+        let pointsEarned = 0;
+        try {
+            pointsEarned = await Reward.addPoints(userId, orderId, finalAmount);
+        } catch (error) {
+            console.error('Error adding reward points:', error);
+        }
+
+        res.status(201).json({ 
             orderId,
-            finalAmount: totalAmount,
+            pointsEarned,
             appliedDiscount,
-            packagingPreference
+            finalAmount,
+            message: 'Order created successfully'
         });
-        
+
     } catch (error) {
+        await connection.rollback();
         console.error('Error creating order:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to create order',
-            error: error.message 
-        });
+        res.status(500).json({ message: 'Error creating order: ' + error.message });
+    } finally {
+        connection.release();
     }
 };
 

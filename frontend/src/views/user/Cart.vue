@@ -3,14 +3,13 @@
         <Navbar :username="username" @logout="showLogoutModal = true"/>
         
         <div class="cart-content">
-            <!-- Cart Header -->
             <div class="cart-header">
-                <h1>
-                    <i class="fas fa-shopping-cart"></i>
-                    Shopping Cart
-                </h1>
-                
-                <!-- Notifications -->
+                <h1><i class="fas fa-shopping-cart"></i> Shopping Cart</h1>
+                <!-- Add console debugging to check values -->
+                <div class="debug-info" style="display: none;">
+                    syncStatus: {{ JSON.stringify(syncStatus) }}, 
+                    partnerUsername: {{ partnerUsername }}
+                </div>
                 <div v-if="notification.show" class="notification" :class="notification.type">
                     <div class="notification-content">
                         <i :class="notification.icon"></i>
@@ -20,168 +19,121 @@
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-                
-                <!-- Cart Sharing Info -->
+                <!-- Cart sharing info with action buttons -->
                 <div v-if="syncStatus" class="cart-sharing-info">
-                    <div v-if="syncStatus.role === 'owner'" class="sharing-badge owner-badge">
-                        <i class="fas fa-share-alt"></i>
-                        <span>Sharing with: <strong>{{ partnerUsername || 'another user' }}</strong></span>
-                        <button @click="stopSharing" class="action-btn stop-btn">
-                            <i class="fas fa-times"></i>
-                            Stop Sharing
+                    <div v-if="syncStatus.role === 'owner'" class="owner-sharing">
+                        <i class="fas fa-share-alt"></i> You are currently sharing your cart with: <strong>{{ partnerUsername || 'another user' }}</strong>
+                        <button @click="stopSharing" class="stop-sharing-btn">
+                            <i class="fas fa-times-circle"></i> Stop Sharing
                         </button>
                     </div>
-                    <div v-else class="sharing-badge receiver-badge">
-                        <i class="fas fa-user-friends"></i>
-                        <span>Using: <strong>{{ partnerUsername || 'another user' }}'s</strong> cart</span>
-                        <button @click="leaveSharing" class="action-btn leave-btn">
-                            <i class="fas fa-sign-out-alt"></i>
-                            Leave Cart
+                    <div v-else class="receiver-sharing">
+                        <i class="fas fa-user-friends"></i> You are currently using: <strong>{{ partnerUsername || 'another user' }}'s</strong> cart
+                        <button @click="leaveSharing" class="leave-sharing-btn">
+                            <i class="fas fa-sign-out-alt"></i> Leave Cart
                         </button>
                     </div>
                 </div>
             </div>
-
-            <div v-if="cartItems.length > 0" class="cart-main">
-                <!-- Select All Section -->
-                <div class="select-all-section">
-                    <label class="select-all-checkbox">
+            <div v-if="syncStatus" class="sync-status">
+                <div class="sync-badge" :class="{'sync-owner': syncStatus.role === 'owner', 'sync-receiver': syncStatus.role === 'receiver'}">
+                    <i class="fas fa-sync-alt"></i> 
+                    {{ syncStatus.role === 'owner' ? 'Your cart is being shared' : 'Viewing a shared cart' }}
+                </div>
+            </div>
+            
+            <div v-if="cartItems.length > 0" class="select-all-container">
+                <div class="select-all-checkbox">
+                    <label>
                         <input 
                             type="checkbox" 
                             :checked="allItemsSelected"
                             @change="toggleSelectAll"
+                            id="select-all"
                         >
-                        <span class="checkbox-custom"></span>
-                        <span class="checkbox-label">Select All Items</span>
+                        <span class="checkbox-label">Select All</span>
                     </label>
                 </div>
+            </div>
 
-                <!-- Cart Items -->
-                <div class="cart-items-container">
-                    <div v-for="item in cartItems" :key="item.id" class="cart-item">
-                        <div class="item-checkbox">
-                            <input 
-                                type="checkbox" 
-                                :checked="checkedItems.has(item.id)"
-                                @change="toggleItemCheck(item.id)"
-                                :id="`item-${item.id}`"
-                            >
-                            <label :for="`item-${item.id}`" class="checkbox-custom"></label>
-                        </div>
-                        
-                        <div class="item-image-container">
-                            <img 
-                                :src="item.image || '/img/placeholder.jpg'"
-                                :alt="item.name"
-                                class="item-image"
-                                @error="handleImageError"
-                            >
-                        </div>
-                        
-                        <div class="item-details">
-                            <h4 class="item-name">{{ item.name }}</h4>
-                            
-                            <div v-if="item.choice_name" class="choice-info">
-                                <i class="fas fa-tag"></i>
-                                {{ item.choice_name }}
-                            </div>
-                            
-                            <div class="item-price">
-                                <i class="fas fa-peso-sign"></i>
-                                {{ formatPrice(item.price) }}
-                            </div>
-                            
-                            <div class="quantity-section">
-                                <span class="quantity-label">Quantity:</span>
-                                <div class="quantity-controls">
-                                    <button 
-                                        @click="updateQuantity(item.id, item.quantity - 1)"
-                                        :disabled="item.quantity <= 1"
-                                        class="quantity-btn"
-                                    >
-                                        <i class="fas fa-minus"></i>
-                                    </button>
-                                    <div class="quantity-display">
-                                        {{ item.quantity }}
-                                    </div>
-                                    <button 
-                                        @click="updateQuantity(item.id, item.quantity + 1)"
-                                        class="quantity-btn"
-                                    >
-                                        <i class="fas fa-plus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div class="item-subtotal">
-                                Subtotal: {{ formatPrice(item.price * item.quantity) }}
-                            </div>
-                            
-                            <button class="remove-btn" @click="removeFromCart(item.id)">
-                                <i class="fas fa-trash"></i>
-                                Remove
+            <div v-if="cartItems.length > 0" class="cart-items">
+                <div v-for="item in cartItems" :key="item.id" class="cart-item">
+                    <div class="cart-item-checkbox">
+                        <input 
+                            type="checkbox" 
+                            :checked="checkedItems.has(item.id)"
+                            @change="toggleItemCheck(item.id)"
+                        >
+                    </div>
+                    <img 
+                        :src="item.image || '/img/placeholder.jpg'"
+                        :alt="item.name"
+                        class="cart-item-image"
+                        @error="handleImageError"
+                    >
+                    <div class="cart-item-details">
+                        <h3><i class="fas fa-box"></i> {{ item.name }}</h3>
+                        <p v-if="item.choice_name" class="choice-info">
+                            <i class="fas fa-tag"></i> Option: {{ item.choice_name }}
+                        </p>
+                        <p class="price">
+                            <i class="fas fa-tag"></i> Price: {{ formatPrice(item.price || 0) }}
+                        </p>                        <div class="quantity-controls">
+                            <span class="quantity-label"><i class="fas fa-cubes"></i> Quantity:</span>
+                            <button @click="updateQuantity(item.id, item.quantity - 1)" 
+                                    :disabled="item.quantity <= 1"
+                                    class="quantity-btn">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <span class="quantity-value">{{ item.quantity }}</span>
+                            <button @click="updateQuantity(item.id, item.quantity + 1)"
+                                    class="quantity-btn">
+                                <i class="fas fa-plus"></i>
                             </button>
                         </div>
+                        <p class="subtotal">
+                            <i class="fas fa-calculator"></i> Subtotal: {{ formatPrice((item.price || 0) * item.quantity) }}
+                        </p>                        <button class="remove-btn" @click="removeFromCart(item.id)">
+                            <i class="fas fa-trash"></i> Remove
+                        </button>
                     </div>
                 </div>
-
-                <!-- Cart Summary -->
                 <div class="cart-summary">
-                    <div class="summary-header">
-                        <h3>
-                            <i class="fas fa-receipt"></i>
-                            Cart Summary
-                        </h3>
+                    <h3><i class="fas fa-receipt"></i> Cart Summary</h3>
+                    <div class="summary-details">
+                        <p class="total-items">
+                            <i class="fas fa-shopping-basket"></i> Selected Items: {{ checkedItemsCount }}
+                        </p>
+                        <p class="total-amount">
+                            <i class="fas fa-dollar-sign"></i> Total Amount: {{ formatPrice(cartTotal) }}
+                        </p>
                     </div>
-                    
-                    <div class="summary-content">
-                        <div class="summary-row">
-                            <span>Selected Items:</span>
-                            <span>{{ checkedItemsCount }}</span>
-                        </div>
-                        <div class="summary-divider"></div>
-                        <div class="summary-row total-row">
-                            <span>Total Amount:</span>
-                            <span class="total-price">{{ formatPrice(cartTotal) }}</span>
-                        </div>
-                    </div>
-                    
                     <div class="cart-actions">
                         <button 
                             class="share-btn" 
                             @click="showShareModal = true"
                             :disabled="cartItems.length === 0"
                         >
-                            <i class="fas fa-share-alt"></i>
-                            Share Cart
+                            <i class="fas fa-share-alt"></i> Share Cart
                         </button>
                         <button 
                             class="checkout-btn" 
                             @click="showOrdersModal = true" 
                             :disabled="checkedItemsCount === 0"
                         >
-                            <i class="fas fa-check"></i>
-                            Place Order
+                            <i class="fas fa-credit-card"></i> Place Order
                         </button>
                     </div>
                 </div>
             </div>
-
-            <!-- Empty Cart State -->
             <div v-else class="empty-cart">
-                <div class="empty-state">
-                    <i class="fas fa-shopping-cart"></i>
-                    <h3>Your cart is empty</h3>
-                    <p>Add some products to get started</p>
-                    <button class="continue-shopping" @click="$router.push('/products')">
-                        <i class="fas fa-store"></i>
-                        Continue Shopping
-                    </button>
-                </div>
+                <i class="fas fa-shopping-cart empty-cart-icon"></i>
+                <p>Your cart is empty</p>
+                <button class="continue-shopping" @click="$router.push('/products')">
+                    <i class="fas fa-store"></i> Continue Shopping
+                </button>
             </div>
         </div>
-
-        <!-- Modals -->
         <ShareCartModal 
             :show="showShareModal"
             @close="showShareModal = false"
@@ -200,7 +152,6 @@
             @close="showOrdersModal = false"
             @place-order="handlePlaceOrder"
         />
-
         <ConfirmationModal
             :show="showStopSharingModal"
             title="Stop Sharing Cart"
@@ -213,6 +164,7 @@
             @cancel="showStopSharingModal = false"
         />
         
+        <!-- Add leave sharing confirmation modal -->
         <ConfirmationModal
             :show="showLeaveSharingModal"
             title="Leave Shared Cart"
@@ -224,14 +176,6 @@
             @confirm="confirmLeaveSharing"
             @cancel="showLeaveSharingModal = false"
         />
-
-        <!-- Sync Status Badge -->
-        <div v-if="syncStatus" class="sync-status">
-            <div class="sync-badge" :class="{'sync-owner': syncStatus.role === 'owner', 'sync-receiver': syncStatus.role === 'receiver'}">
-                <i class="fas fa-sync-alt"></i>
-                {{ syncStatus.role === 'owner' ? 'Cart Shared' : 'Shared Cart' }}
-            </div>
-        </div>
     </div>
 </template>
 
@@ -265,7 +209,7 @@ export default {
             syncStatus: null,
             syncInterval: null,
             partnerUsername: '',
-            showStopSharingModal: false,
+            showStopSharingModal: false, // Add this line
             showLeaveSharingModal: false,
             notification: {
                 show: false,
@@ -297,10 +241,12 @@ export default {
     },
     methods: {
         showNotification(message, type = 'success') {
+            // Clear any existing timeout
             if (this.notification.timeout) {
                 clearTimeout(this.notification.timeout);
             }
             
+            // Set icon based on type
             let icon = 'fas fa-check-circle';
             if (type === 'error') {
                 icon = 'fas fa-exclamation-circle';
@@ -308,6 +254,7 @@ export default {
                 icon = 'fas fa-info-circle';
             }
             
+            // Show notification
             this.notification = {
                 show: true,
                 message,
@@ -315,7 +262,7 @@ export default {
                 icon,
                 timeout: setTimeout(() => {
                     this.hideNotification();
-                }, 5000)
+                }, 5000) // Auto-hide after 5 seconds
             };
         },
         
@@ -325,7 +272,6 @@ export default {
                 clearTimeout(this.notification.timeout);
             }
         },
-        
         stopSharing() {
             this.showStopSharingModal = true;
         },
@@ -333,7 +279,6 @@ export default {
         leaveSharing() {
             this.showLeaveSharingModal = true;
         },
-        
         async confirmStopSharing() {
             try {
                 const token = localStorage.getItem('token');
@@ -361,6 +306,7 @@ export default {
             }
         },
         
+        // Update confirmLeaveSharing method
         async confirmLeaveSharing() {
             try {
                 const token = localStorage.getItem('token');
@@ -376,6 +322,8 @@ export default {
                     this.syncStatus = null;
                     this.partnerUsername = '';
                     this.showNotification('You have left the shared cart. The sharing has ended for both users.');
+                    
+                    // Refresh cart after leaving
                     await this.fetchCart();
                 } else {
                     const error = await response.json();
@@ -388,7 +336,6 @@ export default {
                 this.showLeaveSharingModal = false;
             }
         },
-        
         async fetchPartnerUsername() {
             if (!this.syncStatus || !this.syncStatus.partnerId) return;
             
@@ -402,8 +349,10 @@ export default {
                 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('Partner username data:', data);
                     this.partnerUsername = data.username || 'another user';
                 } else {
+                    console.error('Error response when fetching username:', await response.text());
                     this.partnerUsername = 'another user';
                 }
             } catch (error) {
@@ -411,7 +360,6 @@ export default {
                 this.partnerUsername = 'another user';
             }
         },
-        
         async checkSyncStatus() {
             try {
                 const token = localStorage.getItem('token');
@@ -425,20 +373,23 @@ export default {
                 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('Sync status data:', data);
                     
                     if (data && data.shareId) {
                         this.syncStatus = data;
+                        // Make sure we fetch the username immediately after setting sync status
                         await this.fetchPartnerUsername();
                     } else {
                         this.syncStatus = null;
                         this.partnerUsername = '';
                     }
+                } else {
+                    console.error('Error response when checking sync status:', await response.text());
                 }
             } catch (error) {
                 console.error('Error checking sync status:', error);
             }
         },
-        
         formatPrice(price) {
             return new Intl.NumberFormat('en-PH', {
                 style: 'currency',
@@ -447,7 +398,6 @@ export default {
                 maximumFractionDigits: 2
             }).format(price).replace('PHP', '₱');
         },
-        
         async fetchAvailableDiscounts() {
             try {
                 const token = localStorage.getItem('token');
@@ -474,7 +424,6 @@ export default {
                 this.availableDiscounts = [];
             }
         },
-        
         toggleSelectAll() {
             if (this.allItemsSelected) {
                 this.checkedItems.clear();
@@ -484,7 +433,9 @@ export default {
                 });
             }
         },
-        
+        handleCartUpdate() {
+            this.fetchCart(); // Refresh cart when updated
+        },
         toggleItemCheck(itemId) {
             if (this.checkedItems.has(itemId)) {
                 this.checkedItems.delete(itemId);
@@ -492,13 +443,11 @@ export default {
                 this.checkedItems.add(itemId);
             }
         },
-        
-        async handlePlaceOrder({ items, discountId, plasticPackaging }) {
+       async handlePlaceOrder({ items, discountId }) {
             try {
-                console.log('Placing order with packaging preference:', plasticPackaging); // Debug log
-                
                 const token = localStorage.getItem('token');
                 
+                // Ensure items have all required properties
                 const formattedItems = items.map(item => ({
                     id: item.id,
                     product_id: item.product_id,
@@ -512,11 +461,10 @@ export default {
                     totalAmount: formattedItems.reduce((sum, item) => 
                         sum + (parseFloat(item.price) * item.quantity), 0
                     ),
-                    discountId: discountId,
-                    plasticPackaging: plasticPackaging // Ensure this is being sent
+                    discountId: discountId
                 };
-                
-                console.log('Request body:', requestBody); // Debug log
+
+                console.log('Sending order with data:', requestBody);
 
                 const response = await fetch('http://localhost:7904/api/orders', {
                     method: 'POST',
@@ -532,16 +480,21 @@ export default {
                     throw new Error(errorData.message || 'Failed to place order');
                 }
 
-                const result = await response.json();
-                console.log('Order created with packaging:', result.packagingPreference); // Debug log
+                const { orderId, finalAmount, appliedDiscount, pointsEarned } = await response.json();
 
+                // Instead of trying to delete from server again, just update local UI
+                // since the items are already processed in the order
                 this.cartItems = this.cartItems.filter(cartItem => 
                     !items.some(item => item.id === cartItem.id)
                 );
                 
+                // Clear selected items
                 this.checkedItems.clear();
+                
+                // Update available discounts
                 await this.fetchAvailableDiscounts();
 
+                // Check if cart was being shared and notify user
                 if (this.syncStatus) {
                     this.showNotification('Your order has been placed. Cart sharing has been automatically ended.', 'info');
                     this.syncStatus = null;
@@ -550,6 +503,8 @@ export default {
 
                 this.showOrdersModal = false;
                 this.$router.push('/view-orders');
+                
+                // Dispatch cart update event
                 window.dispatchEvent(new CustomEvent('cart-updated'));
 
             } catch (error) {
@@ -559,9 +514,8 @@ export default {
         },
         
         handleImageError(e) {
-            e.target.src = '/img/placeholder.jpg';
+            e.target.src = 'placeholder-image.jpg'; // Fallback image
         },
-        
         async handleLogout() {
             try {
                 const token = localStorage.getItem('token');
@@ -586,7 +540,6 @@ export default {
                 this.showLogoutModal = false;
             }
         },
-        
         async getUserData() {
             try {
                 const token = localStorage.getItem('token');
@@ -610,7 +563,6 @@ export default {
                 console.error('Error fetching username:', error);
             }
         },
-        
         async fetchCart() {
             try {
                 const token = localStorage.getItem('token');
@@ -637,7 +589,6 @@ export default {
                 this.cartItems = [];
             }
         },
-        
         async removeFromCart(itemId) {
             try {
                 const token = localStorage.getItem('token');
@@ -649,6 +600,7 @@ export default {
                 });
                 
                 if (response.ok) {
+                    // Remove item from local array and checked items
                     this.cartItems = this.cartItems.filter(item => item.id !== itemId);
                     if (this.checkedItems.has(itemId)) {
                         this.checkedItems.delete(itemId);
@@ -675,7 +627,7 @@ export default {
                 });
                 
                 if (response.ok) {
-                    await this.fetchCart();
+                    await this.fetchCart(); // Refresh cart after update
                     window.dispatchEvent(new CustomEvent('cart-updated'));
                 }
             } catch (error) {
@@ -683,21 +635,20 @@ export default {
             }
         }
     },
-    
     async mounted() {
         await this.getUserData();
         await this.fetchCart();
         await this.fetchAvailableDiscounts();
         await this.checkSyncStatus();
         
+        // Check for sync status periodically
         this.syncInterval = setInterval(async () => {
             await this.checkSyncStatus();
             if (this.syncStatus) {
-                await this.fetchCart();
+                await this.fetchCart(); // Refresh cart to see changes
             }
-        }, 1000);
+        }, 1000); // Check every 5 seconds
     },
-    
     beforeDestroy() {
         if (this.syncInterval) {
             clearInterval(this.syncInterval);
@@ -707,502 +658,202 @@ export default {
 </script>
 
 <style scoped>
-/* Main Container */
 .cart-container {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: Arial, sans-serif;
     min-height: 100vh;
-    background-color: #f8fafb;
+    background-color: #f5f5f5;
 }
 
 .cart-content {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 2rem;
 }
 
-/* Header Section */
 .cart-header {
     margin-bottom: 2rem;
-    position: relative;
 }
 
 .cart-header h1 {
-    color: #2a3f2a;
+    color: #2c3e50;
     font-size: 2rem;
-    font-weight: 600;
-    margin: 0 0 1rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-/* Cart Sharing Info */
-.cart-sharing-info {
-    margin-top: 1rem;
-}
-
-.sharing-badge {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    border-left: 4px solid;
-    font-size: 0.95rem;
-    background-color: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.owner-badge {
-    border-left-color: #4CAF50;
-    background-color: #f8fff8;
-}
-
-.receiver-badge {
-    border-left-color: #2196F3;
-    background-color: #f5f9ff;
-}
-
-.action-btn {
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
-}
-
-.stop-btn {
-    background-color: #fee2e2;
-    color: #dc2626;
-}
-
-.stop-btn:hover {
-    background-color: #dc2626;
-    color: white;
-}
-
-.leave-btn {
-    background-color: #e5e7eb;
-    color: #6b7280;
-}
-
-.leave-btn:hover {
-    background-color: #6b7280;
-    color: white;
-}
-
-/* Main Cart Section */
-.cart-main {
+.cart-items {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
-}
-
-/* Select All Section */
-.select-all-section {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border-left: 4px solid #4CAF50;
-}
-
-.select-all-checkbox {
-    display: flex;
-    align-items: center;
     gap: 1rem;
-    cursor: pointer;
-    user-select: none;
-}
-
-.select-all-checkbox input[type="checkbox"] {
-    display: none;
-}
-
-.checkbox-custom {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #e2e8f0;
-    border-radius: 6px;
-    position: relative;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-}
-
-.select-all-checkbox input:checked + .checkbox-custom {
-    background-color: #4CAF50;
-    border-color: #4CAF50;
-}
-
-.select-all-checkbox input:checked + .checkbox-custom::after {
-    content: '✓';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.checkbox-label {
-    color: #2a3f2a;
-    font-size: 1rem;
-    font-weight: 500;
-}
-
-/* Cart Items Container */
-.cart-items-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
 }
 
 .cart-item {
     display: flex;
-    gap: 1.5rem;
-    padding: 1.5rem;
     background: white;
-    border-radius: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border-left: 4px solid #f1f9f1;
-    transition: all 0.2s ease;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
 }
 
 .cart-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.1);
-    border-left-color: #4CAF50;
 }
 
-.item-checkbox {
-    display: flex;
-    align-items: flex-start;
-    padding-top: 0.5rem;
+.cart-item-image {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-right: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.item-checkbox input[type="checkbox"] {
-    display: none;
+.cart-item-details {
+    flex-grow: 1;
 }
 
-.item-checkbox .checkbox-custom {
-    width: 18px;
-    height: 18px;
-    border: 2px solid #e2e8f0;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.item-checkbox input:checked + .checkbox-custom {
-    background-color: #4CAF50;
-    border-color: #4CAF50;
-}
-
-.item-checkbox input:checked + .checkbox-custom::after {
-    content: '✓';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 10px;
-    font-weight: bold;
-}
-
-.item-image-container {
-    width: 100px;
-    height: 100px;
-    flex-shrink: 0;
-    border-radius: 12px;
-    overflow: hidden;
-    background-color: #f8f9fa;
-    border: 1px solid #e2e8f0;
-}
-
-.item-image {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.item-details {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.item-name {
-    margin: 0;
-    color: #2a3f2a;
-    font-size: 1.1rem;
-    font-weight: 600;
-    line-height: 1.3;
-}
-
-.choice-info {
-    background-color: #f1f9f1;
-    color: #4CAF50;
-    padding: 0.35rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-weight: 500;
-    width: fit-content;
-}
-
-.item-price {
-    color: #4CAF50;
-    font-size: 1.1rem;
-    font-weight: 600;
+.cart-item-details h3 {
+    font-size: 1.25rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
-    gap: 0.35rem;
-}
-
-.quantity-section {
-    display: flex;
-    flex-direction: column;
     gap: 0.5rem;
 }
 
-.quantity-label {
-    font-size: 0.9rem;
-    color: #64748b;
-    font-weight: 500;
+.price, .subtotal {
+    font-size: 1.1rem;
+    color: #2c3e50;
+    margin: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .quantity-controls {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-}
-
-.quantity-btn {
-    width: 2rem;
-    height: 2rem;
-    border: 2px solid #4CAF50;
-    background-color: white;
-    color: #4CAF50;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
-}
-
-.quantity-btn:hover:not(:disabled) {
-    background-color: #4CAF50;
-    color: white;
-    transform: scale(1.05);
-}
-
-.quantity-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.quantity-display {
-    min-width: 2rem;
-    text-align: center;
-    font-weight: 600;
-    font-size: 1rem;
-    color: #2a3f2a;
-    background-color: #f8f9fa;
-    padding: 0.5rem;
-    border-radius: 6px;
-    border: 2px solid #e2e8f0;
-}
-
-.item-subtotal {
-    color: #64748b;
-    font-size: 0.95rem;
-    font-weight: 500;
-}
-
-.remove-btn {
-    background-color: #fee2e2;
-    color: #dc2626;
-    border: 2px solid #fecaca;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    transition: all 0.2s ease;
-    width: fit-content;
-}
-
-.remove-btn:hover {
-    background-color: #dc2626;
-    color: white;
-    border-color: #dc2626;
-    transform: translateY(-1px);
-}
-
-/* Cart Summary */
-.cart-summary {
-    background: white;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    border-left: 4px solid #4CAF50;
-}
-
-.summary-header {
-    padding: 1.5rem 2rem 1rem;
-    border-bottom: 1px solid #f1f9f1;
-}
-
-.summary-header h3 {
-    margin: 0;
-    color: #2a3f2a;
-    font-size: 1.3rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.summary-content {
-    padding: 1.5rem 2rem;
-    background-color: #fafffe;
-}
-
-.summary-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-    color: #64748b;
-    font-size: 0.95rem;
-}
-
-.summary-row:last-child {
-    margin-bottom: 0;
-}
-
-.summary-divider {
-    height: 1px;
-    background-color: #e2e8f0;
+    gap: 1rem;
     margin: 1rem 0;
 }
 
-.total-row {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #2a3f2a;
-}
-
-.total-price {
-    color: #4CAF50;
-    font-size: 1.3rem;
-    font-weight: 700;
-}
-
-.cart-actions {
-    padding: 1.5rem 2rem;
+.quantity-label {
+    color: #666;
     display: flex;
-    gap: 1rem;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.share-btn, .checkout-btn {
-    flex: 1;
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 600;
+.quantity-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.quantity-btn:hover:not(:disabled) {
+    background-color: #f8f9fa;
+    border-color: #4CAF50;
+    color: #4CAF50;
+}
+
+.quantity-value {
+    font-size: 1.1rem;
+    min-width: 2rem;
+    text-align: center;
+}
+
+.remove-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
     cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 0.5rem;
-    transition: all 0.2s ease;
-    border: 2px solid transparent;
+    transition: all 0.3s ease;
 }
 
-.share-btn {
-    background-color: white;
-    color: #2196F3;
-    border-color: #2196F3;
+.remove-btn:hover {
+    background-color: #c82333;
+    transform: translateY(-1px);
 }
 
-.share-btn:hover:not(:disabled) {
-    background-color: #2196F3;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+.cart-summary {
+    margin-top: 2rem;
+    padding: 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.cart-summary h3 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.summary-details {
+    margin-bottom: 1.5rem;
+}
+
+.summary-details p {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+    color: #2c3e50;
 }
 
 .checkout-btn {
     background-color: #4CAF50;
     color: white;
-    border-color: #4CAF50;
-}
-
-.checkout-btn:hover:not(:disabled) {
-    background-color: #45a049;
-    border-color: #45a049;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-}
-
-.share-btn:disabled, .checkout-btn:disabled {
-    background-color: #e5e7eb;
-    color: #9ca3af;
-    border-color: #e5e7eb;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-/* Empty Cart State */
-.empty-cart {
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 1.1rem;
     display: flex;
-    justify-content: center;
     align-items: center;
-    min-height: 400px;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
 }
 
-.empty-state {
+.checkout-btn:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.2);
+}
+
+.empty-cart {
     text-align: center;
-    background: white;
     padding: 3rem;
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    max-width: 400px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.empty-state i {
+.empty-cart-icon {
     font-size: 4rem;
-    color: #cbd5e1;
+    color: #cbd5e0;
+    margin-bottom: 1rem;
+}
+
+.empty-cart p {
+    color: #2c3e50;
+    font-size: 1.25rem;
     margin-bottom: 1.5rem;
-}
-
-.empty-state h3 {
-    color: #2a3f2a;
-    font-size: 1.5rem;
-    margin: 0 0 0.5rem 0;
-    font-weight: 600;
-}
-
-.empty-state p {
-    color: #64748b;
-    font-size: 1rem;
-    margin: 0 0 2rem 0;
 }
 
 .continue-shopping {
@@ -1210,26 +861,168 @@ export default {
     color: white;
     border: 2px solid transparent;
     padding: 1rem 2rem;
-    border-radius: 12px;
+    border-radius: 25px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 600;
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    margin: 0 auto;
+    box-shadow: 0 4px 6px rgba(76, 175, 80, 0.2);
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
 }
 
 .continue-shopping:hover {
     background-color: white;
     color: #4CAF50;
-    border-color: #4CAF50;
+    border: 2px solid #4CAF50;
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 6px 12px rgba(76, 175, 80, 0.3);
+}
+.cart-item-checkbox {
+    display: flex;
+    align-items: center;
+    margin-right: 1rem;
+}
+.cart-item-checkbox input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+.checkout-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+.checkout-btn:disabled:hover {
+    background-color: #cccccc;
+    transform: none;
+    box-shadow: none;
+}
+.cart-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
 }
 
-/* Sync Status Badge */
+.view-orders-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.view-orders-btn:hover:not(:disabled) {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
+}
+
+.view-orders-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.cart-actions button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+.select-all-container {
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
+}
+
+.select-all-checkbox {
+    display: flex;
+    align-items: center;
+}
+
+.select-all-checkbox label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.select-all-checkbox input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.checkbox-label {
+    user-select: none;
+}
+@media (max-width: 768px) {
+    .cart-item {
+        flex-direction: column;
+    }
+
+    .cart-item-image {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 1rem;
+    }
+
+    .quantity-controls {
+        justify-content: center;
+    }
+}
+.choice-info {
+    font-size: 0.95rem;
+    color: #3498db;
+    margin: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #eef6fd;
+    padding: 0.5rem;
+    border-radius: 4px;
+    width: fit-content;
+}
+.share-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.share-btn:hover:not(:disabled) {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+}
+
+.share-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
 .sync-status {
     position: fixed;
     bottom: 20px;
@@ -1238,23 +1031,22 @@ export default {
 }
 
 .sync-badge {
-    padding: 0.75rem 1rem;
-    border-radius: 25px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    padding: 10px 15px;
+    border-radius: 20px;
+    font-size: 14px;
     color: white;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 8px;
 }
 
 .sync-owner {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
+    background-color: #4CAF50;
 }
 
 .sync-receiver {
-    background: linear-gradient(135deg, #2196F3, #1976d2);
+    background-color: #3498db;
 }
 
 .sync-badge i {
@@ -1265,14 +1057,73 @@ export default {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+.cart-sharing-info {
+    margin-top: 0.5rem;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
 
-/* Notifications */
+.owner-sharing, .receiver-sharing {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.owner-sharing {
+    color: #4CAF50;
+}
+
+.owner-sharing i {
+    color: #4CAF50;
+}
+
+.receiver-sharing {
+    color: #3498db;
+}
+
+.receiver-sharing i {
+    color: #3498db;
+}
+.stop-sharing-btn, .leave-sharing-btn {
+    margin-left: 15px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.stop-sharing-btn {
+    background-color: #dc3545;
+    color: white;
+}
+
+.stop-sharing-btn:hover {
+    background-color: #c82333;
+}
+
+.leave-sharing-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+.leave-sharing-btn:hover {
+    background-color: #5a6268;
+}
 .notification {
     position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
+    bottom: 20px;
+    left: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
     color: white;
     display: flex;
     align-items: center;
@@ -1280,13 +1131,13 @@ export default {
     min-width: 300px;
     max-width: 400px;
     z-index: 2000;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    animation: slideInRight 0.3s ease-out forwards;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slide-in 0.3s ease-out forwards;
 }
 
-@keyframes slideInRight {
+@keyframes slide-in {
     from {
-        transform: translateX(100%);
+        transform: translateX(-100%);
         opacity: 0;
     }
     to {
@@ -1296,21 +1147,21 @@ export default {
 }
 
 .notification.success {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
+    background-color: #4CAF50;
 }
 
 .notification.error {
-    background: linear-gradient(135deg, #f44336, #d32f2f);
+    background-color: #f44336;
 }
 
 .notification.info {
-    background: linear-gradient(135deg, #2196F3, #1976d2);
+    background-color: #2196F3;
 }
 
 .notification-content {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 10px;
 }
 
 .notification-close {
@@ -1318,88 +1169,9 @@ export default {
     border: none;
     color: white;
     cursor: pointer;
-    font-size: 1.1rem;
-    padding: 0.25rem;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-}
-
-.notification-close:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .cart-content {
-        padding: 1rem;
-    }
-    
-    .cart-header h1 {
-        font-size: 1.75rem;
-    }
-    
-    .cart-item {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    .item-image-container {
-        width: 100%;
-        height: 200px;
-        align-self: center;
-    }
-    
-    .cart-actions {
-        flex-direction: column;
-    }
-    
-    .sharing-badge {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.75rem;
-    }
-    
-    .action-btn {
-        align-self: flex-start;
-    }
-}
-
-@media (max-width: 480px) {
-    .cart-content {
-        padding: 0.5rem;
-    }
-    
-    .cart-header h1 {
-        font-size: 1.5rem;
-    }
-    
-    .select-all-section,
-    .cart-item,
-    .cart-summary {
-        padding: 1rem;
-    }
-    
-    .quantity-controls {
-        justify-content: center;
-    }
-}
-
-/* Scrollbar Styling */
-.cart-items-container::-webkit-scrollbar {
-    width: 6px;
-}
-
-.cart-items-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-}
-
-.cart-items-container::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 10px;
-}
-
-.cart-items-container::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+    font-size: 16px;
+    padding: 0;
+    display: flex;
+    align-items: center;
 }
 </style>

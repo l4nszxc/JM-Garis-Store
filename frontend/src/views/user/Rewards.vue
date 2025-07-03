@@ -461,30 +461,52 @@ export default {
     },
 
     // Get the current tier name based on actual spending
-    getCurrentTierName() {
-      if (!this.loyaltyStatus || !this.loyaltyStatus.current_month_spend) {
-        return 'Member';
-      }
+   getCurrentTierName() {
+        console.log('Current loyalty status:', this.loyaltyStatus);
+        
+        // First check if user has an active loyalty tier from database
+        if (this.loyaltyStatus && this.loyaltyStatus.tier_name) {
+            console.log('Using database tier:', this.loyaltyStatus.tier_name);
+            return this.loyaltyStatus.tier_name;
+        }
 
-      const spend = this.loyaltyStatus.current_month_spend;
-      
-      // Check tier based on actual spending thresholds
-      if (spend >= 21000) {
-        return 'Gold';
-      } else if (spend >= 16000) {
-        return 'Silver';
-      } else if (spend >= 10000) {
-        return 'Bronze';
-      } else {
-        return 'Member';
-      }
+        // Fallback to calculation based on spending
+        if (!this.loyaltyStatus || !this.loyaltyStatus.current_month_spend) {
+            console.log('No loyalty status or spending data, returning Member');
+            return 'Member';
+        }
+
+        const spend = parseFloat(this.loyaltyStatus.current_month_spend);
+        console.log('Calculating tier for spend:', spend);
+        
+        // Check tier based on actual spending thresholds
+        if (spend >= 21000) {
+            console.log('Qualifies for Gold');
+            return 'Gold';
+        } else if (spend >= 16000) {
+            console.log('Qualifies for Silver');
+            return 'Silver';
+        } else if (spend >= 10000) {
+            console.log('Qualifies for Bronze');
+            return 'Bronze';
+        } else {
+            console.log('Member tier');
+            return 'Member';
+        }
     },
 
-    // Get current tier bonus based on actual tier
     getCurrentTierBonus() {
-      const currentTier = this.getCurrentTierName();
-      const tier = this.loyaltyTiers.find(t => t.name === currentTier);
-      return tier ? tier.bonus_percentage : 0;
+        // Use database value if available and valid
+        if (this.loyaltyStatus && 
+            this.loyaltyStatus.bonus_percentage !== null && 
+            this.loyaltyStatus.bonus_percentage !== undefined) {
+            return this.loyaltyStatus.bonus_percentage;
+        }
+
+        // Fallback calculation
+        const currentTier = this.getCurrentTierName();
+        const tier = this.loyaltyTiers.find(t => t.name === currentTier);
+        return tier ? tier.bonus_percentage : 0;
     },
 
     // Check if user is at current tier (based on actual spending)
@@ -494,68 +516,68 @@ export default {
 
     // Fixed tier progress calculation based on actual spending
     getTierProgress() {
-      if (!this.loyaltyStatus || !this.loyaltyStatus.current_month_spend) return 0;
-      
-      const currentSpend = this.loyaltyStatus.current_month_spend;
-      const currentTier = this.getCurrentTierName();
-      
-      // If already at Gold tier, return 100%
-      if (currentTier === 'Gold') return 100;
-      
-      let nextTierMin = 0;
-      let currentTierMin = 0;
-      
-      if (currentTier === 'Member') {
-        currentTierMin = 0;
-        nextTierMin = 10000; // Bronze threshold
-      } else if (currentTier === 'Bronze') {
-        currentTierMin = 10000;
-        nextTierMin = 16000; // Silver threshold
-      } else if (currentTier === 'Silver') {
-        currentTierMin = 16000;
-        nextTierMin = 21000; // Gold threshold
-      }
-      
-      if (nextTierMin === 0) return 100;
-      
-      const progressRange = nextTierMin - currentTierMin;
-      const currentProgress = currentSpend - currentTierMin;
-      
-      return Math.min(Math.max((currentProgress / progressRange) * 100, 0), 100);
+        if (!this.loyaltyStatus || !this.loyaltyStatus.current_month_spend) return 0;
+        
+        const currentSpend = this.loyaltyStatus.current_month_spend;
+        const currentTier = this.getCurrentTierName();
+        
+        // If already at Gold tier, return 100%
+        if (currentTier === 'Gold') return 100;
+        
+        let nextTierMin = 0;
+        let currentTierMin = 0;
+        
+        if (currentTier === 'Member') {
+            currentTierMin = 0;
+            nextTierMin = 10000; // Bronze threshold
+        } else if (currentTier === 'Bronze') {
+            currentTierMin = 10000;
+            nextTierMin = 16000; // Silver threshold
+        } else if (currentTier === 'Silver') {
+            currentTierMin = 16000;
+            nextTierMin = 21000; // Gold threshold
+        }
+        
+        if (nextTierMin === 0) return 100;
+        
+        const progressRange = nextTierMin - currentTierMin;
+        const currentProgress = Math.max(0, currentSpend - currentTierMin);
+        
+        return Math.min(Math.max((currentProgress / progressRange) * 100, 0), 100);
     },
 
     // Fixed next tier info based on actual spending
     getNextTierInfo() {
-      if (!this.loyaltyStatus) return 'Spend ₱10,000 for Bronze tier';
-      
-      const currentSpend = this.loyaltyStatus.current_month_spend;
-      const currentTier = this.getCurrentTierName();
-      
-      if (currentTier === 'Gold') {
-        return 'Highest tier achieved!';
-      }
-      
-      let nextTierName = '';
-      let nextTierMin = 0;
-      
-      if (currentTier === 'Member') {
-        nextTierName = 'Bronze';
-        nextTierMin = 10000;
-      } else if (currentTier === 'Bronze') {
-        nextTierName = 'Silver';
-        nextTierMin = 16000;
-      } else if (currentTier === 'Silver') {
-        nextTierName = 'Gold';
-        nextTierMin = 21000;
-      }
-      
-      const needed = nextTierMin - currentSpend;
-      
-      if (needed <= 0) {
-        return `Qualified for ${nextTierName}!`;
-      }
-      
-      return `₱${this.formatNumber(needed)} to ${nextTierName}`;
+        if (!this.loyaltyStatus) return 'Spend ₱10,000 for Bronze tier';
+        
+        const currentSpend = this.loyaltyStatus.current_month_spend;
+        const currentTier = this.getCurrentTierName();
+        
+        if (currentTier === 'Gold') {
+            return 'Highest tier achieved!';
+        }
+        
+        let nextTierName = '';
+        let nextTierMin = 0;
+        
+        if (currentTier === 'Member') {
+            nextTierName = 'Bronze';
+            nextTierMin = 10000;
+        } else if (currentTier === 'Bronze') {
+            nextTierName = 'Silver';
+            nextTierMin = 16000;
+        } else if (currentTier === 'Silver') {
+            nextTierName = 'Gold';
+            nextTierMin = 21000;
+        }
+        
+        const needed = nextTierMin - currentSpend;
+        
+        if (needed <= 0) {
+            return `Qualified for ${nextTierName}!`;
+        }
+        
+        return `₱${this.formatNumber(needed)} to ${nextTierName}`;
     },
 
     showRedemptionConfirmation(reward) {

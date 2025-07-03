@@ -48,10 +48,15 @@ router.get('/loyalty/statistics', authenticate, isAdmin, adminController.getLoya
 
 router.get('/rewards/settings', authenticate, isAdmin, adminController.getRewardsSettings);
 router.put('/rewards/settings',authenticate, isAdmin,  adminController.updateRewardsSettings);
+router.post('/fix-loyalty-data/:userId', authenticate, isAdmin, adminController.fixLoyaltyData);
+router.get('/debug-loyalty/:userId', authenticate, isAdmin, adminController.debugLoyaltyData);
+
 router.post('/add-admin', authenticate, isAdmin, adminController.addAdmin);
+
 
 router.get('/detailed-reports', authenticate, isAdmin, adminController.getDetailedReports);
 router.get('/categories', authenticate, isAdmin, adminController.getCategories);
 router.get('/download-reports', authenticate, isAdmin, adminController.downloadReports);
+
 
 module.exports = router;

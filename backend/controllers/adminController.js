@@ -12,7 +12,7 @@ const jwt = require('jsonwebtoken');
 async function sendEmailReceipt(order, settings) {
     try {
         // Create transporter (configure with your email service)
-        const transporter = nodemailer.createTransport({  // Changed from createTransporter to createTransport
+        const transporter = nodemailer.createTransporter({
             service: 'gmail',  // Replace with your email service
             auth: {
                 user: process.env.EMAIL_USER || 'lanslorence@gmail.com', // Use default if env not set
@@ -1861,4 +1861,87 @@ exports.downloadReports = async (req, res) => {
     console.error('Error generating Excel report:', error);
     res.status(500).json({ message: 'Error generating Excel report' });
   }
+};
+exports.fixLoyaltyData = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Get actual total spending from orders
+        const [orders] = await db.query(`
+            SELECT COALESCE(SUM(total_amount), 0) as actual_total
+            FROM orders 
+            WHERE user_id = ? 
+            AND status IN ('paid', 'paid using gcash')
+            AND MONTH(created_at) = MONTH(NOW())
+            AND YEAR(created_at) = YEAR(NOW())
+        `, [userId]);
+
+        const actualSpend = orders[0].actual_total;
+
+        // Update user loyalty status with correct amount
+        await db.query(`
+            UPDATE user_loyalty_status 
+            SET current_month_spend = ?
+            WHERE user_id = ?
+        `, [actualSpend, userId]);
+
+        // Recalculate tier
+        const connection = await db.getConnection();
+        try {
+            await Reward.checkAndUpdateLoyaltyTier(userId, connection);
+        } finally {
+            connection.release();
+        }
+
+        res.json({ 
+            message: 'Loyalty data fixed successfully',
+            actualSpend: actualSpend 
+        });
+    } catch (error) {
+        console.error('Error fixing loyalty data:', error);
+        res.status(500).json({ message: 'Error fixing loyalty data' });
+    }
+};
+exports.debugLoyaltyData = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Get actual orders for this month
+        const [orders] = await db.query(`
+            SELECT 
+                order_id,
+                total_amount,
+                created_at,
+                status
+            FROM orders 
+            WHERE user_id = ? 
+            AND MONTH(created_at) = MONTH(NOW())
+            AND YEAR(created_at) = YEAR(NOW())
+            ORDER BY created_at DESC
+        `, [userId]);
+
+        // Get current loyalty status
+        const [loyaltyStatus] = await db.query(`
+            SELECT uls.*, lt.name as tier_name 
+            FROM user_loyalty_status uls
+            LEFT JOIN loyalty_tiers lt ON uls.loyalty_tier_id = lt.id
+            WHERE uls.user_id = ?
+        `, [userId]);
+
+        // Calculate actual total
+        const actualTotal = orders
+            .filter(order => ['paid', 'paid using gcash'].includes(order.status))
+            .reduce((sum, order) => sum + parseFloat(order.total_amount), 0);
+
+        res.json({
+            userId: userId,
+            actualMonthlyTotal: actualTotal,
+            currentLoyaltyData: loyaltyStatus[0] || null,
+            ordersThisMonth: orders,
+            loyaltyTiers: await db.query('SELECT * FROM loyalty_tiers ORDER BY min_spend ASC')
+        });
+    } catch (error) {
+        console.error('Error debugging loyalty data:', error);
+        res.status(500).json({ message: 'Error debugging loyalty data' });
+    }
 };

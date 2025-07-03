@@ -145,81 +145,125 @@ class Reward {
     }
 
     static async updateMonthlySpend(userId, amount, connection) {
-        try {
-            // Check if user exists in loyalty status
-            const [existing] = await connection.query(
-                'SELECT * FROM user_loyalty_status WHERE user_id = ?',
-                [userId]
+    try {
+        console.log(`Updating monthly spend for user ${userId}: adding ${amount}`);
+        
+        // Check if user exists in loyalty status
+        const [existing] = await connection.query(
+            'SELECT current_month_spend FROM user_loyalty_status WHERE user_id = ?',
+            [userId]
+        );
+
+        if (existing.length === 0) {
+            // Create new loyalty status record
+            await connection.query(
+                `INSERT INTO user_loyalty_status (user_id, current_month_spend) 
+                VALUES (?, ?)`,
+                [userId, amount]
             );
-
-            if (existing.length === 0) {
-                // Create new loyalty status record
-                await connection.query(
-                    `INSERT INTO user_loyalty_status (user_id, current_month_spend) 
-                     VALUES (?, ?)`,
-                    [userId, amount]
-                );
-            } else {
-                // Update existing record
-                await connection.query(
-                    `UPDATE user_loyalty_status 
-                     SET current_month_spend = current_month_spend + ? 
-                     WHERE user_id = ?`,
-                    [amount, userId]
-                );
-            }
-
-            // Check and update loyalty tier
-            await this.checkAndUpdateLoyaltyTier(userId, connection);
-        } catch (error) {
-            throw error;
+            console.log(`Created new loyalty status for user ${userId} with spend ${amount}`);
+        } else {
+            const currentSpend = existing[0].current_month_spend;
+            const newSpend = parseFloat(currentSpend) + parseFloat(amount);
+            
+            await connection.query(
+                `UPDATE user_loyalty_status 
+                SET current_month_spend = ? 
+                WHERE user_id = ?`,
+                [newSpend, userId]
+            );
+            console.log(`Updated user ${userId} spend from ${currentSpend} to ${newSpend}`);
         }
+
+        // Check and update loyalty tier after updating spend
+        await this.checkAndUpdateLoyaltyTier(userId, connection);
+    } catch (error) {
+        console.error('Error in updateMonthlySpend:', error);
+        throw error;
     }
+}
 
-    static async checkAndUpdateLoyaltyTier(userId, connection) {
-        try {
-            // Get current monthly spend
-            const [spendData] = await connection.query(
-                'SELECT current_month_spend FROM user_loyalty_status WHERE user_id = ?',
-                [userId]
-            );
+static async checkAndUpdateLoyaltyTier(userId, connection) {
+    try {
+        // Get current monthly spend
+        const [spendData] = await connection.query(
+            'SELECT current_month_spend FROM user_loyalty_status WHERE user_id = ?',
+            [userId]
+        );
 
-            if (spendData.length === 0) return;
+        if (spendData.length === 0) return;
 
-            const monthlySpend = spendData[0].current_month_spend;
+        const monthlySpend = parseFloat(spendData[0].current_month_spend);
+        console.log(`Checking tier for user ${userId} with monthly spend: ${monthlySpend}`);
 
-            // Determine appropriate tier based on new thresholds
-            const [tiers] = await connection.query(
-                'SELECT * FROM loyalty_tiers ORDER BY min_spend DESC'
-            );
+        // Get loyalty tiers ordered by minimum spend (ascending)
+        const [tiers] = await connection.query(
+            'SELECT * FROM loyalty_tiers ORDER BY min_spend ASC'
+        );
 
-            let appropriateTier = null;
-            for (const tier of tiers) {
-                if (monthlySpend >= tier.min_spend) {
-                    if (!tier.max_spend || monthlySpend <= tier.max_spend) {
-                        appropriateTier = tier;
-                        break;
-                    }
+        let appropriateTier = null;
+        
+        // Find the highest tier the user qualifies for
+        for (const tier of tiers) {
+            const minSpend = parseFloat(tier.min_spend);
+            const maxSpend = tier.max_spend ? parseFloat(tier.max_spend) : null;
+            
+            console.log(`Checking tier ${tier.name}: min=${minSpend}, max=${maxSpend}, userSpend=${monthlySpend}`);
+            
+            if (monthlySpend >= minSpend) {
+                if (!maxSpend || monthlySpend <= maxSpend) {
+                    appropriateTier = tier;
+                    console.log(`User qualifies for tier: ${tier.name}`);
+                } else {
+                    console.log(`User exceeds max spend for tier ${tier.name}`);
                 }
+            } else {
+                console.log(`User doesn't meet min spend for tier ${tier.name}`);
             }
-
-            if (appropriateTier) {
-                const tierEndDate = new Date();
-                tierEndDate.setMonth(tierEndDate.getMonth() + 3); // 3 months validity
-
-                await connection.query(
-                    `UPDATE user_loyalty_status 
-                     SET loyalty_tier_id = ?, 
-                         tier_start_date = CURDATE(), 
-                         tier_end_date = ? 
-                     WHERE user_id = ?`,
-                    [appropriateTier.id, tierEndDate.toISOString().split('T')[0], userId]
-                );
-            }
-        } catch (error) {
-            throw error;
         }
+
+        // Get current tier
+        const [currentTierData] = await connection.query(
+            'SELECT loyalty_tier_id FROM user_loyalty_status WHERE user_id = ?',
+            [userId]
+        );
+
+        const currentTierId = currentTierData[0]?.loyalty_tier_id;
+        console.log(`Current tier ID: ${currentTierId}, Appropriate tier: ${appropriateTier?.name || 'None'}`);
+
+        // Only update if tier changed
+        if (appropriateTier && appropriateTier.id !== currentTierId) {
+            const tierEndDate = new Date();
+            tierEndDate.setMonth(tierEndDate.getMonth() + 3);
+
+            await connection.query(
+                `UPDATE user_loyalty_status 
+                SET loyalty_tier_id = ?, 
+                    tier_start_date = CURDATE(), 
+                    tier_end_date = ? 
+                WHERE user_id = ?`,
+                [appropriateTier.id, tierEndDate.toISOString().split('T')[0], userId]
+            );
+            console.log(`Updated user ${userId} to tier ${appropriateTier.name}`);
+        } else if (!appropriateTier && currentTierId) {
+            // Remove tier if user no longer qualifies
+            await connection.query(
+                `UPDATE user_loyalty_status 
+                SET loyalty_tier_id = NULL, 
+                    tier_start_date = NULL, 
+                    tier_end_date = NULL 
+                WHERE user_id = ?`,
+                [userId]
+            );
+            console.log(`Removed tier for user ${userId} - no longer qualifies`);
+        } else {
+            console.log(`No tier change needed for user ${userId}`);
+        }
+    } catch (error) {
+        console.error('Error in checkAndUpdateLoyaltyTier:', error);
+        throw error;
     }
+}
 
     static async redeemPoints(userId, points, rewardId) {
         const connection = await db.getConnection();
@@ -328,6 +372,41 @@ class Reward {
             return result[0] || null;
         } catch (error) {
             throw error;
+        }
+    }
+    static async resetMonthlySpending() {
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            // Move current month to last month, last month to two months ago
+            await connection.query(`
+                UPDATE user_loyalty_status 
+                SET 
+                    two_months_ago_spend = last_month_spend,
+                    last_month_spend = current_month_spend,
+                    current_month_spend = 0.00
+            `);
+
+            // Check if users still qualify for their tiers based on average spending
+            await connection.query(`
+                UPDATE user_loyalty_status uls
+                LEFT JOIN loyalty_tiers lt ON uls.loyalty_tier_id = lt.id
+                SET 
+                    uls.loyalty_tier_id = NULL,
+                    uls.tier_start_date = NULL,
+                    uls.tier_end_date = NULL
+                WHERE uls.loyalty_tier_id IS NOT NULL
+                AND (uls.last_month_spend + uls.two_months_ago_spend) / 2 < lt.min_spend
+            `);
+
+            await connection.commit();
+            console.log('Monthly spending reset completed');
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
         }
     }
 }
