@@ -88,6 +88,7 @@
                             <option value="Canned Goods">Canned Goods</option>
                             <option value="Biscuits">Biscuits</option>
                             <option value="Candies and Snacks">Candies and Snacks</option>
+                            <option value="Bar and Soap">Bar and Soap</option>
                         </select>
                     </div>
 
@@ -488,6 +489,26 @@ export default {
                             { name: 'Regular (30g)', price: null, stock: null },
                             { name: 'Sharing (75g)', price: null, stock: null },
                             { name: 'Jumbo (150g)', price: null, stock: null }
+                        ]
+                    }
+                ],
+                'Bar and Soap': [
+                    {
+                        label: 'Soap Types',
+                        choices: [
+                            { name: 'Laundry Bar', price: null, stock: null },
+                            { name: 'Beauty Bar', price: null, stock: null },
+                            { name: 'Anti-bacterial Bar', price: null, stock: null },
+                            { name: 'Body Soap', price: null, stock: null }
+                        ]
+                    },
+                    {
+                        label: 'Package Sizes',
+                        choices: [
+                            { name: 'Small (90g)', price: null, stock: null },
+                            { name: 'Regular (135g)', price: null, stock: null },
+                            { name: 'Family Size (200g)', price: null, stock: null },
+                            { name: 'Twin Pack', price: null, stock: null }
                         ]
                     }
                 ]

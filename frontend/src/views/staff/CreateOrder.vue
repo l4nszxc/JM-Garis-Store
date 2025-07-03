@@ -305,7 +305,8 @@
             { id: 'condiments', name: 'Condiments' },
             { id: 'canned-goods', name: 'Canned Goods' },
             { id: 'biscuits', name: 'Biscuits' },
-            { id: 'candies-snacks', name: 'Candies and Snacks' }
+            { id: 'candies-snacks', name: 'Candies and Snacks' },
+            { id: 'bar-and-soap', name: 'Bar and Soap' }
             ],
         selectedCategory: null,
       }

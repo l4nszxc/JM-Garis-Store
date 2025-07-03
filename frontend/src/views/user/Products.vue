@@ -198,7 +198,8 @@ export default {
                 { label: 'Condiments', value: 'Condiments' },
                 { label: 'Canned Goods', value: 'Canned Goods' },
                 { label: 'Biscuits', value: 'Biscuits' },
-                { label: 'Candies & Snacks', value: 'Candies and Snacks' }
+                { label: 'Candies & Snacks', value: 'Candies and Snacks' },
+                { label: 'Bar and Soap', value: 'Bar and Soap' }
             ],
             showLeftScroll: false,
             showRightScroll: false,

@@ -241,6 +241,7 @@
                             <option value="Canned Goods">Canned Goods</option>
                             <option value="Biscuits">Biscuits</option>
                             <option value="Candies and Snacks">Candies and Snacks</option>
+                            <option value="Bar and Soap">Bar and Soap</option>
                         </select>
                     </div>
                     <div class="product-choices-section">
@@ -434,7 +435,8 @@ export default {
                 { label: 'Condiments', value: 'Condiments' },
                 { label: 'Canned Goods', value: 'Canned Goods' },
                 { label: 'Biscuits', value: 'Biscuits' },
-                { label: 'Candies & Snacks', value: 'Candies and Snacks' }
+                { label: 'Candies & Snacks', value: 'Candies and Snacks' },
+                { label: 'Bar and Soap', value: 'Bar and Soap' }
             ],
             sortBy: 'updated_at',
             sortDirection: 'desc',
