@@ -30,21 +30,23 @@ exports.createOrder = async (req, res) => {
             if (discount.length > 0) {
                 appliedDiscount = discount[0].amount;
                 totalAmount = Math.max(0, totalAmount - appliedDiscount);
-                
-                // Mark discount as used
-                await db.execute(
-                    'UPDATE available_discounts SET used = 1, order_id = ? WHERE id = ?',
-                    [orderId, discountId]
-                );
             }
         }
         
-        // Create the order with packaging preference
+        // Create the order FIRST - before updating discounts
         await db.execute(
             `INSERT INTO orders (order_id, user_id, total_amount, status, packaging_preference, created_at, updated_at) 
              VALUES (?, ?, ?, 'pending', ?, NOW(), NOW())`,
             [orderId, userId, totalAmount, packagingPreference]
         );
+        
+        // THEN mark discount as used (after order is created)
+        if (discountId && appliedDiscount > 0) {
+            await db.execute(
+                'UPDATE available_discounts SET used = 1, order_id = ? WHERE id = ?',
+                [orderId, discountId]
+            );
+        }
         
         // Insert order items
         for (const item of items) {
