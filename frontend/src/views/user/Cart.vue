@@ -493,8 +493,10 @@ export default {
             }
         },
         
-        async handlePlaceOrder({ items, discountId }) {
+        async handlePlaceOrder({ items, discountId, plasticPackaging }) {
             try {
+                console.log('Placing order with packaging preference:', plasticPackaging); // Debug log
+                
                 const token = localStorage.getItem('token');
                 
                 const formattedItems = items.map(item => ({
@@ -510,8 +512,11 @@ export default {
                     totalAmount: formattedItems.reduce((sum, item) => 
                         sum + (parseFloat(item.price) * item.quantity), 0
                     ),
-                    discountId: discountId
+                    discountId: discountId,
+                    plasticPackaging: plasticPackaging // Ensure this is being sent
                 };
+                
+                console.log('Request body:', requestBody); // Debug log
 
                 const response = await fetch('http://localhost:7904/api/orders', {
                     method: 'POST',
@@ -527,7 +532,8 @@ export default {
                     throw new Error(errorData.message || 'Failed to place order');
                 }
 
-                const { orderId, finalAmount, appliedDiscount, pointsEarned } = await response.json();
+                const result = await response.json();
+                console.log('Order created with packaging:', result.packagingPreference); // Debug log
 
                 this.cartItems = this.cartItems.filter(cartItem => 
                     !items.some(item => item.id === cartItem.id)
