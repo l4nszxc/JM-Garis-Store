@@ -8,6 +8,7 @@ const forecastService = require('../services/forecastService');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const ExcelJS = require('exceljs'); 
 
 async function sendEmailReceipt(order, settings) {
     try {
@@ -1724,7 +1725,6 @@ exports.getCategories = async (req, res) => {
 // Download reports as Excel
 exports.downloadReports = async (req, res) => {
   try {
-    const ExcelJS = require('exceljs');
     const { fromDate, toDate, category, type } = req.query;
     
     const workbook = new ExcelJS.Workbook();
@@ -1739,24 +1739,83 @@ exports.downloadReports = async (req, res) => {
       // Create Sales worksheet
       const salesSheet = workbook.addWorksheet('Sales Report');
       
-      // Add header information
-      salesSheet.addRow(['JM Garis Store - Sales Report']);
-      salesSheet.addRow([`Period: ${fromDate} to ${toDate}`]);
-      salesSheet.addRow(['Generated:', new Date().toLocaleString()]);
-      salesSheet.addRow([]); // Empty row
+      // Set column widths
+      salesSheet.columns = [
+        { width: 25 }, // Product Name
+        { width: 15 }, // Category
+        { width: 12 }, // Units Sold
+        { width: 15 }, // Revenue
+        { width: 15 }  // Average Price
+      ];
       
-      // Add sales by product data
-      salesSheet.addRow(['Product Name', 'Category', 'Units Sold', 'Revenue', 'Average Price']);
+      // Add store header (merge cells for centered title)
+      salesSheet.mergeCells('A1:E1');
+      const titleCell = salesSheet.getCell('A1');
+      titleCell.value = 'JM GARIS STORE';
+      titleCell.font = { name: 'Arial', size: 18, bold: true };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF4472C4' }
+      };
+      titleCell.font = { ...titleCell.font, color: { argb: 'FFFFFFFF' } };
       
-      // Get the same data as the API
+      // Add report title
+      salesSheet.mergeCells('A2:E2');
+      const reportTitleCell = salesSheet.getCell('A2');
+      reportTitleCell.value = 'SALES REPORT';
+      reportTitleCell.font = { name: 'Arial', size: 14, bold: true };
+      reportTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // Add date range
+      salesSheet.mergeCells('A3:E3');
+      const dateRangeCell = salesSheet.getCell('A3');
+      dateRangeCell.value = `Period: ${fromDate || 'All Time'} to ${toDate || new Date().toISOString().split('T')[0]}`;
+      dateRangeCell.font = { name: 'Arial', size: 11 };
+      dateRangeCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // Add generation timestamp
+      salesSheet.mergeCells('A4:E4');
+      const timestampCell = salesSheet.getCell('A4');
+      timestampCell.value = `Generated: ${new Date().toLocaleString('en-PH', { 
+        timeZone: 'Asia/Manila',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`;
+      timestampCell.font = { name: 'Arial', size: 10, italic: true };
+      timestampCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // Add empty row
+      salesSheet.addRow([]);
+      
+      // Add table headers
+      const headerRow = salesSheet.addRow(['Product Name', 'Category', 'Units Sold', 'Revenue (₱)', 'Avg. Price (₱)']);
+      headerRow.font = { name: 'Arial', size: 11, bold: true };
+      headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE7E6E6' }
+      };
+      
+      // Add borders to header
+      headerRow.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+      
+      // Get sales data
       let dateFilter = '';
       if (fromDate && toDate) {
-        dateFilter = `AND o.created_at BETWEEN '${fromDate} 00:00:00' AND '${toDate} 23:59:59'`;
-      }
-      
-      let categoryFilter = '';
-      if (category) {
-        categoryFilter = `AND p.category = '${category}'`;
+        dateFilter = `AND DATE(o.created_at) BETWEEN '${fromDate}' AND '${toDate}'`;
       }
       
       const [salesData] = await db.execute(`
@@ -1764,53 +1823,200 @@ exports.downloadReports = async (req, res) => {
           p.name as product_name,
           p.category,
           SUM(oi.quantity) as units_sold,
-          SUM(oi.price * oi.quantity) as revenue,
+          SUM(oi.quantity * oi.price) as revenue,
           AVG(oi.price) as avg_price
-        FROM products p
-        JOIN order_items oi ON p.products_id = oi.product_id
+        FROM order_items oi
         JOIN orders o ON oi.order_id = o.order_id
-        WHERE o.status = 'paid' ${dateFilter} ${categoryFilter}
-        GROUP BY p.products_id, p.name, p.category
+        JOIN products p ON oi.product_id = p.product_id
+        WHERE o.status IN ('paid', 'paid using gcash') ${dateFilter}
+        GROUP BY p.product_id, p.name, p.category
         ORDER BY revenue DESC
       `);
       
-      salesData.forEach(row => {
-        salesSheet.addRow([
+      // Add data rows
+      salesData.forEach((row, index) => {
+        const dataRow = salesSheet.addRow([
           row.product_name,
           row.category,
-          row.units_sold,
+          parseInt(row.units_sold),
           parseFloat(row.revenue || 0),
           parseFloat(row.avg_price || 0)
         ]);
+        
+        // Format data cells
+        dataRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+        dataRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+        dataRow.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
+        dataRow.getCell(4).alignment = { horizontal: 'right', vertical: 'middle' };
+        dataRow.getCell(5).alignment = { horizontal: 'right', vertical: 'middle' };
+        
+        // Format currency cells
+        dataRow.getCell(4).numFmt = '#,##0.00';
+        dataRow.getCell(5).numFmt = '#,##0.00';
+        
+        // Add borders
+        dataRow.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+        
+        // Alternate row colors
+        if (index % 2 === 1) {
+          dataRow.eachCell((cell) => {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFF8F9FA' }
+            };
+          });
+        }
       });
       
-      // Style the header
-      salesSheet.getRow(1).font = { bold: true, size: 16 };
-      salesSheet.getRow(5).font = { bold: true };
+      // Add summary section
+      const currentRow = salesSheet.rowCount + 2;
+      salesSheet.mergeCells(`A${currentRow}:E${currentRow}`);
+      const summaryHeaderCell = salesSheet.getCell(`A${currentRow}`);
+      summaryHeaderCell.value = 'SUMMARY';
+      summaryHeaderCell.font = { name: 'Arial', size: 12, bold: true };
+      summaryHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      summaryHeaderCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFD1E7DD' }
+      };
       
-      // Auto-fit columns
-      salesSheet.columns.forEach(column => {
-        column.width = 20;
-      });
+      // Calculate totals
+      const totalRevenue = salesData.reduce((sum, row) => sum + parseFloat(row.revenue || 0), 0);
+      const totalUnits = salesData.reduce((sum, row) => sum + parseInt(row.units_sold || 0), 0);
+      
+      salesSheet.addRow(['Total Products:', salesData.length, '', '', '']);
+      salesSheet.addRow(['Total Units Sold:', totalUnits, '', '', '']);
+      salesSheet.addRow(['Total Revenue:', '', '', totalRevenue, '']);
+      
+      // Format summary rows
+      for (let i = currentRow + 1; i <= currentRow + 3; i++) {
+        const row = salesSheet.getRow(i);
+        row.getCell(1).font = { bold: true };
+        row.getCell(2).font = { bold: true };
+        row.getCell(4).numFmt = '#,##0.00';
+        row.getCell(4).font = { bold: true };
+      }
+      
+      // Add footer with signature
+      const footerRow = salesSheet.rowCount + 3;
+      salesSheet.mergeCells(`A${footerRow}:E${footerRow}`);
+      salesSheet.mergeCells(`A${footerRow + 2}:E${footerRow + 2}`);
+      salesSheet.mergeCells(`A${footerRow + 4}:E${footerRow + 4}`);
+      salesSheet.mergeCells(`A${footerRow + 5}:E${footerRow + 5}`);
+      
+      // Prepared by
+      const preparedByCell = salesSheet.getCell(`A${footerRow}`);
+      preparedByCell.value = 'Prepared by:';
+      preparedByCell.font = { name: 'Arial', size: 10 };
+      preparedByCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // Signature line
+      const signatureCell = salesSheet.getCell(`A${footerRow + 2}`);
+      signatureCell.value = '________________________';
+      signatureCell.font = { name: 'Arial', size: 10 };
+      signatureCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // Printed name
+      const nameCell = salesSheet.getCell(`A${footerRow + 4}`);
+      nameCell.value = 'Admin Officer';
+      nameCell.font = { name: 'Arial', size: 10, bold: true };
+      nameCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // Title
+      const titleFooterCell = salesSheet.getCell(`A${footerRow + 5}`);
+      titleFooterCell.value = 'JM Garis Store';
+      titleFooterCell.font = { name: 'Arial', size: 9, italic: true };
+      titleFooterCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // Set row heights
+      salesSheet.getRow(1).height = 25;
+      salesSheet.getRow(2).height = 20;
     }
     
     if (type === 'inventory' || type === 'combined') {
       // Create Inventory worksheet
       const inventorySheet = workbook.addWorksheet('Inventory Report');
       
-      // Add header information
-      inventorySheet.addRow(['JM Garis Store - Inventory Report']);
-      inventorySheet.addRow([`Generated: ${new Date().toLocaleString()}`]);
-      inventorySheet.addRow([]); // Empty row
+      // Set column widths
+      inventorySheet.columns = [
+        { width: 25 }, // Product Name
+        { width: 15 }, // Category
+        { width: 15 }, // Current Stock
+        { width: 15 }, // Unit Price
+        { width: 15 }, // Total Value
+        { width: 12 }  // Status
+      ];
       
-      // Add inventory data
-      inventorySheet.addRow(['Product Name', 'Category', 'Current Stock', 'Unit Price', 'Total Value', 'Status']);
+      // Add store header
+      inventorySheet.mergeCells('A1:F1');
+      const titleCell = inventorySheet.getCell('A1');
+      titleCell.value = 'JM GARIS STORE';
+      titleCell.font = { name: 'Arial', size: 18, bold: true };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF4472C4' }
+      };
+      titleCell.font = { ...titleCell.font, color: { argb: 'FFFFFFFF' } };
       
+      // Add report title
+      inventorySheet.mergeCells('A2:F2');
+      const reportTitleCell = inventorySheet.getCell('A2');
+      reportTitleCell.value = 'INVENTORY REPORT';
+      reportTitleCell.font = { name: 'Arial', size: 14, bold: true };
+      reportTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // Add generation timestamp
+      inventorySheet.mergeCells('A3:F3');
+      const timestampCell = inventorySheet.getCell('A3');
+      timestampCell.value = `Generated: ${new Date().toLocaleString('en-PH', { 
+        timeZone: 'Asia/Manila',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`;
+      timestampCell.font = { name: 'Arial', size: 10, italic: true };
+      timestampCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // Add empty row
+      inventorySheet.addRow([]);
+      
+      // Add table headers
+      const headerRow = inventorySheet.addRow(['Product Name', 'Category', 'Current Stock', 'Unit Price (₱)', 'Total Value (₱)', 'Status']);
+      headerRow.font = { name: 'Arial', size: 11, bold: true };
+      headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE7E6E6' }
+      };
+      
+      // Add borders to header
+      headerRow.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+      
+      // Get inventory data
       let categoryFilter = '';
       if (category) {
-        categoryFilter = `WHERE p.category = '${category}'`;
-      } else {
-        categoryFilter = 'WHERE 1=1';
+        categoryFilter = `WHERE category = '${category}'`;
       }
       
       const [inventoryData] = await db.execute(`
@@ -1824,29 +2030,148 @@ exports.downloadReports = async (req, res) => {
         ORDER BY stock_quantity ASC
       `);
       
-      inventoryData.forEach(row => {
+      // Add data rows
+      inventoryData.forEach((row, index) => {
         let status = 'Normal';
         if (row.stock <= 10) status = 'Critical';
         else if (row.stock <= 30) status = 'Low';
         
-        inventorySheet.addRow([
+        const dataRow = inventorySheet.addRow([
           row.product_name,
           row.category,
-          row.stock,
+          parseInt(row.stock),
           parseFloat(row.price || 0),
           parseFloat(row.total_value || 0),
           status
         ]);
+        
+        // Format data cells
+        dataRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+        dataRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+        dataRow.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
+        dataRow.getCell(4).alignment = { horizontal: 'right', vertical: 'middle' };
+        dataRow.getCell(5).alignment = { horizontal: 'right', vertical: 'middle' };
+        dataRow.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Format currency cells
+        dataRow.getCell(4).numFmt = '#,##0.00';
+        dataRow.getCell(5).numFmt = '#,##0.00';
+        
+        // Color code status
+        const statusCell = dataRow.getCell(6);
+        if (status === 'Critical') {
+          statusCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFE6E6' }
+          };
+          statusCell.font = { color: { argb: 'FFDC2626' }, bold: true };
+        } else if (status === 'Low') {
+          statusCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFF3E0' }
+          };
+          statusCell.font = { color: { argb: 'FFEA580C' }, bold: true };
+        } else {
+          statusCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF0FDF4' }
+          };
+          statusCell.font = { color: { argb: 'FF059669' }, bold: true };
+        }
+        
+        // Add borders
+        dataRow.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+        
+        // Alternate row colors
+        if (index % 2 === 1) {
+          dataRow.eachCell((cell, colNumber) => {
+            if (colNumber !== 6) { // Don't override status cell color
+              cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFF8F9FA' }
+              };
+            }
+          });
+        }
       });
       
-      // Style the header
-      inventorySheet.getRow(1).font = { bold: true, size: 16 };
-      inventorySheet.getRow(4).font = { bold: true };
+      // Add summary section
+      const currentRow = inventorySheet.rowCount + 2;
+      inventorySheet.mergeCells(`A${currentRow}:F${currentRow}`);
+      const summaryHeaderCell = inventorySheet.getCell(`A${currentRow}`);
+      summaryHeaderCell.value = 'INVENTORY SUMMARY';
+      summaryHeaderCell.font = { name: 'Arial', size: 12, bold: true };
+      summaryHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      summaryHeaderCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFD1E7DD' }
+      };
       
-      // Auto-fit columns
-      inventorySheet.columns.forEach(column => {
-        column.width = 20;
-      });
+      // Calculate totals
+      const totalValue = inventoryData.reduce((sum, row) => sum + parseFloat(row.total_value || 0), 0);
+      const lowStockCount = inventoryData.filter(row => row.stock <= 30).length;
+      const criticalStockCount = inventoryData.filter(row => row.stock <= 10).length;
+      
+      inventorySheet.addRow(['Total Products:', inventoryData.length, '', '', '', '']);
+      inventorySheet.addRow(['Total Inventory Value:', '', '', '', totalValue, '']);
+      inventorySheet.addRow(['Low Stock Items (≤30):', lowStockCount, '', '', '', '']);
+      inventorySheet.addRow(['Critical Stock Items (≤10):', criticalStockCount, '', '', '', '']);
+      
+      // Format summary rows
+      for (let i = currentRow + 1; i <= currentRow + 4; i++) {
+        const row = inventorySheet.getRow(i);
+        row.getCell(1).font = { bold: true };
+        row.getCell(2).font = { bold: true };
+        row.getCell(5).numFmt = '#,##0.00';
+        row.getCell(5).font = { bold: true };
+      }
+      
+      // Add footer with signature
+      const footerRow = inventorySheet.rowCount + 3;
+      inventorySheet.mergeCells(`A${footerRow}:F${footerRow}`);
+      inventorySheet.mergeCells(`A${footerRow + 2}:F${footerRow + 2}`);
+      inventorySheet.mergeCells(`A${footerRow + 4}:F${footerRow + 4}`);
+      inventorySheet.mergeCells(`A${footerRow + 5}:F${footerRow + 5}`);
+      
+      // Prepared by
+      const preparedByCell = inventorySheet.getCell(`A${footerRow}`);
+      preparedByCell.value = 'Prepared by:';
+      preparedByCell.font = { name: 'Arial', size: 10 };
+      preparedByCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // Signature line
+      const signatureCell = inventorySheet.getCell(`A${footerRow + 2}`);
+      signatureCell.value = '________________________';
+      signatureCell.font = { name: 'Arial', size: 10 };
+      signatureCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // Printed name
+      const nameCell = inventorySheet.getCell(`A${footerRow + 4}`);
+      nameCell.value = 'Admin Officer';
+      nameCell.font = { name: 'Arial', size: 10, bold: true };
+      nameCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // Title
+      const titleFooterCell = inventorySheet.getCell(`A${footerRow + 5}`);
+      titleFooterCell.value = 'JM Garis Store';
+      titleFooterCell.font = { name: 'Arial', size: 9, italic: true };
+      titleFooterCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // Set row heights
+      inventorySheet.getRow(1).height = 25;
+      inventorySheet.getRow(2).height = 20;
     }
     
     // Set response headers
