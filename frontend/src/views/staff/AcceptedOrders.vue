@@ -133,6 +133,20 @@
                         <p><strong>Accepted On:</strong> {{ formatDate(selectedOrder.accepted_at) }}</p>
                         <p><strong>Estimated Ready By:</strong> {{ formatDate(selectedOrder.estimatedPickupTime) }}</p>
                         
+                        <!-- Add Packaging Preference Display -->
+                        <div class="packaging-info">
+                            <p><strong>Packaging Preference:</strong></p>
+                            <div class="packaging-display" :class="selectedOrder.packaging_preference">
+                                <i :class="selectedOrder.packaging_preference === 'plastic' ? 'fas fa-shopping-bag' : 'fas fa-leaf'"></i>
+                                <span v-if="selectedOrder.packaging_preference === 'plastic'">
+                                    Plastic Packaging Requested
+                                </span>
+                                <span v-else>
+                                    Eco-Friendly (Paper Bag/Box)
+                                </span>
+                            </div>
+                        </div>
+                        
                         <div class="price-breakdown">
                             <p class="subtotal">
                                 <i class="fas fa-receipt"></i> Subtotal: {{ formatPrice(selectedOrder.subtotal) }}
@@ -1104,6 +1118,58 @@ input[type="checkbox"] {
     right: 1rem;
     pointer-events: none;
     color: #64748b;
+}
+.packaging-info {
+    margin: 1rem 0;
+    padding: 1rem;
+    background-color: #f8fffe;
+    border-radius: 8px;
+    border-left: 4px solid #4CAF50;
+}
+
+.packaging-info p {
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.packaging-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.packaging-display.eco {
+    color: #2a3f2a;
+    background-color: #f0f8f0;
+}
+
+.packaging-display.plastic {
+    color: #B8860B;
+    background-color: #fffbf0;
+    border-left-color: #FFA500;
+}
+
+.packaging-display.plastic + .packaging-info {
+    border-left-color: #FFA500;
+    background-color: #fffbf0;
+}
+
+.packaging-display i {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.packaging-display.eco i {
+    color: #4CAF50;
+}
+
+.packaging-display.plastic i {
+    color: #FFA500;
 }
 @keyframes pulse {
     0% {
