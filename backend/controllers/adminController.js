@@ -1827,9 +1827,9 @@ exports.downloadReports = async (req, res) => {
           AVG(oi.price) as avg_price
         FROM order_items oi
         JOIN orders o ON oi.order_id = o.order_id
-        JOIN products p ON oi.product_id = p.product_id
+        JOIN products p ON oi.product_id = p.products_id
         WHERE o.status IN ('paid', 'paid using gcash') ${dateFilter}
-        GROUP BY p.product_id, p.name, p.category
+        GROUP BY p.products_id, p.name, p.category
         ORDER BY revenue DESC
       `);
       
