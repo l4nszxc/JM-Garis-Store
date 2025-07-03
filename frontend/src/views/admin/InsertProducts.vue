@@ -607,68 +607,86 @@ export default {
               this.successMessage = '';
               this.errorMessage = '';
 
-                // Validate product information
-                if (!this.product.name?.trim()) {
-                    throw new Error('Please enter a product name');
-                }
+              // Validate product information
+              if (!this.product.name?.trim()) {
+                  throw new Error('Please enter a product name');
+              }
 
-                if (!this.product.category) {
-                    throw new Error('Please select a product category');
-                }
+              if (!this.product.category) {
+                  throw new Error('Please select a product category');
+              }
 
-                // If there are no choices, validate the price
-                if (this.choices.length === 0) {
-                    const price = this.formatDecimal(this.product.price);
-                    if (isNaN(price) || price <= 0) {
-                        throw new Error('Please enter a valid price greater than zero');
-                    }
-                } else {
-                    // If there are choices, validate that at least one choice has a price
-                    const hasValidPrices = this.choices.some(choice => {
-                        const price = parseFloat(choice.price);
-                        return !isNaN(price) && price > 0;
-                    });
-                    
-                    if (!hasValidPrices) {
-                        throw new Error('Please enter a valid price for at least one product option');
-                    }
-                }
+              // If there are no choices, validate the price
+              if (this.choices.length === 0) {
+                  const price = this.formatDecimal(this.product.price);
+                  if (isNaN(price) || price <= 0) {
+                      throw new Error('Please enter a valid price greater than zero');
+                  }
+              } else {
+                  // If there are choices, validate that at least one choice has a price
+                  const hasValidPrices = this.choices.some(choice => {
+                      const price = parseFloat(choice.price);
+                      return !isNaN(price) && price > 0;
+                  });
+                  
+                  if (!hasValidPrices) {
+                      throw new Error('Please enter a valid price for at least one product option');
+                  }
 
-                const formData = new FormData();
-                formData.append('name', this.product.name);
-                formData.append('description', this.product.description);
-                
-                // If using choices, set main product price to 0
-                const productPrice = this.choices.length > 0 ? 0 : this.formatDecimal(this.product.price);
-                formData.append('price', productPrice);
-                
-                // Set stock_quantity to 0 if using choices, otherwise use the input value
-                formData.append('stock_quantity', this.choices.length > 0 ? '0' : this.product.stock_quantity || '0');
-                formData.append('category', this.product.category);
-                
-                // Add main product image if it exists
-                if (this.image) {
-                    formData.append('image', this.image);
-                }
-                
-                // Handle choices and their images
-                if (this.choices.length > 0) {
-                    const formattedChoices = this.choices.map(choice => ({
-                        ...choice,
-                        price: this.formatDecimal(choice.price)
-                    }));
-                    formData.append('hasChoices', 'true');
-                    formData.append('choices', JSON.stringify(formattedChoices));
-                    
-                    this.choiceImages.forEach((img, idx) => {
-                        if (img) {
-                            formData.append('choiceImage', img);
-                        }
-                    });
-                }
+                  // Validate that choices have stock
+                  const hasValidStock = this.choices.some(choice => {
+                      const stock = parseInt(choice.stock);
+                      return !isNaN(stock) && stock >= 0;
+                  });
+                  
+                  if (!hasValidStock) {
+                      throw new Error('Please enter valid stock quantities for product options');
+                  }
+              }
 
-                const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/products', {
+              const formData = new FormData();
+              formData.append('name', this.product.name);
+              formData.append('description', this.product.description);
+              
+              // If using choices, set main product price to 0 but calculate total stock
+              const productPrice = this.choices.length > 0 ? 0 : this.formatDecimal(this.product.price);
+              formData.append('price', productPrice);
+              
+              // Calculate and set stock_quantity
+              let stockQuantity;
+              if (this.choices.length > 0) {
+                  // Calculate total stock from all choices
+                  stockQuantity = this.getTotalStock;
+              } else {
+                  stockQuantity = this.product.stock_quantity || 0;
+              }
+              formData.append('stock_quantity', stockQuantity);
+              formData.append('category', this.product.category);
+              
+              // Add main product image if it exists
+              if (this.image) {
+                  formData.append('image', this.image);
+              }
+              
+              // Handle choices and their images
+              if (this.choices.length > 0) {
+                  const formattedChoices = this.choices.map(choice => ({
+                      ...choice,
+                      price: this.formatDecimal(choice.price),
+                      stock: parseInt(choice.stock) || 0
+                  }));
+                  formData.append('hasChoices', 'true');
+                  formData.append('choices', JSON.stringify(formattedChoices));
+                  
+                  this.choiceImages.forEach((img, idx) => {
+                      if (img) {
+                          formData.append('choiceImage', img);
+                      }
+                  });
+              }
+
+              const token = localStorage.getItem('token');
+              const response = await fetch('http://localhost:7904/api/products', {
                   method: 'POST',
                   headers: {
                       'Authorization': `Bearer ${token}`
@@ -683,6 +701,9 @@ export default {
                   this.successMessage = 'Product added successfully!';
                   this.showToast('Product added successfully!', 'success');
                   
+                  // Log the total stock that was saved
+                  console.log('Product saved with total stock:', data.totalStock);
+                  
                   // Delay form reset to allow user to see the success message
                   setTimeout(() => {
                       this.confirmReset();
@@ -691,7 +712,9 @@ export default {
                   throw new Error(data.message || 'Failed to add product');
               }
           } catch (error) {
-              // Error handling remains the same...
+              console.error('Error adding product:', error);
+              this.errorMessage = error.message;
+              this.showToast(error.message, 'error');
           } finally {
               this.isSubmitting = false;
           }

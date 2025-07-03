@@ -46,15 +46,22 @@ exports.insertProduct = async (req, res) => {
             return res.status(400).json({ message: 'Required fields are missing' });
         }
 
-        // Ensure stock_quantity is a valid integer
-        const parsedStock = parseInt(stock_quantity) || 0;
+        // Calculate total stock if choices exist
+        let totalStock = parseInt(stock_quantity) || 0;
+        
+        if (hasChoices && choices) {
+            const choicesArray = JSON.parse(choices);
+            totalStock = choicesArray.reduce((sum, choice) => {
+                return sum + (parseInt(choice.stock) || 0);
+            }, 0);
+        }
 
         // Create the product
         const productId = await Product.create({
             name,
             description,
             price,
-            stock_quantity: parsedStock,
+            stock_quantity: totalStock, // Use calculated total stock
             category,
             image: imageUrl
         });
@@ -87,7 +94,8 @@ exports.insertProduct = async (req, res) => {
         res.status(201).json({ 
             message: 'Product added successfully',
             productId,
-            imageUrl
+            imageUrl,
+            totalStock // Return the calculated total stock
         });
     } catch (error) {
         console.error('Product insertion error:', error);
