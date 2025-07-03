@@ -51,61 +51,64 @@ class Reward {
     }
 
     static async addPoints(userId, orderId, amount) {
-        const connection = await db.getConnection();
-        try {
-            await connection.beginTransaction();
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
 
-            // Get current rewards settings
-            const rewardsSettings = await this.getRewardsSettings();
+        // Get current rewards settings
+        const rewardsSettings = await this.getRewardsSettings();
+        
+        // Calculate base points using dynamic settings
+        const basePoints = Math.floor(amount / rewardsSettings.amount_threshold) * rewardsSettings.points_per_amount;
+        
+        // Initialize bonusPoints outside the if block
+        let bonusPoints = 0;
+        
+        if (basePoints > 0) {
+            // Get user's loyalty status and bonus
+            const loyaltyBonus = await this.getLoyaltyBonus(userId, connection);
             
-            // Calculate base points using dynamic settings
-            const basePoints = Math.floor(amount / rewardsSettings.amount_threshold) * rewardsSettings.points_per_amount;
-            
-            if (basePoints > 0) {
-                // Get user's loyalty status and bonus
-                const loyaltyBonus = await this.getLoyaltyBonus(userId, connection);
+            // Calculate bonus points based on loyalty tier
+            bonusPoints = Math.floor(basePoints * loyaltyBonus / 100);
+            const totalPoints = basePoints + bonusPoints;
+
+            // Add base points
+            await connection.query(
+                `INSERT INTO user_rewards (user_id, order_id, points, description, created_at) 
+                VALUES (?, ?, ?, ?, NOW())`,
+                [userId, orderId, basePoints, `Earned points from order #${orderId} (₱${amount})`]
+            );
+
+            // Add loyalty bonus points if any
+            if (bonusPoints > 0) {
+                const [loyaltyTier] = await connection.query(
+                    `SELECT lt.name FROM user_loyalty_status uls 
+                     JOIN loyalty_tiers lt ON uls.loyalty_tier_id = lt.id 
+                     WHERE uls.user_id = ?`,
+                    [userId]
+                );
                 
-                // Calculate bonus points based on loyalty tier
-                const bonusPoints = Math.floor(basePoints * loyaltyBonus / 100);
-                const totalPoints = basePoints + bonusPoints;
-
-                // Add base points
+                const tierName = loyaltyTier[0]?.name || 'Unknown';
                 await connection.query(
                     `INSERT INTO user_rewards (user_id, order_id, points, description, created_at) 
                     VALUES (?, ?, ?, ?, NOW())`,
-                    [userId, orderId, basePoints, `Earned points from order #${orderId} (₱${amount})`]
+                    [userId, orderId, bonusPoints, `${tierName} loyalty bonus (+${loyaltyBonus}%)`]
                 );
-
-                // Add loyalty bonus points if any
-                if (bonusPoints > 0) {
-                    const [loyaltyTier] = await connection.query(
-                        `SELECT lt.name FROM user_loyalty_status uls 
-                         JOIN loyalty_tiers lt ON uls.loyalty_tier_id = lt.id 
-                         WHERE uls.user_id = ?`,
-                        [userId]
-                    );
-                    
-                    const tierName = loyaltyTier[0]?.name || 'Unknown';
-                    await connection.query(
-                        `INSERT INTO user_rewards (user_id, order_id, points, description, created_at) 
-                        VALUES (?, ?, ?, ?, NOW())`,
-                        [userId, orderId, bonusPoints, `${tierName} loyalty bonus (+${loyaltyBonus}%)`]
-                    );
-                }
-
-                // Update user's monthly spend for loyalty tracking
-                await this.updateMonthlySpend(userId, amount, connection);
             }
 
-            await connection.commit();
-            return basePoints + (bonusPoints || 0);
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
+            // Update user's monthly spend for loyalty tracking
+            await this.updateMonthlySpend(userId, amount, connection);
         }
+
+        await connection.commit();
+        return basePoints + bonusPoints;
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
     }
+}
     static async getRewardsSettings() {
         try {
             const [settings] = await db.query('SELECT * FROM rewards_settings ORDER BY id DESC LIMIT 1');

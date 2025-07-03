@@ -12,7 +12,7 @@ const jwt = require('jsonwebtoken');
 async function sendEmailReceipt(order, settings) {
     try {
         // Create transporter (configure with your email service)
-        const transporter = nodemailer.createTransporter({
+        const transporter = nodemailer.createTransport({ // Changed from createTransporter to createTransport
             service: 'gmail',  // Replace with your email service
             auth: {
                 user: process.env.EMAIL_USER || 'lanslorence@gmail.com', // Use default if env not set
@@ -1866,7 +1866,7 @@ exports.fixLoyaltyData = async (req, res) => {
     try {
         const { userId } = req.params;
         
-        // Get actual total spending from orders
+        // Get actual total spending from orders for this month
         const [orders] = await db.query(`
             SELECT COALESCE(SUM(total_amount), 0) as actual_total
             FROM orders 
@@ -1876,7 +1876,7 @@ exports.fixLoyaltyData = async (req, res) => {
             AND YEAR(created_at) = YEAR(NOW())
         `, [userId]);
 
-        const actualSpend = orders[0].actual_total;
+        const actualSpend = parseFloat(orders[0].actual_total);
 
         // Update user loyalty status with correct amount
         await db.query(`
@@ -1885,7 +1885,8 @@ exports.fixLoyaltyData = async (req, res) => {
             WHERE user_id = ?
         `, [actualSpend, userId]);
 
-        // Recalculate tier
+        // Recalculate tier using the imported Reward model
+        const Reward = require('../models/rewardModel');
         const connection = await db.getConnection();
         try {
             await Reward.checkAndUpdateLoyaltyTier(userId, connection);
