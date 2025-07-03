@@ -62,21 +62,11 @@ exports.createOrder = async (req, res) => {
             );
         }
         
-        // Award points based on total amount
-        const pointsEarned = Math.floor(totalAmount / 100);
-        if (pointsEarned > 0) {
-            await db.execute(
-                'INSERT INTO user_points (user_id, order_id, points, description, created_at) VALUES (?, ?, ?, ?, NOW())',
-                [userId, orderId, pointsEarned, `Earned points from order #${orderId} (₱${totalAmount})`]
-            );
-        }
-        
         res.status(201).json({
             success: true,
             orderId,
             finalAmount: totalAmount,
             appliedDiscount,
-            pointsEarned,
             packagingPreference
         });
         
