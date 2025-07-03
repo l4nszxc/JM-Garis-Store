@@ -1,11 +1,23 @@
 <template>
-    <div v-if="show" class="modal-overlay">
+    <div v-if="show" class="modal-overlay" @click.self="$emit('close')">
         <div class="modal-content">
-            <h3><i class="fas fa-clipboard-list"></i> Order Summary</h3>
-            
-            <!-- Add discount selection -->
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-clipboard-list"></i>
+                    Order Summary
+                </h3>
+                <button @click="$emit('close')" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Discount Selection -->
             <div v-if="availableDiscounts.length" class="discount-section">
-                <h4>Available Discounts</h4>
+                <h4 class="section-title">
+                    <i class="fas fa-tags"></i>
+                    Available Discounts
+                </h4>
                 <select v-model="selectedDiscountId" class="discount-select">
                     <option value="">No discount (₱0)</option>
                     <option v-for="discount in availableDiscounts" 
@@ -16,69 +28,104 @@
                 </select>
             </div>
 
+            <!-- Scrollable Content -->
             <div class="scrollable-content">
                 <div v-if="localItems.length > 0" class="order-items">
                     <div v-for="item in localItems" :key="item.id" class="order-item">
-                        <img 
-                            :src="item.image || '/img/placeholder.jpg'"
-                            :alt="item.name"
-                            class="order-item-image"
-                            @error="handleImageError"
-                        >
-                        <div class="order-item-details">
-                            <h4>{{ item.name }}</h4>
-                            <p v-if="item.choice_name" class="choice-info">
-                                <i class="fas fa-tag"></i> Option: {{ item.choice_name }}
-                            </p>
-                            <p class="item-price">Price: {{ formatPrice(item.price) }}</p>
-                            <div class="quantity-controls">
-                                <button 
-                                    @click="updateQuantity(item.id, item.quantity - 1)"
-                                    :disabled="item.quantity <= 1"
-                                    class="quantity-btn"
-                                >
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <span class="quantity-value">{{ item.quantity }}</span>
-                                <button 
-                                    @click="updateQuantity(item.id, item.quantity + 1)"
-                                    class="quantity-btn"
-                                >
-                                    <i class="fas fa-plus"></i>
-                                </button>
+                        <div class="item-image-container">
+                            <img 
+                                :src="item.image || '/img/placeholder.jpg'"
+                                :alt="item.name"
+                                class="order-item-image"
+                                @error="handleImageError"
+                            >
+                        </div>
+                        
+                        <div class="item-details">
+                            <h4 class="item-name">{{ item.name }}</h4>
+                            
+                            <div v-if="item.choice_name" class="choice-info">
+                                <i class="fas fa-tag"></i> 
+                                {{ item.choice_name }}
                             </div>
-                            <p class="item-subtotal">Subtotal: {{ formatPrice(item.price * item.quantity) }}</p>
+                            
+                            <div class="item-price">
+                                <i class="fas fa-peso-sign"></i>
+                                {{ formatPrice(item.price) }}
+                            </div>
+                            
+                            <div class="quantity-section">
+                                <div class="quantity-controls">
+                                    <button 
+                                        @click="updateQuantity(item.id, item.quantity - 1)"
+                                        :disabled="item.quantity <= 1"
+                                        class="quantity-btn"
+                                    >
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <div class="quantity-display">
+                                        {{ item.quantity }}
+                                    </div>
+                                    <button 
+                                        @click="updateQuantity(item.id, item.quantity + 1)"
+                                        class="quantity-btn"
+                                    >
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="item-subtotal">
+                                Subtotal: {{ formatPrice(item.price * item.quantity) }}
+                            </div>
+                            
                             <button class="remove-btn" @click="removeItem(item.id)">
-                                <i class="fas fa-trash"></i> Remove
+                                <i class="fas fa-trash"></i> 
+                                Remove
                             </button>
                         </div>
                     </div>
                 </div>
-                <div v-else class="no-items">
+                
+                <div v-else class="empty-state">
+                    <i class="fas fa-clipboard-list"></i>
                     <p>No items selected</p>
                 </div>
             </div>
 
+            <!-- Fixed Bottom Section -->
             <div class="fixed-bottom">
-                <div class="order-total">
-                    <div class="total-breakdown">
-                        <p class="subtotal-line">Subtotal: {{ formatPrice(subtotal) }}</p>
-                        <p v-if="discountAmount > 0" class="discount-line">
-                            <i class="fas fa-tag"></i> Discount: -{{ formatPrice(discountAmount) }}
-                        </p>
-                        <h4 class="final-total">Total Amount: {{ formatPrice(calculateTotal) }}</h4>
+                <div class="total-calculation">
+                    <div class="calculation-row">
+                        <span>Subtotal:</span>
+                        <span>{{ formatPrice(subtotal) }}</span>
+                    </div>
+                    <div v-if="discountAmount > 0" class="calculation-row discount-row">
+                        <span>
+                            <i class="fas fa-tag"></i> 
+                            Discount:
+                        </span>
+                        <span>-{{ formatPrice(discountAmount) }}</span>
+                    </div>
+                    <div class="calculation-divider"></div>
+                    <div class="calculation-row total-row">
+                        <span>Total:</span>
+                        <span class="total-price">{{ formatPrice(calculateTotal) }}</span>
                     </div>
                 </div>
-                <div class="modal-buttons">
+                
+                <div class="modal-actions">
                     <button 
                         @click="confirmOrder" 
-                        class="place-order-btn"
+                        class="confirm-btn"
                         :disabled="localItems.length === 0"
                     >
-                        <i class="fas fa-check"></i> Confirm Order
+                        <i class="fas fa-check"></i> 
+                        Confirm Order
                     </button>
                     <button @click="$emit('close')" class="cancel-btn">
-                        <i class="fas fa-times"></i> Close
+                        <i class="fas fa-times"></i> 
+                        Close
                     </button>
                 </div>
             </div>
@@ -100,13 +147,11 @@ export default {
     data() {
         return {
             localItems: [],
-            selectedDiscountId: null,
-            selectedDiscountId: '' ,
+            selectedDiscountId: ''
         }
     },
     watch: {
         show(newValue) {
-            // Reset the items when modal opens
             if (newValue && this.selectedItems) {
                 this.localItems = JSON.parse(JSON.stringify(this.selectedItems));
             }
@@ -159,7 +204,6 @@ export default {
             this.localItems = this.localItems.filter(item => item.id !== itemId);
         },
         confirmOrder() {
-            // Format items properly to ensure they contain all needed fields
             const formattedItems = this.localItems.map(item => ({
                 id: item.id,
                 product_id: item.product_id,
@@ -178,243 +222,456 @@ export default {
 </script>
 
 <style scoped>
+/* Modal Overlay & Container */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    padding: 1rem;
+    backdrop-filter: blur(2px);
 }
 
 .modal-content {
-    position: relative;
-    background: white;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 600px;
-    height: 80vh;
+    background-color: white;
+    border-radius: 16px;
+    max-width: 700px;
+    width: 100%;
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    border-left: 4px solid #4CAF50;
+    animation: modalSlideIn 0.3s ease-out;
 }
 
-.modal-content h3 {
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modal Header */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem 1rem;
+    border-bottom: 1px solid #f1f9f1;
+}
+
+.modal-header h3 {
     margin: 0;
-    padding: 1.5rem;
-    border-bottom: 1px solid #eee;
+    color: #2a3f2a;
+    font-size: 1.5rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
+.close-btn {
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    font-size: 1.25rem;
+}
+
+.close-btn:hover {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+/* Section Styles */
+.section-title {
+    margin: 0 0 1rem 0;
+    color: #2a3f2a;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Discount Section */
+.discount-section {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f1f9f1;
+    background-color: #fafffe;
+}
+
+.discount-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #2a3f2a;
+    background-color: white;
+    transition: border-color 0.2s ease;
+}
+
+.discount-select:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
+}
+
+/* Scrollable Content */
 .scrollable-content {
     flex: 1;
     overflow-y: auto;
-    padding: 1.5rem;
+    padding: 1.5rem 2rem;
 }
 
 .order-items {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem;
 }
 
 .order-item {
     display: flex;
-    gap: 1rem;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 8px;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background-color: #fafffe;
+    border-radius: 12px;
+    border: 1px solid #f1f9f1;
+    transition: all 0.2s ease;
+}
+
+.order-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.1);
+}
+
+.item-image-container {
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: white;
+    border: 1px solid #e2e8f0;
 }
 
 .order-item-image {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
-.order-item-details {
-    flex-grow: 1;
-}
-
-.order-item-details h4 {
-    margin: 0 0 0.5rem 0;
-    color: #2c3e50;
-}
-
-.item-price, .item-quantity, .item-subtotal {
-    margin: 0.25rem 0;
-    color: #666;
-}
-
-.fixed-bottom {
-    border-top: 2px solid #eee;
-    padding: 1.5rem;
-    background: white;
-    border-radius: 0 0 12px 12px;
-}
-
-.order-total {
-    margin-bottom: 1rem;
-    text-align: right;
-}
-
-.order-total h4 {
-    margin: 0;
-    color: #2c3e50;
-    font-size: 1.2rem;
-}
-
-.modal-buttons {
+.item-details {
+    flex: 1;
     display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
-.place-order-btn, .cancel-btn {
-    padding: 0.75rem 1.5rem;
-    border: none;
+.item-name {
+    margin: 0;
+    color: #2a3f2a;
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.choice-info {
+    background-color: #f1f9f1;
+    color: #4CAF50;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 500;
+    width: fit-content;
+}
+
+.item-price {
+    color: #4CAF50;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Quantity Section */
+.quantity-section {
+    margin: 0.5rem 0;
+}
+
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.quantity-btn {
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid #4CAF50;
+    background-color: white;
+    color: #4CAF50;
     border-radius: 6px;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-}
-
-.place-order-btn {
-    background-color: #4CAF50;
-    color: white;
-}
-
-.cancel-btn {
-    background-color: #6c757d;
-    color: white;
-}
-
-.place-order-btn:hover {
-    background-color: #45a049;
-}
-
-.cancel-btn:hover {
-    background-color: #5a6268;
-}
-.quantity-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0.5rem 0;
-}
-
-.quantity-btn {
-    padding: 0.25rem 0.5rem;
-    border: 1px solid #ddd;
-    background: white;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
 }
 
 .quantity-btn:hover:not(:disabled) {
-    border-color: #4CAF50;
-    color: #4CAF50;
+    background-color: #4CAF50;
+    color: white;
+    transform: scale(1.05);
 }
 
 .quantity-btn:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
+    transform: none;
 }
 
-.quantity-value {
+.quantity-display {
     min-width: 2rem;
     text-align: center;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #2a3f2a;
+    background-color: white;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 2px solid #e2e8f0;
+}
+
+.item-subtotal {
+    color: #64748b;
+    font-size: 0.95rem;
     font-weight: 500;
 }
 
 .remove-btn {
-    background-color: #dc3545;
-    color: white;
-    border: none;
+    background-color: #fee2e2;
+    color: #dc2626;
+    border: 2px solid #fecaca;
     padding: 0.5rem 1rem;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-top: 0.5rem;
-    transition: all 0.2s;
-}
-
-.remove-btn:hover {
-    background-color: #c82333;
-}
-
-.place-order-btn:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-}
-.choice-info {
-    font-size: 0.95rem;
-    color: #3498db;
-    margin: 0.5rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: #eef6fd;
-    padding: 0.5rem;
-    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
     width: fit-content;
 }
 
-.no-items {
+.remove-btn:hover {
+    background-color: #dc2626;
+    color: white;
+    border-color: #dc2626;
+    transform: translateY(-1px);
+}
+
+.empty-state {
     text-align: center;
-    padding: 2rem;
-    color: #6c757d;
-}
-.discount-section {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #eee;
+    padding: 3rem 2rem;
+    color: #64748b;
 }
 
-.discount-section h4 {
-    margin-bottom: 0.5rem;
-    color: #2c3e50;
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #cbd5e1;
 }
 
-.discount-select {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.95rem;
-}
-.total-breakdown {
-    text-align: right;
-    padding: 1rem 0;
-}
-
-.subtotal-line {
+.empty-state p {
     margin: 0;
-    color: #666;
+    font-size: 1.1rem;
+}
+
+/* Fixed Bottom Section */
+.fixed-bottom {
+    border-top: 1px solid #f1f9f1;
+    padding: 1.5rem 2rem;
+    background: white;
+    border-radius: 0 0 16px 16px;
+}
+
+.total-calculation {
+    background-color: #fafffe;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #f1f9f1;
+    margin-bottom: 1.5rem;
+}
+
+.calculation-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    color: #64748b;
     font-size: 0.95rem;
 }
 
-.discount-line {
-    margin: 0.5rem 0;
+.calculation-row:last-child {
+    margin-bottom: 0;
+}
+
+.discount-row {
     color: #4CAF50;
-    font-size: 0.95rem;
+}
+
+.calculation-divider {
+    height: 1px;
+    background-color: #e2e8f0;
+    margin: 1rem 0;
+}
+
+.total-row {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2a3f2a;
+}
+
+.total-price {
+    color: #4CAF50;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+/* Action Buttons */
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.confirm-btn, .cancel-btn {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 0.5rem;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
 }
 
-.final-total {
-    margin: 0.5rem 0 0 0;
-    color: #2c3e50;
-    font-size: 1.2rem;
-    font-weight: 600;
+.confirm-btn {
+    background-color: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+}
+
+.confirm-btn:hover:not(:disabled) {
+    background-color: #45a049;
+    border-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.confirm-btn:disabled {
+    background-color: #c8e6c9;
+    border-color: #c8e6c9;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.cancel-btn {
+    background-color: white;
+    color: #64748b;
+    border-color: #e2e8f0;
+}
+
+.cancel-btn:hover {
+    background-color: #f8f9fa;
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modal-content {
+        margin: 1rem;
+        max-height: 95vh;
+    }
+    
+    .modal-header, .discount-section, .scrollable-content, .fixed-bottom {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+    
+    .order-item {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .item-image-container {
+        width: 100%;
+        height: 150px;
+        align-self: center;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-overlay {
+        padding: 0.5rem;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.25rem;
+    }
+    
+    .quantity-controls {
+        justify-content: center;
+    }
+}
+
+/* Scrollbar Styling */
+.scrollable-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scrollable-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 </style>
