@@ -27,7 +27,7 @@
                         >
                         <span class="toggle-slider"></span>
                         <span class="toggle-label">
-                            {{ plasticPackaging ? 'Plastic packaging requested' : 'Eco-friendly packaging' }}
+                            {{ plasticPackaging ? 'Eco-friendly packaging' : 'Plastic packaging requested' }}
                         </span>
                     </label>
                     <div class="packaging-note" :class="{ 'eco-note': !plasticPackaging, 'plastic-note': plasticPackaging }">
