@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jul 03, 2025 at 02:37 PM
+-- Generation Time: Jul 03, 2025 at 04:12 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -36,6 +36,15 @@ CREATE TABLE `available_discounts` (
   `used` tinyint(1) DEFAULT '0',
   `order_id` char(7) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `available_discounts`
+--
+
+INSERT INTO `available_discounts` (`id`, `user_id`, `amount`, `created_at`, `expires_at`, `used`, `order_id`) VALUES
+(62, 58, 10.00, '2025-07-03 14:54:02', '2025-08-02 14:54:02', 1, '4757422'),
+(63, 58, 5.00, '2025-07-03 15:17:58', '2025-08-02 15:17:58', 1, '3333057'),
+(64, 58, 5.00, '2025-07-03 15:25:51', '2025-08-02 15:25:51', 1, '3687453');
 
 -- --------------------------------------------------------
 
@@ -105,7 +114,7 @@ CREATE TABLE `orders` (
 --
 
 INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_at`, `updated_at`, `cancel_reason`, `accepted_by`, `accepted_at`, `cash_amount`, `change_amount`, `customer_name`, `is_physical_order`, `packaging_preference`) VALUES
-('7865364', 58, 3245.00, 'paid', '2025-07-03 14:31:22', '2025-07-03 14:31:48', NULL, 23, '2025-07-03 22:31:37', 4000.00, 755.00, NULL, 0, 'eco');
+('1434748', 58, 1947.00, 'paid', '2025-07-03 16:11:17', '2025-07-03 16:11:34', NULL, 23, '2025-07-04 00:11:20', 2000.00, 53.00, NULL, 0, 'eco');
 
 -- --------------------------------------------------------
 
@@ -127,7 +136,7 @@ CREATE TABLE `order_items` (
 --
 
 INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, `choice_id`) VALUES
-(1772, '7865364', 33, 5, 649.00, NULL);
+(1796, '1434748', 33, 3, 649.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -188,29 +197,29 @@ CREATE TABLE `products` (
 
 INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_quantity`, `category`, `image`, `created_at`, `updated_at`) VALUES
 (31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 998, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-04-01 07:21:29', '2025-06-12 10:36:15'),
-(32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 990, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-04-01 07:22:15', '2025-06-30 16:11:31'),
-(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 951, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-07-03 14:31:22'),
-(34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 70, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-06-30 16:11:31'),
+(32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 983, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-04-01 07:22:15', '2025-07-03 16:00:33'),
+(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 934, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-07-03 16:11:17'),
+(34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 69, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-07-03 15:57:56'),
 (35, 'GSM Mojito 1L', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 189.00, 972, 'Beverages', 'https://i.ibb.co/vvP01sRS/00058af3eb33.png', '2025-04-01 07:28:48', '2025-06-26 07:34:33'),
 (36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 79, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-04-01 07:34:49', '2025-06-13 18:26:04'),
 (37, 'Primera Light 1Liter', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 189.00, 95, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 07:35:27', '2025-05-09 13:17:45'),
-(38, 'Lucky 7 Corned Beef ', 'organic-free corned beef multipack', 17.50, 196, 'Canned Goods', 'https://i.ibb.co/MD9MDJ5q/d66d18901a73.png', '2025-04-01 07:37:33', '2025-06-12 08:43:21'),
+(38, 'Lucky 7 Corned Beef ', 'organic-free corned beef multipack', 17.50, 195, 'Canned Goods', 'https://i.ibb.co/MD9MDJ5q/d66d18901a73.png', '2025-04-01 07:37:33', '2025-07-03 15:00:42'),
 (41, 'Lucky 7 Meat Loaf 100g', 'organic-free corned beef multipack', 23.00, 45, 'Canned Goods', 'https://i.ibb.co/tTMm9hg9/bf73f6e95a5d.png', '2025-04-01 07:42:51', '2025-06-26 07:34:33'),
 (45, 'Datu Patis ', '#1 fish sauce in the Philippines.', 0.00, 50, 'Condiments', 'https://i.ibb.co/0Ry6CFm6/51d8ce58dd9f.png', '2025-04-01 09:25:10', '2025-06-26 08:07:51'),
 (47, 'UFC Ketchup', 'unique blend of fresh spices and select bananas that provide the tamis anghang (sweet and spicy) flavor. ', 11.75, 100, 'Condiments', 'https://i.ibb.co/j9gnXrxH/cecb6672ce73.png', '2025-04-01 09:27:23', '2025-04-09 06:24:47'),
 (48, 'Argentina Corned Beef', 'No. 1 corned beef brand that has the food qualities consumer most value', 27.50, 100, 'Canned Goods', 'https://i.ibb.co/W46GfnGB/d19d7b986670.png', '2025-04-01 09:32:37', '2025-04-08 21:09:32'),
 (50, 'Primera Light 1Liter', 'a unique 55-proof brandy liqueur masterpiece', 185.00, 17, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 09:41:56', '2025-06-11 19:20:28'),
 (51, 'May Sparkle Red', 'A non-alcoholic beverage from freshly-pressed and carefully-selected Belgium Grapes.', 0.00, 6, 'Beverages', 'https://i.ibb.co/Wv5gFDjr/d75fc84e5138.png', '2025-04-01 09:43:28', '2025-04-01 17:04:28'),
-(52, 'Novellino 750mL', 'Novellino Wild Blackberry is a casual wine vinified from choice vitis vinifera grapes in the tradition of fine Italian winemaking', 270.00, 5, 'Beverages', 'https://i.ibb.co/278v021y/05b8707b2772.png', '2025-04-01 09:45:11', '2025-06-19 09:02:00'),
-(53, 'The Bar Dry Gin 335mL ', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 6, 'Beverages', 'https://i.ibb.co/jkNpPRn2/4cd7e58417a4.png', '2025-04-01 09:46:37', '2025-04-17 07:31:00'),
+(52, 'Novellino 750mL', 'Novellino Wild Blackberry is a casual wine vinified from choice vitis vinifera grapes in the tradition of fine Italian winemaking', 270.00, 2, 'Beverages', 'https://i.ibb.co/278v021y/05b8707b2772.png', '2025-04-01 09:45:11', '2025-07-03 15:00:42'),
+(53, 'The Bar Dry Gin 335mL ', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 2, 'Beverages', 'https://i.ibb.co/jkNpPRn2/4cd7e58417a4.png', '2025-04-01 09:46:37', '2025-07-03 14:58:00'),
 (54, 'The Bar Pink 335mL', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 58, 'Beverages', 'https://i.ibb.co/hxGrvfmq/a6f137b5983c.png', '2025-04-01 09:47:16', '2025-05-19 06:14:33'),
-(55, 'The Bar Lime 335mL', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 6, 'Beverages', 'https://i.ibb.co/8gggkGVx/49ad7f791839.png', '2025-04-01 09:47:46', '2025-04-01 17:18:04'),
+(55, 'The Bar Lime 335mL', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 5, 'Beverages', 'https://i.ibb.co/8gggkGVx/49ad7f791839.png', '2025-04-01 09:47:46', '2025-07-03 15:10:26'),
 (56, 'Emperador 750mL', ' brand of cut brandy and brandy produced by Emperador Inc.', 142.00, 50, 'Beverages', 'https://i.ibb.co/mrbVVg4L/daf1bf6947ad.png', '2025-04-01 09:51:17', '2025-04-01 17:18:46'),
 (57, 'Emperador 1Liter', ' brand of cut brandy and brandy produced by Emperador Inc.', 185.00, 49, 'Beverages', 'https://i.ibb.co/VckXJTFG/ecd6f3d61a21.png', '2025-04-01 09:52:01', '2025-06-12 08:45:48'),
 (58, 'Red Horse Beer per Case', 'beer', 617.00, 79, 'Beverages', 'https://i.ibb.co/F4fd74z2/2843dba65b63.png', '2025-04-01 17:27:22', '2025-06-12 09:26:02'),
 (59, 'San Mig Light || Apple per Case', 'flavored beer', 835.00, 52, 'Beverages', 'https://i.ibb.co/dwTNCfJV/b0926c017020.png', '2025-04-08 20:30:05', '2025-04-08 21:03:32'),
 (60, 'Ginebra per Case', 'delivers a clean, juniper-forward taste, complemented by subtle hints of citrus and spice', 1554.00, 200, 'Beverages', 'https://i.ibb.co/C3MZ5YvK/0b2cffba62af.png', '2025-04-08 20:59:46', '2025-04-08 20:59:46'),
-(61, 'San Miguel Beer per case', 'full-flavored taste complements its pleasant aroma, making it a perfectly balanced beer', 599.00, 29, 'Beverages', 'https://i.ibb.co/FqyQ2D5Z/2b8cb868bbda.png', '2025-04-08 21:03:06', '2025-04-20 17:00:51'),
+(61, 'San Miguel Beer per case', 'full-flavored taste complements its pleasant aroma, making it a perfectly balanced beer', 599.00, 26, 'Beverages', 'https://i.ibb.co/FqyQ2D5Z/2b8cb868bbda.png', '2025-04-08 21:03:06', '2025-07-03 16:00:23'),
 (62, 'Argentina Meat Loaf', 'made from quality meat that\'s seasoned with the most flavorful yet kid-friendly spices', 16.00, 99, 'Canned Goods', 'https://i.ibb.co/zTRL3z2K/67acda401865.png', '2025-04-08 21:13:02', '2025-04-20 17:03:04'),
 (63, 'Wow Ulam', 'brand of canned and fresh processed meat products from Century Pacific Food Inc.', 23.00, 99, 'Canned Goods', 'https://i.ibb.co/nNMdv4zm/8eaa96b1b065.png', '2025-04-08 22:09:14', '2025-06-11 17:20:10'),
 (64, 'Century Tuna', 'a leading canned tuna brand in the Philippines, known for its healthy, delicious, and convenient options,', 27.50, 100, 'Canned Goods', 'https://i.ibb.co/FbXNJm1m/c00050cbdeba.png', '2025-04-08 22:14:26', '2025-04-08 22:14:26'),
@@ -226,7 +235,7 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (74, 'Bear Brand Choco', ' a chocolate-flavored powdered milk drink fortified with essential nutrients like iron, zinc, and vitamin C, designed for individuals aged 3 and up to support strong immunity and overall well-being', 93.00, 20, 'Milk and Chocolate Drink', 'https://i.ibb.co/nMPC557v/b9527d3d54b3.png', '2025-04-08 23:00:50', '2025-06-11 16:38:11'),
 (75, 'Milo', 'a chocolate-flavored malted beverage powder created by Nestlé, known for its unique choco-malty flavor and often mixed with milk or water to create a nutritious and delicious drink, especially popular among children and those seeking an energy boost. ', 54.00, 5, 'Milk and Chocolate Drink', 'https://i.ibb.co/7NrmLyxz/6d157cac0a1f.png', '2025-04-08 23:05:20', '2025-06-11 15:29:15'),
 (76, 'Birch Tree', ' known for its affordable price and high-quality nutrition, with a focus on fortified milk for children and adults. ', 51.00, 22, 'Milk and Chocolate Drink', 'https://i.ibb.co/xK9CjyBV/e407420a9dcb.png', '2025-04-08 23:10:11', '2025-04-20 17:03:16'),
-(77, 'Del Monte Ketchup', 'made from real, high-quality tomatoes, naturally contains lycopene, and is guaranteed to have no preservatives, offering a rich tomato flavor and a sweet-sour taste for delicious dips and meals', 49.00, 18, 'Condiments', 'https://i.ibb.co/jmzv3ZM/728ac9940fe7.png', '2025-04-09 06:48:17', '2025-06-14 01:16:24'),
+(77, 'Del Monte Ketchup', 'made from real, high-quality tomatoes, naturally contains lycopene, and is guaranteed to have no preservatives, offering a rich tomato flavor and a sweet-sour taste for delicious dips and meals', 49.00, 17, 'Condiments', 'https://i.ibb.co/jmzv3ZM/728ac9940fe7.png', '2025-04-09 06:48:17', '2025-07-03 14:54:20'),
 (78, 'Lorins Patis', 'a popular, tangy Filipino fish sauce, ideal as a dipping sauce or cooking ingredient for a wide variety of dishes, including seafood, meat, poultry, vegetables, and Filipino favorites like sinigang and nilaga. ', 27.00, 20, 'Condiments', 'https://i.ibb.co/3yZ5qszC/df3e929a28ec.png', '2025-04-09 07:02:19', '2025-04-09 07:03:39'),
 (79, 'Sugar per kg', 'brown and white refined', 72.00, 300, 'Condiments', 'https://i.ibb.co/xK5TGqzf/2eb5e49aefb7.png', '2025-04-09 07:06:43', '2025-04-09 07:12:13'),
 (80, 'Salt per kg', 'sea salt', 12.00, 200, 'Condiments', 'https://i.ibb.co/j9LdB8xH/50a57d229f22.png', '2025-04-09 07:08:19', '2025-04-09 07:08:19'),
@@ -361,7 +370,7 @@ INSERT INTO `product_choices` (`choice_id`, `product_id`, `name`, `price`, `stoc
 (89, 133, 'Green', 25.00, 500, NULL),
 (90, 133, 'Red', 25.00, 500, NULL),
 (91, 74, '375ml', 32.00, 2, 'https://i.ibb.co/N25PWXHW/e71758e8ad02.png'),
-(93, 45, 'ZCX', 20.00, 50, 'https://i.ibb.co/pCmq69c/3cf9373984c9.png');
+(93, 45, 'ZCX', 20.00, 44, 'https://i.ibb.co/pCmq69c/3cf9373984c9.png');
 
 -- --------------------------------------------------------
 
@@ -533,8 +542,7 @@ CREATE TABLE `user_loyalty_status` (
 --
 
 INSERT INTO `user_loyalty_status` (`id`, `user_id`, `loyalty_tier_id`, `current_month_spend`, `last_month_spend`, `two_months_ago_spend`, `tier_start_date`, `tier_end_date`, `last_updated`) VALUES
-(1, 58, 2, 17242.00, 0.00, 0.00, '2025-07-03', '2025-10-03', '2025-07-03 14:31:22'),
-(2, 1000, 3, 649.00, 0.00, 0.00, '2025-07-01', '2025-09-30', '2025-06-30 16:44:00');
+(3, 58, 3, 1434748.00, 0.00, 0.00, '2025-07-04', '2025-10-03', '2025-07-03 16:11:17');
 
 -- --------------------------------------------------------
 
@@ -556,8 +564,7 @@ CREATE TABLE `user_rewards` (
 --
 
 INSERT INTO `user_rewards` (`id`, `user_id`, `order_id`, `points`, `description`, `created_at`) VALUES
-(397, 58, '7865364', 32, 'Earned points from order #7865364 (₱3245)', '2025-07-03 14:31:22'),
-(398, 58, '7865364', 1, 'Bronze loyalty bonus (+5.00%)', '2025-07-03 14:31:22');
+(424, 58, '1947', 14347, 'Earned points from order #1947 (₱1434748)', '2025-07-03 16:11:17');
 
 --
 -- Indexes for dumped tables
@@ -696,13 +703,13 @@ ALTER TABLE `user_rewards`
 -- AUTO_INCREMENT for table `available_discounts`
 --
 ALTER TABLE `available_discounts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
 
 --
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491690;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491716;
 
 --
 -- AUTO_INCREMENT for table `loyalty_tiers`
@@ -714,7 +721,7 @@ ALTER TABLE `loyalty_tiers`
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1773;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1797;
 
 --
 -- AUTO_INCREMENT for table `order_reports`
@@ -774,13 +781,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_loyalty_status`
 --
 ALTER TABLE `user_loyalty_status`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `user_rewards`
 --
 ALTER TABLE `user_rewards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=399;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=425;
 
 --
 -- Constraints for dumped tables

@@ -12,22 +12,30 @@ exports.createOrder = async (req, res) => {
         const { items, totalAmount, discountId } = req.body;
         const userId = req.user.id;
 
-        // Check if items array is valid
+        // Validate inputs
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ message: 'No items provided' });
         }
 
+        // Validate and convert totalAmount to proper decimal
+        const validatedTotalAmount = parseFloat(totalAmount);
+        if (isNaN(validatedTotalAmount) || validatedTotalAmount <= 0) {
+            return res.status(400).json({ message: 'Invalid total amount' });
+        }
+
         // Debug log
+        console.log('Creating order with validated total amount:', validatedTotalAmount);
         console.log('Creating order with items:', items);
 
-        let finalAmount = totalAmount;
+        let finalAmount = validatedTotalAmount;
         let appliedDiscount = 0;
 
         // Apply discount if provided
         if (discountId) {
             try {
                 appliedDiscount = await Reward.applyDiscount(userId, null, discountId);
-                finalAmount = Math.max(0, totalAmount - appliedDiscount);
+                finalAmount = Math.max(0, validatedTotalAmount - appliedDiscount);
+                console.log(`Applied discount: ₱${appliedDiscount}, Final amount: ₱${finalAmount}`);
             } catch (error) {
                 console.error('Error applying discount:', error);
             }
@@ -35,6 +43,12 @@ exports.createOrder = async (req, res) => {
         
         // Use the Order model's create method to handle the order creation and stock update
         const orderId = await Order.create(userId, items, finalAmount);
+
+        // Update the order with the final amount (ensure it's stored correctly)
+        await connection.execute(
+            'UPDATE orders SET total_amount = ? WHERE order_id = ?',
+            [finalAmount, orderId]
+        );
 
         // If discount was applied, update the order_id in available_discounts
         if (discountId && appliedDiscount > 0) {
@@ -56,10 +70,12 @@ exports.createOrder = async (req, res) => {
 
         await connection.commit();
 
-        // Add reward points for the final amount paid
+        // Add reward points for the final amount paid (using the correct final amount)
         let pointsEarned = 0;
         try {
+            console.log(`Adding reward points for order ${orderId} with final amount: ₱${finalAmount}`);
             pointsEarned = await Reward.addPoints(userId, orderId, finalAmount);
+            console.log(`Points earned for order ${orderId}: ${pointsEarned} points`);
         } catch (error) {
             console.error('Error adding reward points:', error);
         }
