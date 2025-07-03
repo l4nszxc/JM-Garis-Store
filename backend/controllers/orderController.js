@@ -9,8 +9,14 @@ exports.createOrder = async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        const { items, totalAmount, discountId } = req.body;
+        const { items, totalAmount, discountId, packagingPreference } = req.body;
         const userId = req.user.id;
+
+        // Debug logs
+        console.log('=== ORDER CREATION DEBUG ===');
+        console.log('Request body:', req.body);
+        console.log('Packaging preference from request:', packagingPreference);
+        console.log('Type of packagingPreference:', typeof packagingPreference);
 
         // Validate inputs
         if (!Array.isArray(items) || items.length === 0) {
@@ -23,9 +29,14 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ message: 'Invalid total amount' });
         }
 
+        // Validate packaging preference (default to 'eco' if not provided)
+        const validPackagingPreference = ['eco', 'plastic'].includes(packagingPreference) ? packagingPreference : 'eco';
+
         // Debug log
         console.log('Creating order with validated total amount:', validatedTotalAmount);
         console.log('Creating order with items:', items);
+        console.log('Packaging preference received:', packagingPreference);
+        console.log('Validated packaging preference:', validPackagingPreference);
 
         let finalAmount = validatedTotalAmount;
         let appliedDiscount = 0;
@@ -41,14 +52,24 @@ exports.createOrder = async (req, res) => {
             }
         }
         
-        // Use the Order model's create method to handle the order creation and stock update
-        const orderId = await Order.create(userId, items, finalAmount);
+        // IMPORTANT: Pass packaging preference as the 4th parameter
+        console.log('Calling Order.create with packaging preference:', validPackagingPreference);
+        const orderId = await Order.create(userId, items, finalAmount, validPackagingPreference);
 
-        // Update the order with the final amount (ensure it's stored correctly)
+        // Double-check: Update the order to ensure packaging preference is set correctly
+        console.log('Double-checking packaging preference update for order:', orderId);
         await connection.execute(
-            'UPDATE orders SET total_amount = ? WHERE order_id = ?',
-            [finalAmount, orderId]
+            'UPDATE orders SET packaging_preference = ? WHERE order_id = ?',
+            [validPackagingPreference, orderId]
         );
+
+        // Verify the final state
+        const [finalVerification] = await connection.execute(
+            'SELECT order_id, packaging_preference, total_amount FROM orders WHERE order_id = ?',
+            [orderId]
+        );
+        console.log('=== FINAL VERIFICATION ===');
+        console.log('Order in database:', finalVerification[0]);
 
         // If discount was applied, update the order_id in available_discounts
         if (discountId && appliedDiscount > 0) {
@@ -61,7 +82,6 @@ exports.createOrder = async (req, res) => {
         // Check if user has an active shared cart and terminate it
         const activeShare = await SharedCart.getActiveSharedCart(userId);
         if (activeShare && activeShare.shareId) {
-            // Terminate the shared cart (set status to "expired")
             await db.execute(
                 'UPDATE shared_carts SET status = "expired" WHERE share_id = ? AND status = "active"',
                 [activeShare.shareId]
@@ -70,7 +90,7 @@ exports.createOrder = async (req, res) => {
 
         await connection.commit();
 
-        // Add reward points for the final amount paid (using the correct final amount)
+        // Add reward points for the final amount paid
         let pointsEarned = 0;
         try {
             console.log(`Adding reward points for order ${orderId} with final amount: ₱${finalAmount}`);
@@ -85,6 +105,7 @@ exports.createOrder = async (req, res) => {
             pointsEarned,
             appliedDiscount,
             finalAmount,
+            packagingPreference: validPackagingPreference,
             message: 'Order created successfully'
         });
 

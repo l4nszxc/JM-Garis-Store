@@ -12,6 +12,36 @@
                 </button>
             </div>
 
+            <!-- Packaging Preference Section -->
+            <div class="packaging-section">
+                <h4 class="section-title">
+                    <i class="fas fa-box"></i>
+                    Packaging Preference
+                </h4>
+                <div class="packaging-toggle">
+                    <label class="switch">
+                        <input 
+                            type="checkbox" 
+                            v-model="packagingPreference" 
+                            @change="updatePackagingPreference"
+                        >
+                        <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-label" :class="{'plastic-requested': packagingPreference}">
+                        {{ packagingPreference ? 'Plastic packaging requested' : 'Plastic packaging' }}
+                    </span>
+                </div>
+                <div class="packaging-note" :class="{'plastic-selected': packagingPreference}">
+                    <i :class="packagingPreference ? 'fas fa-shopping-bag' : 'fas fa-leaf'"></i>
+                    <span v-if="!packagingPreference">
+                        Your order will be packed with paper bag/box. Thank you for helping us reducing plastic.
+                    </span>
+                    <span v-else>
+                        Your order will be packed with plastic. Join us in reducing plastic on your next order.
+                    </span>
+                </div>
+            </div>
+
             <!-- Discount Selection -->
             <div v-if="availableDiscounts.length" class="discount-section">
                 <h4 class="section-title">
@@ -147,7 +177,8 @@ export default {
     data() {
         return {
             localItems: [],
-            selectedDiscountId: ''
+            selectedDiscountId: '',
+            packagingPreference: false // false = eco (paper), true = plastic
         }
     },
     watch: {
@@ -203,6 +234,10 @@ export default {
         removeItem(itemId) {
             this.localItems = this.localItems.filter(item => item.id !== itemId);
         },
+        updatePackagingPreference() {
+            // Debug log to check if the preference is changing
+            console.log('Packaging preference changed to:', this.packagingPreference ? 'plastic' : 'eco');
+        },
         confirmOrder() {
             const formattedItems = this.localItems.map(item => ({
                 id: item.id,
@@ -212,10 +247,17 @@ export default {
                 choice_id: item.choice_id
             }));
             
-            this.$emit('place-order', {
+            const orderData = {
                 items: formattedItems,
-                discountId: this.selectedDiscountId
-            });
+                discountId: this.selectedDiscountId,
+                packagingPreference: this.packagingPreference ? 'plastic' : 'eco'
+            };
+            
+            // Debug log to verify what's being sent
+            console.log('Order data being sent:', orderData);
+            console.log('Packaging preference value:', orderData.packagingPreference);
+            
+            this.$emit('place-order', orderData);
         }
     }
 }
@@ -306,6 +348,111 @@ export default {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+/* Packaging Section */
+.packaging-section {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f1f9f1;
+    background-color: #fafffe;
+}
+
+.packaging-toggle {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #4CAF50;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #FFA500;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.toggle-label {
+    font-weight: 600;
+    color: #2a3f2a;
+    font-size: 1rem;
+    transition: color 0.3s ease;
+}
+
+.toggle-label.plastic-requested {
+    color: #B8860B;
+}
+
+.packaging-note {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background-color: #f8fffe;
+    border-radius: 8px;
+    border-left: 4px solid #4CAF50;
+    font-size: 0.9rem;
+    color: #2a3f2a;
+    line-height: 1.4;
+    transition: all 0.3s ease;
+}
+
+.packaging-note i {
+    color: #4CAF50;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    transition: color 0.3s ease;
+}
+
+.packaging-note span {
+    flex: 1;
+}
+
+.packaging-note.plastic-selected {
+    border-left-color: #FFA500;
+    background-color: #fffbf0;
+    color: #B8860B;
+}
+
+.packaging-note.plastic-selected i {
+    color: #FFA500;
 }
 
 /* Discount Section */
@@ -621,7 +768,7 @@ export default {
         max-height: 95vh;
     }
     
-    .modal-header, .discount-section, .scrollable-content, .fixed-bottom {
+    .modal-header, .packaging-section, .discount-section, .scrollable-content, .fixed-bottom {
         padding-left: 1.5rem;
         padding-right: 1.5rem;
     }

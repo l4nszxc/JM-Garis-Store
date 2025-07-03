@@ -257,8 +257,11 @@ exports.createPhysicalOrder = async (req, res) => {
     try {
         await connection.beginTransaction();
         
-        const { items, customerName, isPhysicalOrder } = req.body;
+        const { items, customerName, isPhysicalOrder, packagingPreference } = req.body;
         const staffId = req.user.id;
+        
+        // Validate packaging preference (default to 'eco' if not provided)
+        const validPackagingPreference = ['eco', 'plastic'].includes(packagingPreference) ? packagingPreference : 'eco';
         
         // Generate a 7-character order ID format
         const prefix = "PO"; // For Physical Order
@@ -283,18 +286,19 @@ exports.createPhysicalOrder = async (req, res) => {
         const paddedNum = orderNum.toString().padStart(5, '0');
         const orderId = `${prefix}${paddedNum}`;
         
-        // Create order record with 'ready for pickup' status
+        // Create order record with packaging preference
         await connection.execute(
-            `INSERT INTO orders (order_id, user_id, status, total_amount, accepted_by, accepted_at, is_physical_order, customer_name) 
-             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?)`,
+            `INSERT INTO orders (order_id, user_id, status, total_amount, accepted_by, accepted_at, is_physical_order, customer_name, packaging_preference) 
+             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?)`,
             [
                 orderId, 
                 staffId, 
-                'ready for pickup', // Changed from 'pending' to 'ready for pickup'
+                'ready for pickup',
                 items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
                 staffId,
                 isPhysicalOrder ? 1 : 0,
-                customerName || 'Walk-in Customer'
+                customerName || 'Walk-in Customer',
+                validPackagingPreference
             ]
         );
         
@@ -322,7 +326,8 @@ exports.createPhysicalOrder = async (req, res) => {
         await connection.commit();
         res.json({ 
             message: 'Order created successfully',
-            orderId: orderId
+            orderId: orderId,
+            packagingPreference: validPackagingPreference
         });
     } catch (error) {
         await connection.rollback();

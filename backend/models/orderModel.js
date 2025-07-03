@@ -5,13 +5,23 @@ class Order {
         return Math.random().toString().slice(2, 9);
     }
 
-    static async create(userId, items, totalAmount) {
+    static async create(userId, items, totalAmount, packagingPreference = 'eco') {
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
             
             const orderId = this.generateOrderId();
-    
+
+            // Debug logs
+            console.log('Order.create called with:');
+            console.log('- userId:', userId);
+            console.log('- totalAmount:', totalAmount);
+            console.log('- packagingPreference:', packagingPreference);
+
+            // Validate packaging preference
+            const validPackaging = ['eco', 'plastic'].includes(packagingPreference) ? packagingPreference : 'eco';
+            console.log('- validatedPackaging:', validPackaging);
+
             // First verify if there's enough stock for all items
             for (const item of items) {
                 if (item.choice_id) {
@@ -20,7 +30,7 @@ class Order {
                         'SELECT stock FROM product_choices WHERE choice_id = ? FOR UPDATE',
                         [item.choice_id]
                     );
-    
+
                     if (!choiceRows[0] || choiceRows[0].stock < item.quantity) {
                         throw new Error(`Not enough stock for product variant with choice ID ${item.choice_id}`);
                     }
@@ -30,19 +40,27 @@ class Order {
                         'SELECT stock_quantity FROM products WHERE products_id = ? FOR UPDATE',
                         [item.product_id]
                     );
-    
+
                     if (!productRows[0] || productRows[0].stock_quantity < item.quantity) {
                         throw new Error(`Not enough stock for product ID ${item.product_id}`);
                     }
                 }
             }
             
-            // Create order
+            // Create order with packaging preference - IMPORTANT: Include packaging_preference in INSERT
+            console.log('Inserting order with packaging preference:', validPackaging);
             await connection.execute(
-                'INSERT INTO orders (order_id, user_id, total_amount) VALUES (?, ?, ?)',
-                [orderId, userId, totalAmount]
+                'INSERT INTO orders (order_id, user_id, total_amount, packaging_preference, created_at) VALUES (?, ?, ?, ?, NOW())',
+                [orderId, userId, totalAmount, validPackaging]
             );
-    
+
+            // Verify the insertion worked
+            const [verifyResult] = await connection.execute(
+                'SELECT packaging_preference FROM orders WHERE order_id = ?',
+                [orderId]
+            );
+            console.log('Verified packaging preference in database:', verifyResult[0]?.packaging_preference);
+
             // Process each item
             for (const item of items) {
                 // Insert order item
@@ -50,32 +68,26 @@ class Order {
                     'INSERT INTO order_items (order_id, product_id, quantity, price, choice_id) VALUES (?, ?, ?, ?, ?)',
                     [orderId, item.product_id, item.quantity, item.price, item.choice_id || null]
                 );
-    
+
                 // Update stock
                 if (item.choice_id) {
-                    // Debug log
                     console.log(`Reducing choice stock: choice_id=${item.choice_id}, quantity=${item.quantity}`);
-                    
                     await connection.execute(
                         'UPDATE product_choices SET stock = stock - ? WHERE choice_id = ?',
                         [item.quantity, item.choice_id]
                     );
                 } else {
-                    // Debug log
                     console.log(`Reducing product stock: product_id=${item.product_id}, quantity=${item.quantity}`);
-                    
                     await connection.execute(
                         'UPDATE products SET stock_quantity = stock_quantity - ? WHERE products_id = ?',
                         [item.quantity, item.product_id]
                     );
                 }
             }
-    
-            // Clear cart items that were ordered - FIX HERE
-            // Extract cart item IDs
+
+            // Clear cart items that were ordered
             const itemIds = items.map(item => item.id).filter(id => id);
             
-            // Delete items one by one to avoid SQL issues with array parameters
             if (itemIds.length > 0) {
                 for (const id of itemIds) {
                     await connection.execute(
@@ -84,12 +96,14 @@ class Order {
                     );
                 }
             }
-    
+
             await connection.commit();
+            console.log('Order created successfully with packaging preference:', validPackaging);
             return orderId;
+            
         } catch (error) {
             await connection.rollback();
-            console.error('Error creating order:', error);
+            console.error('Error in Order.create:', error);
             throw error;
         } finally {
             connection.release();

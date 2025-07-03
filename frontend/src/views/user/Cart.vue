@@ -493,7 +493,7 @@ export default {
             }
         },
         
-        async handlePlaceOrder({ items, discountId }) {
+        async handlePlaceOrder({ items, discountId, packagingPreference }) {
             try {
                 const token = localStorage.getItem('token');
                 
@@ -510,8 +510,12 @@ export default {
                     totalAmount: formattedItems.reduce((sum, item) => 
                         sum + (parseFloat(item.price) * item.quantity), 0
                     ),
-                    discountId: discountId
+                    discountId: discountId,
+                    packagingPreference: packagingPreference  // Make sure this is included
                 };
+
+                console.log('Cart handlePlaceOrder - Request body:', requestBody);
+                console.log('Cart handlePlaceOrder - Packaging preference:', packagingPreference);
 
                 const response = await fetch('http://localhost:7904/api/orders', {
                     method: 'POST',
@@ -548,7 +552,7 @@ export default {
 
             } catch (error) {
                 console.error('Error placing order:', error);
-                this.showNotification('Failed to place order: ' + (error.message || 'Unknown error'), 'error');
+                this.showNotification(error.message, 'error');
             }
         },
         

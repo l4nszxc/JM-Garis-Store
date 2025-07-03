@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jul 03, 2025 at 04:12 PM
+-- Generation Time: Jul 03, 2025 at 04:49 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -114,7 +114,16 @@ CREATE TABLE `orders` (
 --
 
 INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `created_at`, `updated_at`, `cancel_reason`, `accepted_by`, `accepted_at`, `cash_amount`, `change_amount`, `customer_name`, `is_physical_order`, `packaging_preference`) VALUES
-('1434748', 58, 1947.00, 'paid', '2025-07-03 16:11:17', '2025-07-03 16:11:34', NULL, 23, '2025-07-04 00:11:20', 2000.00, 53.00, NULL, 0, 'eco');
+('0200807', 58, 649.00, 'cancelled', '2025-07-03 16:39:55', '2025-07-03 16:46:51', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco'),
+('0808688', 58, 141.00, 'paid', '2025-07-03 16:25:32', '2025-07-03 16:25:47', NULL, 23, '2025-07-04 00:25:36', 200.00, 59.00, NULL, 0, 'eco'),
+('0841191', 58, 649.00, 'cancelled', '2025-07-03 16:31:32', '2025-07-03 16:46:57', 'Found better price elsewhere', NULL, NULL, NULL, NULL, NULL, 0, 'eco'),
+('1248147', 58, 141.00, 'cancelled', '2025-07-03 16:39:11', '2025-07-03 16:47:01', 'Ordered by mistake', NULL, NULL, NULL, NULL, NULL, 0, 'eco'),
+('2015882', 58, 141.00, 'cancelled', '2025-07-03 16:45:51', '2025-07-03 16:46:48', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'plastic'),
+('2056774', 58, 200.00, 'cancelled', '2025-07-03 16:38:42', '2025-07-03 16:46:55', 'zcx', NULL, NULL, NULL, NULL, NULL, 0, 'eco'),
+('5369343', 58, 705.00, 'paid', '2025-07-03 16:30:59', '2025-07-03 16:32:37', NULL, 23, '2025-07-04 00:32:24', 10000.00, 9295.00, NULL, 0, 'eco'),
+('5608042', 58, 20.00, 'cancelled', '2025-07-03 16:31:48', '2025-07-03 16:46:59', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco'),
+('7214359', 58, 3245.00, 'paid', '2025-07-03 16:21:31', '2025-07-03 16:21:47', NULL, 23, '2025-07-04 00:21:36', 4000.00, 755.00, NULL, 0, 'eco'),
+('9569324', 58, 3245.00, 'paid', '2025-07-03 16:47:19', '2025-07-03 16:47:35', NULL, 23, '2025-07-04 00:47:25', 4000.00, 755.00, NULL, 0, 'plastic');
 
 -- --------------------------------------------------------
 
@@ -136,7 +145,16 @@ CREATE TABLE `order_items` (
 --
 
 INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, `choice_id`) VALUES
-(1796, '1434748', 33, 3, 649.00, NULL);
+(1798, '7214359', 33, 5, 649.00, NULL),
+(1799, '0808688', 34, 1, 141.00, NULL),
+(1800, '5369343', 34, 5, 141.00, NULL),
+(1801, '0841191', 33, 1, 649.00, NULL),
+(1802, '5608042', 45, 1, 20.00, 93),
+(1803, '2056774', 71, 8, 25.00, NULL),
+(1804, '1248147', 34, 1, 141.00, NULL),
+(1805, '0200807', 33, 1, 649.00, NULL),
+(1806, '2015882', 34, 1, 141.00, NULL),
+(1807, '9569324', 33, 5, 649.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -198,8 +216,8 @@ CREATE TABLE `products` (
 INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_quantity`, `category`, `image`, `created_at`, `updated_at`) VALUES
 (31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 998, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-04-01 07:21:29', '2025-06-12 10:36:15'),
 (32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 983, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-04-01 07:22:15', '2025-07-03 16:00:33'),
-(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 934, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-07-03 16:11:17'),
-(34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 69, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-07-03 15:57:56'),
+(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 922, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-04-01 07:22:59', '2025-07-03 16:47:19'),
+(34, 'GSM Mojito 700mL', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 141.00, 63, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-04-01 07:28:23', '2025-07-03 16:47:01'),
 (35, 'GSM Mojito 1L', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 189.00, 972, 'Beverages', 'https://i.ibb.co/vvP01sRS/00058af3eb33.png', '2025-04-01 07:28:48', '2025-06-26 07:34:33'),
 (36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 79, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-04-01 07:34:49', '2025-06-13 18:26:04'),
 (37, 'Primera Light 1Liter', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 189.00, 95, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 07:35:27', '2025-05-09 13:17:45'),
@@ -229,7 +247,7 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (68, 'Bingo Corned Beef', 'a canned, ready-to-eat corned beef product, specially prepared with beef and savory seasonings, and fortified with zinc and iron', 19.00, 50, 'Canned Goods', 'https://i.ibb.co/BH4TXJBC/d226081191f0.png', '2025-04-08 22:26:27', '2025-04-08 22:26:27'),
 (69, 'San Marino', 'has the delicious taste and health benefits of tuna', 32.00, 100, 'Canned Goods', 'https://i.ibb.co/ns3PXZPS/e9feba69ac43.png', '2025-04-08 22:34:10', '2025-04-08 22:34:10'),
 (70, 'Fresca Tuna', 'It\'s a great alternative to the usual sardines, giving you more value for your money while staying within your budget.', 26.50, 100, 'Canned Goods', 'https://i.ibb.co/j9QJQfM7/2e963da1932c.png', '2025-04-08 22:37:38', '2025-04-08 22:37:38'),
-(71, 'Hunts Pork and Beans', '#1 brand of Pork & Beans in the Philippines. It is made from high quality Great Northern Beans and real pork bits covered in rich, thick, sweet tomato sauce.', 25.00, 50, 'Canned Goods', 'https://i.ibb.co/rGVdMcgd/716c7cd11ed1.png', '2025-04-08 22:39:42', '2025-04-08 22:40:04'),
+(71, 'Hunts Pork and Beans', '#1 brand of Pork & Beans in the Philippines. It is made from high quality Great Northern Beans and real pork bits covered in rich, thick, sweet tomato sauce.', 25.00, 50, 'Canned Goods', 'https://i.ibb.co/rGVdMcgd/716c7cd11ed1.png', '2025-04-08 22:39:42', '2025-07-03 16:46:55'),
 (72, 'Bear Brand', ' a Nestlé-owned milk brand, particularly popular in the Philippines, offering both sterilized milk and fortified powdered milk drinks, known for providing essential nutrients and supporting overall health and well-being. ', 37.00, 50, 'Milk and Chocolate Drink', 'https://i.ibb.co/1fKNBZTT/b2969e594b9d.png', '2025-04-08 22:52:24', '2025-04-08 22:52:24'),
 (73, 'Bear Brand Adult', 'a powdered milk drink specially formulated for adults aged 19-29, designed to provide essential nutrients, including calcium, vitamin D, and B-vitamins, to support energy and immunity, and help close daily nutrition gaps. ', 98.00, 14, 'Milk and Chocolate Drink', 'https://i.ibb.co/3mr1fM35/60153400556e.png', '2025-04-08 22:58:08', '2025-04-20 17:00:51'),
 (74, 'Bear Brand Choco', ' a chocolate-flavored powdered milk drink fortified with essential nutrients like iron, zinc, and vitamin C, designed for individuals aged 3 and up to support strong immunity and overall well-being', 93.00, 20, 'Milk and Chocolate Drink', 'https://i.ibb.co/nMPC557v/b9527d3d54b3.png', '2025-04-08 23:00:50', '2025-06-11 16:38:11'),
@@ -542,7 +560,7 @@ CREATE TABLE `user_loyalty_status` (
 --
 
 INSERT INTO `user_loyalty_status` (`id`, `user_id`, `loyalty_tier_id`, `current_month_spend`, `last_month_spend`, `two_months_ago_spend`, `tier_start_date`, `tier_end_date`, `last_updated`) VALUES
-(3, 58, 3, 1434748.00, 0.00, 0.00, '2025-07-04', '2025-10-03', '2025-07-03 16:11:17');
+(4, 58, NULL, 9116.00, 0.00, 0.00, NULL, NULL, '2025-07-03 16:47:19');
 
 -- --------------------------------------------------------
 
@@ -564,7 +582,15 @@ CREATE TABLE `user_rewards` (
 --
 
 INSERT INTO `user_rewards` (`id`, `user_id`, `order_id`, `points`, `description`, `created_at`) VALUES
-(424, 58, '1947', 14347, 'Earned points from order #1947 (₱1434748)', '2025-07-03 16:11:17');
+(426, 58, '7214359', 32, 'Earned points from order #7214359 (₱3245.00)', '2025-07-03 16:21:31'),
+(427, 58, '0808688', 1, 'Earned points from order #0808688 (₱141.00)', '2025-07-03 16:25:32'),
+(428, 58, '5369343', 7, 'Earned points from order #5369343 (₱705.00)', '2025-07-03 16:30:59'),
+(429, 58, '0841191', 6, 'Earned points from order #0841191 (₱649.00)', '2025-07-03 16:31:32'),
+(430, 58, '2056774', 2, 'Earned points from order #2056774 (₱200.00)', '2025-07-03 16:38:42'),
+(431, 58, '1248147', 1, 'Earned points from order #1248147 (₱141.00)', '2025-07-03 16:39:11'),
+(432, 58, '0200807', 6, 'Earned points from order #0200807 (₱649.00)', '2025-07-03 16:39:55'),
+(433, 58, '2015882', 1, 'Earned points from order #2015882 (₱141.00)', '2025-07-03 16:45:51'),
+(434, 58, '9569324', 32, 'Earned points from order #9569324 (₱3245.00)', '2025-07-03 16:47:19');
 
 --
 -- Indexes for dumped tables
@@ -709,7 +735,7 @@ ALTER TABLE `available_discounts`
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491716;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491728;
 
 --
 -- AUTO_INCREMENT for table `loyalty_tiers`
@@ -721,7 +747,7 @@ ALTER TABLE `loyalty_tiers`
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1797;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1808;
 
 --
 -- AUTO_INCREMENT for table `order_reports`
@@ -781,13 +807,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_loyalty_status`
 --
 ALTER TABLE `user_loyalty_status`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `user_rewards`
 --
 ALTER TABLE `user_rewards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=425;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=435;
 
 --
 -- Constraints for dumped tables
