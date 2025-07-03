@@ -58,5 +58,7 @@ router.get('/detailed-reports', authenticate, isAdmin, adminController.getDetail
 router.get('/categories', authenticate, isAdmin, adminController.getCategories);
 router.get('/download-reports', authenticate, isAdmin, adminController.downloadReports);
 
+router.get('/download-low-stock', adminController.downloadLowStockReport);
+
 
 module.exports = router;

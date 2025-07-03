@@ -2271,3 +2271,296 @@ exports.debugLoyaltyData = async (req, res) => {
         res.status(500).json({ message: 'Error debugging loyalty data' });
     }
 };
+exports.downloadLowStockReport = async (req, res) => {
+    try {
+        const { filter, search } = req.query;
+        
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        
+        // Set workbook properties
+        workbook.creator = 'JM Garis Store';
+        workbook.lastModifiedBy = 'Admin';
+        workbook.created = new Date();
+        workbook.modified = new Date();
+        
+        // Create Low Stock worksheet
+        const lowStockSheet = workbook.addWorksheet('Low Stock Report');
+        
+        // Set column widths
+        lowStockSheet.columns = [
+            { width: 35 }, // Product Name
+            { width: 15 }, // Type
+            { width: 15 }, // Stock Left
+            { width: 15 }, // Unit Price
+            { width: 20 }, // Category
+            { width: 15 }  // Status
+        ];
+        
+        // Add store header
+        lowStockSheet.mergeCells('A1:F1');
+        const titleCell = lowStockSheet.getCell('A1');
+        titleCell.value = 'JM GARIS STORE';
+        titleCell.font = { name: 'Arial', size: 18, bold: true };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        titleCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF4472C4' }
+        };
+        titleCell.font = { ...titleCell.font, color: { argb: 'FFFFFFFF' } };
+        
+        // Add report title
+        lowStockSheet.mergeCells('A2:F2');
+        const reportTitleCell = lowStockSheet.getCell('A2');
+        reportTitleCell.value = 'LOW STOCK ALERT REPORT';
+        reportTitleCell.font = { name: 'Arial', size: 14, bold: true };
+        reportTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Add generation timestamp
+        lowStockSheet.mergeCells('A3:F3');
+        const timestampCell = lowStockSheet.getCell('A3');
+        timestampCell.value = `Generated on: ${new Date().toLocaleString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })}`;
+        timestampCell.font = { name: 'Arial', size: 10, italic: true };
+        timestampCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Add filter information if any
+        if (filter && filter !== 'all') {
+            lowStockSheet.mergeCells('A4:F4');
+            const filterCell = lowStockSheet.getCell('A4');
+            let filterText = '';
+            switch(filter) {
+                case 'critical': filterText = 'Critical Stock (≤ 10 units)'; break;
+                case 'warning': filterText = 'Warning Stock (≤ 20 units)'; break;
+                case 'low': filterText = 'Low Stock (≤ 30 units)'; break;
+            }
+            filterCell.value = `Filter: ${filterText}`;
+            filterCell.font = { name: 'Arial', size: 10, italic: true };
+            filterCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        }
+        
+        // Add search information if any
+        if (search) {
+            const searchRowIndex = filter && filter !== 'all' ? 5 : 4;
+            lowStockSheet.mergeCells(`A${searchRowIndex}:F${searchRowIndex}`);
+            const searchCell = lowStockSheet.getCell(`A${searchRowIndex}`);
+            searchCell.value = `Search: "${search}"`;
+            searchCell.font = { name: 'Arial', size: 10, italic: true };
+            searchCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        }
+        
+        // Add headers
+        const headerRowIndex = 6 + (filter && filter !== 'all' ? 1 : 0) + (search ? 1 : 0);
+        const headerRow = lowStockSheet.addRow(['Product Name', 'Type', 'Stock Left', 'Unit Price (₱)', 'Category', 'Status']);
+        headerRow.eachCell((cell, colNumber) => {
+            cell.font = { name: 'Arial', size: 11, bold: true };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE7E6E6' }
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        });
+        
+        // Get low stock data
+        const lowStockItems = await Admin.getLowStockItems();
+        
+        // Apply filters similar to frontend
+        let filteredItems = lowStockItems;
+        
+        if (search) {
+            filteredItems = filteredItems.filter(item => {
+                if (item.type === 'choice') {
+                    return item.product_name.toLowerCase().includes(search.toLowerCase()) ||
+                           item.choice_name.toLowerCase().includes(search.toLowerCase());
+                } else {
+                    return item.name.toLowerCase().includes(search.toLowerCase());
+                }
+            });
+        }
+        
+        if (filter && filter !== 'all') {
+            filteredItems = filteredItems.filter(item => {
+                switch(filter) {
+                    case 'critical': return item.stock <= 10;
+                    case 'warning': return item.stock <= 20;
+                    case 'low': return item.stock <= 30;
+                    default: return true;
+                }
+            });
+        }
+        
+        // Add data rows
+        filteredItems.forEach((item, index) => {
+            const productName = item.type === 'choice' 
+                ? `${item.product_name} (${item.choice_name})` 
+                : item.name;
+            
+            const productType = item.type === 'choice' ? 'Variant' : 'Product';
+            
+            let status = 'Normal';
+            if (item.stock <= 10) status = 'Critical';
+            else if (item.stock <= 20) status = 'Warning';
+            else if (item.stock <= 30) status = 'Low';
+            
+            const dataRow = lowStockSheet.addRow([
+                productName,
+                productType,
+                parseInt(item.stock),
+                parseFloat(item.price || 0),
+                item.category,
+                status
+            ]);
+            
+            // Format data cells
+            dataRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+            dataRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+            dataRow.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
+            dataRow.getCell(4).alignment = { horizontal: 'right', vertical: 'middle' };
+            dataRow.getCell(4).numFmt = '#,##0.00';
+            dataRow.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
+            dataRow.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Add borders
+            dataRow.eachCell((cell, colNumber) => {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Color code status column
+            const statusCell = dataRow.getCell(6);
+            switch(status) {
+                case 'Critical':
+                    statusCell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFFFE2E2' }
+                    };
+                    statusCell.font = { color: { argb: 'FFDC2626' }, bold: true };
+                    break;
+                case 'Warning':
+                    statusCell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFFEF3C7' }
+                    };
+                    statusCell.font = { color: { argb: 'FFD97706' }, bold: true };
+                    break;
+                case 'Low':
+                    statusCell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFE3F5E9' }
+                    };
+                    statusCell.font = { color: { argb: 'FF0F7840' }, bold: true };
+                    break;
+            }
+            
+            // Alternate row colors
+            if (index % 2 === 1) {
+                dataRow.eachCell((cell, colNumber) => {
+                    if (colNumber !== 6) { // Don't override status cell color
+                        cell.fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: { argb: 'FFF8F9FA' }
+                        };
+                    }
+                });
+            }
+        });
+        
+        // Add summary section
+        const currentRow = lowStockSheet.rowCount + 2;
+        lowStockSheet.mergeCells(`A${currentRow}:F${currentRow}`);
+        const summaryHeaderCell = lowStockSheet.getCell(`A${currentRow}`);
+        summaryHeaderCell.value = 'LOW STOCK SUMMARY';
+        summaryHeaderCell.font = { name: 'Arial', size: 12, bold: true };
+        summaryHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        summaryHeaderCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFE2E2' }
+        };
+        
+        // Calculate summary statistics
+        const criticalCount = filteredItems.filter(item => item.stock <= 10).length;
+        const warningCount = filteredItems.filter(item => item.stock <= 20).length;
+        const lowCount = filteredItems.filter(item => item.stock <= 30).length;
+        const totalValue = filteredItems.reduce((sum, item) => sum + (parseFloat(item.stock) * parseFloat(item.price || 0)), 0);
+        
+        lowStockSheet.addRow(['Total Low Stock Items:', filteredItems.length, '', '', '', '']);
+        lowStockSheet.addRow(['Critical Stock (≤10):', criticalCount, '', '', '', '']);
+        lowStockSheet.addRow(['Warning Stock (≤20):', warningCount, '', '', '', '']);
+        lowStockSheet.addRow(['Low Stock (≤30):', lowCount, '', '', '', '']);
+        lowStockSheet.addRow(['Total Stock Value:', '', '', totalValue, '', '']);
+        
+        // Format summary rows
+        for (let i = currentRow + 1; i <= currentRow + 5; i++) {
+            const row = lowStockSheet.getRow(i);
+            row.getCell(1).font = { bold: true };
+            row.getCell(2).font = { bold: true };
+            if (i === currentRow + 5) { // Total value row
+                row.getCell(4).numFmt = '#,##0.00';
+                row.getCell(4).font = { bold: true };
+            }
+        }
+        
+        // Add footer with signature
+        const footerRow = lowStockSheet.rowCount + 3;
+        lowStockSheet.mergeCells(`A${footerRow}:F${footerRow}`);
+        lowStockSheet.mergeCells(`A${footerRow + 2}:F${footerRow + 2}`);
+        lowStockSheet.mergeCells(`A${footerRow + 4}:F${footerRow + 4}`);
+        lowStockSheet.mergeCells(`A${footerRow + 5}:F${footerRow + 5}`);
+        
+        // Signature line
+        const signatureCell = lowStockSheet.getCell(`A${footerRow + 2}`);
+        signatureCell.value = '________________________';
+        signatureCell.font = { name: 'Arial', size: 10 };
+        signatureCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Printed name
+        const nameCell = lowStockSheet.getCell(`A${footerRow + 4}`);
+        nameCell.value = 'Inventory Manager';
+        nameCell.font = { name: 'Arial', size: 10, bold: true };
+        nameCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Store name
+        const storeNameCell = lowStockSheet.getCell(`A${footerRow + 5}`);
+        storeNameCell.value = 'JM Garis Store';
+        storeNameCell.font = { name: 'Arial', size: 9, italic: true };
+        storeNameCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Set row heights
+        lowStockSheet.getRow(1).height = 25;
+        lowStockSheet.getRow(2).height = 20;
+        
+        // Set response headers
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="low_stock_report_${new Date().toISOString().split('T')[0]}.xlsx"`);
+        
+        // Write to response
+        await workbook.xlsx.write(res);
+        res.end();
+        
+    } catch (error) {
+        console.error('Error generating low stock report:', error);
+        res.status(500).json({ message: 'Failed to generate low stock report' });
+    }
+};

@@ -6,7 +6,13 @@
     />
     
     <div class="admin-content">
-      <h1><i class="fas fa-exclamation-triangle"></i> Low Stock Products</h1>
+      <div class="header-section">
+        <h1><i class="fas fa-exclamation-triangle"></i> Low Stock Products</h1>
+        <button @click="downloadExcel" class="download-btn" :disabled="!filteredLowStock.length">
+          <i class="fas fa-download"></i>
+          Download Excel
+        </button>
+      </div>
 
       <div class="low-stock-section">
         <div class="search-filter">
@@ -100,6 +106,7 @@
       </div>
     </div>
 
+    <!-- Confirmation Modal -->
     <div v-if="showSaveConfirmation" class="modal-overlay">
       <div class="modal-content save-confirmation-modal">
         <h2>Confirm Stock Update</h2>
@@ -121,6 +128,17 @@
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- Notification -->
+    <div v-if="notification.show" class="notification" :class="notification.type">
+      <div class="notification-content">
+        <i :class="notification.icon"></i>
+        {{ notification.message }}
+      </div>
+      <button class="notification-close" @click="hideNotification">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
 
     <LogoutModal 
@@ -159,7 +177,13 @@ export default {
         { label: 'Warning (≤ 20)', value: 'warning', class: 'warning' },
         { label: 'Low (≤ 30)', value: 'low', class: 'low' }
       ],
-      defaultStockFilter: 'all'
+      defaultStockFilter: 'all',
+      notification: {
+        show: false,
+        message: '',
+        type: 'success',
+        icon: 'fas fa-check-circle'
+      }
     }
   },
   computed: {
@@ -204,6 +228,61 @@ export default {
       return 'low';
     },
     
+    async downloadExcel() {
+      if (!this.filteredLowStock.length) {
+        this.showNotification('No low stock data available to download', 'warning', 'fas fa-exclamation-triangle');
+        return;
+      }
+      
+      try {
+        const token = localStorage.getItem('token');
+        const params = new URLSearchParams({
+          filter: this.stockFilter,
+          search: this.searchQuery
+        });
+        
+        const response = await fetch(`http://localhost:7904/api/admin/download-low-stock?${params}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          
+          const today = new Date().toISOString().split('T')[0];
+          const filename = `low_stock_report_${today}.xlsx`;
+          link.download = filename;
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+          
+          this.showNotification('Low stock report downloaded successfully', 'success', 'fas fa-download');
+        } else {
+          throw new Error('Download failed');
+        }
+      } catch (error) {
+        console.error('Error downloading low stock report:', error);
+        this.showNotification('Error downloading report', 'error', 'fas fa-times-circle');
+      }
+    },
+    
+    showNotification(message, type = 'success', icon = 'fas fa-check-circle') {
+      this.notification = { show: true, message, type, icon };
+      setTimeout(() => {
+        this.hideNotification();
+      }, 5000);
+    },
+    
+    hideNotification() {
+      this.notification.show = false;
+    },
+    
     startEdit(item) {
       this.editingId = item.type === 'choice' ? `choice-${item.choice_id}` : item.id;
       this.editingStock = item.stock;
@@ -240,7 +319,6 @@ export default {
         let endpoint, payload;
         
         if (this.itemToUpdate.type === 'choice') {
-          // Update choice stock - maintain existing price
           endpoint = `http://localhost:7904/api/products/choices/${this.itemToUpdate.choice_id}`;
           payload = { 
             stock: parseInt(this.editingStock),
@@ -248,7 +326,6 @@ export default {
             name: this.itemToUpdate.choice_name
           };
         } else {
-          // Update regular product stock - maintain existing price
           endpoint = `http://localhost:7904/api/products/${this.itemToUpdate.id}`;
           payload = { 
             stock_quantity: parseInt(this.editingStock),
@@ -269,7 +346,6 @@ export default {
         });
 
         if (response.ok) {
-          // Update only the stock in the local data
           const index = this.lowStockItems.findIndex(item => {
             if (this.itemToUpdate.type === 'choice') {
               return item.choice_id === this.itemToUpdate.choice_id;
@@ -281,7 +357,6 @@ export default {
           if (index !== -1) {
             this.lowStockItems[index].stock = parseInt(this.editingStock);
             
-            // Remove from list if it's no longer low stock
             if (this.editingStock > 30) {
               this.lowStockItems.splice(index, 1);
             }
@@ -290,17 +365,17 @@ export default {
           this.editingId = null;
           this.editingStock = null;
           
-          // Refresh data
           await this.fetchLowStockItems();
-          
-          // Dispatch event to update sidebar badge
           window.dispatchEvent(new CustomEvent('stock-updated'));
+          
+          this.showNotification('Stock updated successfully', 'success', 'fas fa-check-circle');
         } else {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to update stock');
-          }
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to update stock');
+        }
       } catch (error) {
         console.error('Error updating stock:', error);
+        this.showNotification('Error updating stock', 'error', 'fas fa-times-circle');
       } finally {
         this.showSaveConfirmation = false;
         this.itemToUpdate = null;
@@ -377,12 +452,47 @@ export default {
   padding: 2rem;
 }
 
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
 .admin-content h1 {
   color: #2c3e50;
-  margin-bottom: 2rem;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.download-btn {
+  padding: 0.75rem 1.25rem;
+  background-color: #059669;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.download-btn:hover:not(:disabled) {
+  background-color: #047857;
+  transform: translateY(-1px);
+}
+
+.download-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #9ca3af;
 }
 
 .low-stock-section {
@@ -738,6 +848,64 @@ tr:hover {
   background-color: #5a6268;
 }
 
+/* Notification */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 300px;
+  animation: slideIn 0.3s ease;
+}
+
+.notification.success {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.notification.error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.notification.warning {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  flex: 1;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  color: currentColor;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  padding: 0.25rem;
+}
+
+.notification-close:hover {
+  opacity: 1;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 @media (max-width: 768px) {
   .admin-container {
     padding-left: 60px;
@@ -745,6 +913,16 @@ tr:hover {
 
   .admin-content {
     padding: 1rem;
+  }
+
+  .header-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .download-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .search-filter {
