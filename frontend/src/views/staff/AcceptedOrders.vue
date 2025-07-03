@@ -468,15 +468,15 @@ export default {
         },
         calculateEstimatedTime(order) {
             try {
-                const baseTime = 15; // Base preparation time in minutes
-                const timePerItem = 5; // Additional time per item in minutes
+                // 3 minutes per product (180 seconds)
+                const timePerProduct = 180; // seconds per product
                 
                 const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
-                const estimatedMinutes = baseTime + (timePerItem * totalQuantity);
+                const estimatedSeconds = totalQuantity * timePerProduct;
                 
                 // Use accepted_at as base time
                 const estimatedTime = new Date(order.accepted_at);
-                estimatedTime.setMinutes(estimatedTime.getMinutes() + estimatedMinutes);
+                estimatedTime.setSeconds(estimatedTime.getSeconds() + estimatedSeconds);
                 
                 return estimatedTime.toISOString();
             } catch (error) {

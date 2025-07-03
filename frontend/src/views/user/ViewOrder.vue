@@ -263,14 +263,13 @@ export default {
                     // Ensure each order has a valid estimatedPickupTime
                     this.orders = orders.map(order => {
                         if (order.status === 'preparing') {
-                            // Calculate estimated time if not provided
-                            const baseTime = 15; // Base preparation time in minutes
-                            const timePerItem = 5; // Additional time per item in minutes
+                            // Calculate estimated time: 3 minutes per product
+                            const timePerProduct = 180; // 180 seconds (3 minutes) per product
                             const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
-                            const estimatedMinutes = baseTime + (timePerItem * totalQuantity);
+                            const estimatedSeconds = totalQuantity * timePerProduct;
                             
                             const estimatedTime = new Date(order.accepted_at);
-                            estimatedTime.setMinutes(estimatedTime.getMinutes() + estimatedMinutes);
+                            estimatedTime.setSeconds(estimatedTime.getSeconds() + estimatedSeconds);
                             
                             return {
                                 ...order,

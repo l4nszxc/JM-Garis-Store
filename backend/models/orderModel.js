@@ -111,17 +111,15 @@ class Order {
     }
     static calculateEstimatedTime(items) {
         try {
-            // Base preparation time in minutes
-            const baseTime = 15;
-            // Additional time per item in minutes
-            const timePerItem = 5;
+            // 3 minutes per product (180 seconds)
+            const timePerProduct = 180; // seconds per product
             
             const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-            const estimatedMinutes = baseTime + (timePerItem * totalQuantity);
+            const estimatedSeconds = totalQuantity * timePerProduct;
             
             // Create a date object with the estimated completion time
             const estimatedTime = new Date();
-            estimatedTime.setMinutes(estimatedTime.getMinutes() + estimatedMinutes);
+            estimatedTime.setSeconds(estimatedTime.getSeconds() + estimatedSeconds);
             
             // Return ISO string for consistent date formatting
             return estimatedTime.toISOString();

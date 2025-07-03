@@ -163,12 +163,21 @@ exports.acceptOrder = async (req, res) => {
             image: item.actual_image || item.image
         }));
 
+        // Calculate estimated time: 3 minutes per product
+        const timePerProduct = 180; // seconds per product (3 minutes)
+        const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+        const estimatedSeconds = totalQuantity * timePerProduct;
+        
+        const estimatedTime = new Date();
+        estimatedTime.setSeconds(estimatedTime.getSeconds() + estimatedSeconds);
+        
         // Prepare order details for email
         const orderDetails = {
             ...order,
             items: formattedItems,
             subtotal: subtotal,
             order_id: orderId,
+            estimatedPickupTime: estimatedTime.toISOString(),
             total_amount: order.total_amount,
             discount_amount: parseFloat(order.discount_amount) || 0
         };
