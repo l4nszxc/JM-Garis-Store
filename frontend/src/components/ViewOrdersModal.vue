@@ -12,6 +12,43 @@
                 </button>
             </div>
 
+            <!-- Payment Method Selection -->
+            <div class="payment-method-section">
+                <h4 class="section-title">
+                    <i class="fas fa-credit-card"></i>
+                    Payment Method
+                </h4>
+                <div class="payment-methods">
+                    <label class="payment-option">
+                        <input 
+                            type="radio" 
+                            value="cash" 
+                            v-model="selectedPaymentMethod"
+                            name="paymentMethod"
+                        >
+                        <div class="payment-card">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>Cash on Pickup</span>
+                            <small>Pay when you collect your order</small>
+                        </div>
+                    </label>
+                    
+                    <label class="payment-option">
+                        <input 
+                            type="radio" 
+                            value="gcash" 
+                            v-model="selectedPaymentMethod"
+                            name="paymentMethod"
+                        >
+                        <div class="payment-card gcash-card">
+                            <i class="fab fa-google-pay"></i>
+                            <span>GCash</span>
+                            <small>Pay now with GCash</small>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
             <!-- Packaging Preference Section -->
             <div class="packaging-section">
                 <h4 class="section-title">
@@ -148,12 +185,13 @@
                     <button 
                         @click="confirmOrder" 
                         class="confirm-btn"
-                        :disabled="localItems.length === 0"
+                        :disabled="localItems.length === 0 || !selectedPaymentMethod || processingPayment"
                     >
-                        <i class="fas fa-check"></i> 
-                        Confirm Order
+                        <i class="fas fa-spinner fa-spin" v-if="processingPayment"></i>
+                        <i class="fas fa-check" v-else></i> 
+                        {{ processingPayment ? 'Processing...' : getConfirmButtonText() }}
                     </button>
-                    <button @click="$emit('close')" class="cancel-btn">
+                    <button @click="$emit('close')" class="cancel-btn" :disabled="processingPayment">
                         <i class="fas fa-times"></i> 
                         Close
                     </button>
@@ -164,11 +202,14 @@
 </template>
 
 <script>
+import PaymentStatusModal from './PaymentStatusModal.vue';
+
 export default {
     name: 'ViewOrdersModal',
     props: {
         show: Boolean,
         selectedItems: Array,
+        PaymentStatusModal,
         availableDiscounts: {
             type: Array,
             default: () => []
@@ -178,13 +219,20 @@ export default {
         return {
             localItems: [],
             selectedDiscountId: '',
-            packagingPreference: false // false = eco (paper), true = plastic
+            packagingPreference: false,
+            selectedPaymentMethod: 'cash',
+            processingPayment: false,
+             showPaymentStatus: false,
+            currentOrderId: null,
+            currentAmount: 0
         }
     },
     watch: {
         show(newValue) {
             if (newValue && this.selectedItems) {
                 this.localItems = JSON.parse(JSON.stringify(this.selectedItems));
+                this.selectedPaymentMethod = 'cash'; // Reset to default
+                this.processingPayment = false;
             }
         },
         selectedItems: {
@@ -235,29 +283,198 @@ export default {
             this.localItems = this.localItems.filter(item => item.id !== itemId);
         },
         updatePackagingPreference() {
-            // Debug log to check if the preference is changing
             console.log('Packaging preference changed to:', this.packagingPreference ? 'plastic' : 'eco');
         },
-        confirmOrder() {
-            const formattedItems = this.localItems.map(item => ({
-                id: item.id,
-                product_id: item.product_id,
-                quantity: item.quantity,
-                price: parseFloat(item.price),
-                choice_id: item.choice_id
-            }));
+        getConfirmButtonText() {
+            if (this.selectedPaymentMethod === 'gcash') {
+                return 'Pay with GCash';
+            }
+            return 'Confirm Order';
+        },
+        async confirmOrder() {
+            this.processingPayment = true;
             
-            const orderData = {
-                items: formattedItems,
-                discountId: this.selectedDiscountId,
-                packagingPreference: this.packagingPreference ? 'plastic' : 'eco'
-            };
+            try {
+                const formattedItems = this.localItems.map(item => ({
+                    id: item.id,
+                    product_id: item.product_id,
+                    quantity: item.quantity,
+                    price: parseFloat(item.price),
+                    choice_id: item.choice_id
+                }));
+                
+                const orderData = {
+                    items: formattedItems,
+                    discountId: this.selectedDiscountId,
+                    packagingPreference: this.packagingPreference ? 'plastic' : 'eco',
+                    paymentMethod: this.selectedPaymentMethod
+                };
+                
+                console.log('Order data being sent:', orderData);
+                
+                if (this.selectedPaymentMethod === 'gcash') {
+                    await this.processGCashPayment(orderData);
+                } else {
+                    this.$emit('place-order', orderData);
+                }
+            } catch (error) {
+                console.error('Error processing order:', error);
+                this.$emit('payment-error', error.message || 'Failed to process payment');
+            } finally {
+                this.processingPayment = false;
+            }
+        },
+        
+        async processGCashPayment(orderData) {
+            try {
+                // First create the order
+                const token = localStorage.getItem('token');
+                const orderResponse = await fetch('http://localhost:7904/api/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        items: orderData.items,
+                        totalAmount: this.calculateTotal,
+                        discountId: orderData.discountId,
+                        packagingPreference: orderData.packagingPreference
+                    })
+                });
+
+                if (!orderResponse.ok) {
+                    throw new Error('Failed to create order');
+                }
+
+                 const { orderId } = await orderResponse.json();
+
+                // Create GCash payment
+                const paymentResponse = await fetch('http://localhost:7904/api/payment/gcash/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        orderId: orderId,
+                        amount: this.calculateTotal
+                    })
+                });
+
+                if (!paymentResponse.ok) {
+                    throw new Error('Failed to create GCash payment');
+                }
+
+                const paymentData = await paymentResponse.json();
+                
+                // Open payment in new window instead of redirecting
+                const paymentWindow = window.open(
+                    paymentData.checkoutUrl,
+                    'gcash-payment',
+                    'width=800,height=600,scrollbars=yes,resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no'
+                );
+
+                if (!paymentWindow) {
+                    throw new Error('Payment window blocked. Please allow popups and try again.');
+                }
+
+                // Monitor the payment window
+                this.monitorPaymentWindow(paymentWindow, orderId);
+                
+            } catch (error) {
+                console.error('GCash payment error:', error);
+                throw error;
+            }
+        },
+         monitorPaymentWindow(paymentWindow, orderId) {
+            const checkWindow = setInterval(() => {
+                try {
+                    // Check if window is closed
+                    if (paymentWindow.closed) {
+                        clearInterval(checkWindow);
+                        this.processingPayment = false;
+                        
+                        // Check payment status after window closes
+                        this.checkPaymentStatus(orderId);
+                        return;
+                    }
+
+                    // Try to detect success/failure URLs
+                    try {
+                        const currentUrl = paymentWindow.location.href;
+                        
+                        if (currentUrl.includes('payment-success')) {
+                            clearInterval(checkWindow);
+                            paymentWindow.close();
+                            this.handlePaymentSuccess(orderId);
+                        } else if (currentUrl.includes('payment-failed')) {
+                            clearInterval(checkWindow);
+                            paymentWindow.close();
+                            this.handlePaymentFailure(orderId);
+                        }
+                    } catch (e) {
+                        // Cross-origin restrictions prevent URL access
+                        // This is expected behavior
+                    }
+                } catch (error) {
+                    console.error('Error monitoring payment window:', error);
+                }
+            }, 1000);
+
+            // Set a timeout for the payment window (10 minutes)
+            setTimeout(() => {
+                if (!paymentWindow.closed) {
+                    clearInterval(checkWindow);
+                    paymentWindow.close();
+                    this.processingPayment = false;
+                    this.$emit('payment-error', 'Payment session expired. Please try again.');
+                }
+            }, 600000); // 10 minutes
+        },
+        async checkPaymentStatus(orderId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`http://localhost:7904/api/payment/status/${orderId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const paymentStatus = await response.json();
+                    
+                    if (paymentStatus.status === 'succeeded') {
+                        this.handlePaymentSuccess(orderId);
+                    } else if (paymentStatus.status === 'failed') {
+                        this.handlePaymentFailure(orderId);
+                    } else {
+                        // Payment still pending
+                        this.$emit('payment-error', 'Payment status is still pending. Please check your order history.');
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking payment status:', error);
+                this.$emit('payment-error', 'Unable to verify payment status. Please check your order history.');
+            }
+        },
+        handlePaymentSuccess(orderId) {
+            this.processingPayment = false;
+            this.$emit('close');
             
-            // Debug log to verify what's being sent
-            console.log('Order data being sent:', orderData);
-            console.log('Packaging preference value:', orderData.packagingPreference);
+            // Show success message
+            this.$emit('payment-success', {
+                message: `Payment successful! Order #${orderId} has been processed.`,
+                orderId: orderId
+            });
             
-            this.$emit('place-order', orderData);
+            // Redirect to order history or receipt
+            this.$router.push(`/receipt/${orderId}`);
+        },
+
+        handlePaymentFailure(orderId) {
+            this.processingPayment = false;
+            this.$emit('payment-error', `Payment failed for Order #${orderId}. Please try again or use a different payment method.`);
         }
     }
 }
@@ -348,6 +565,86 @@ export default {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+/* Payment Method Section */
+.payment-method-section {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f1f9f1;
+    background-color: #fafffe;
+}
+
+.payment-methods {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.payment-option {
+    cursor: pointer;
+}
+
+.payment-option input[type="radio"] {
+    display: none;
+}
+
+.payment-card {
+    padding: 1.5rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background-color: white;
+    transition: all 0.3s ease;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.payment-card i {
+    font-size: 2rem;
+    color: #64748b;
+    transition: color 0.3s ease;
+}
+
+.payment-card span {
+    font-weight: 600;
+    color: #2a3f2a;
+    font-size: 1.1rem;
+}
+
+.payment-card small {
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.payment-option input[type="radio"]:checked + .payment-card {
+    border-color: #4CAF50;
+    background-color: #f8fff8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+}
+
+.payment-option input[type="radio"]:checked + .payment-card i {
+    color: #4CAF50;
+}
+
+.gcash-card i {
+    color: #007bff;
+}
+
+.payment-option input[type="radio"]:checked + .gcash-card i {
+    color: #007bff;
+}
+
+.payment-option input[type="radio"]:checked + .gcash-card {
+    border-color: #007bff;
+    background-color: #f0f8ff;
+}
+
+.payment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* Packaging Section */
@@ -755,10 +1052,15 @@ input:checked + .slider:before {
     border-color: #e2e8f0;
 }
 
-.cancel-btn:hover {
+.cancel-btn:hover:not(:disabled) {
     background-color: #f8f9fa;
     border-color: #cbd5e1;
     transform: translateY(-2px);
+}
+
+.cancel-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 /* Responsive Design */
@@ -768,9 +1070,13 @@ input:checked + .slider:before {
         max-height: 95vh;
     }
     
-    .modal-header, .packaging-section, .discount-section, .scrollable-content, .fixed-bottom {
+    .modal-header, .payment-method-section, .packaging-section, .discount-section, .scrollable-content, .fixed-bottom {
         padding-left: 1.5rem;
         padding-right: 1.5rem;
+    }
+    
+    .payment-methods {
+        grid-template-columns: 1fr;
     }
     
     .order-item {

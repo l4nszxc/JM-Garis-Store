@@ -193,12 +193,14 @@
             @cancel="showLogoutModal = false" 
         />
 
-        <ViewOrdersModal 
+       <ViewOrdersModal 
             :show="showOrdersModal"
             :selectedItems="selectedItems"
             :availableDiscounts="availableDiscounts"
             @close="showOrdersModal = false"
             @place-order="handlePlaceOrder"
+            @payment-error="handlePaymentError"
+            @payment-success="handlePaymentSuccess"
         />
 
         <ConfirmationModal
@@ -493,8 +495,13 @@ export default {
             }
         },
         
-        async handlePlaceOrder({ items, discountId, packagingPreference }) {
+        async handlePlaceOrder({ items, discountId, packagingPreference, paymentMethod }) {
             try {
+                if (paymentMethod === 'gcash') {
+                    // GCash payment is handled in the modal
+                    return;
+                }
+                
                 const token = localStorage.getItem('token');
                 
                 const formattedItems = items.map(item => ({
@@ -511,7 +518,7 @@ export default {
                         sum + (parseFloat(item.price) * item.quantity), 0
                     ),
                     discountId: discountId,
-                    packagingPreference: packagingPreference  // Make sure this is included
+                    packagingPreference: packagingPreference
                 };
 
                 console.log('Cart handlePlaceOrder - Request body:', requestBody);
@@ -548,14 +555,36 @@ export default {
 
                 this.showOrdersModal = false;
                 this.$router.push('/view-orders');
-                window.dispatchEvent(new CustomEvent('cart-updated'));
 
             } catch (error) {
                 console.error('Error placing order:', error);
-                this.showNotification(error.message, 'error');
+                this.showNotification('Failed to place order: ' + error.message, 'error');
             }
         },
-        
+        handlePaymentError(message) {
+            this.showNotification(message, 'error');
+        },
+        handlePaymentSuccess(data) {
+            // Remove items from cart
+            this.cartItems = this.cartItems.filter(cartItem => 
+                !this.selectedItems.some(item => item.id === cartItem.id)
+            );
+            
+            this.checkedItems.clear();
+            this.showOrdersModal = false;
+            
+            // Show success notification
+            this.showNotification(data.message, 'success');
+            
+            // Update cart count
+            window.dispatchEvent(new CustomEvent('cart-updated'));
+            
+            // If sharing was active, end it
+            if (this.syncStatus) {
+                this.syncStatus = null;
+                this.partnerUsername = '';
+            }
+        },
         handleImageError(e) {
             e.target.src = '/img/placeholder.jpg';
         },

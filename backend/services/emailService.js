@@ -1,17 +1,18 @@
 const nodemailer = require('nodemailer');
+require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'lanslorence@gmail.com', // Replace with your Gmail
-        pass: 'dwha kvpo ogpk txmg' // Use an App Password from Google Account
+        user: process.env.EMAIL_USER || 'lanslorence@gmail.com',
+        pass: process.env.EMAIL_PASS || 'dwha kvpo ogpk txmg'
     }
 });
 
 exports.sendOTP = async (email, otp) => {
     try {
         await transporter.sendMail({
-            from: '"Your App" <storeofjmgaris@gmail.com>',
+            from: `"JM Garis Store" <${process.env.EMAIL_USER || 'storeofjmgaris@gmail.com'}>`,
             to: email,
             subject: "Email Verification OTP",
             html: `
@@ -27,10 +28,11 @@ exports.sendOTP = async (email, otp) => {
         throw error;
     }
 };
+
 exports.sendPasswordResetOTP = async (email, otp) => {
     try {
         await transporter.sendMail({
-            from: '"Your App" <storeofjmgaris@gmail.com',
+            from: `"JM Garis Store" <${process.env.EMAIL_USER || 'storeofjmgaris@gmail.com'}>`,
             to: email,
             subject: "Password Reset OTP",
             html: `
@@ -46,4 +48,4 @@ exports.sendPasswordResetOTP = async (email, otp) => {
     } catch (error) {
         throw error;
     }
-}; 
+};

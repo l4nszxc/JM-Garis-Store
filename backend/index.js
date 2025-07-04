@@ -9,31 +9,37 @@ const orderRoutes = require('./routes/orderRoutes');
 const staffRoutes = require('./routes/staffRoutes');
 const rewardRoutes = require('./routes/rewardRoutes');
 const sharedCartRoutes = require('./routes/sharedCartRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 const path = require('path');
 require('dotenv').config();
 
 const app = express();
 
-// Update CORS configuration
+// Update CORS configuration to use environment variables
+const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:8080',
+    'http://localhost:8081'
+];
+
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:8081'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
 
-// Session middleware
+// Session middleware with environment-based secret
 app.use(session({
-  secret: 'your-secret-key', // Change this to a secure secret
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // Set to true if using HTTPS
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
+    secret: process.env.JWT_SECRET || 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
 }));
 
 // Routes
@@ -47,9 +53,10 @@ app.use('/api/staff', staffRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/rewards', rewardRoutes);
 app.use('/api/shared-cart', sharedCartRoutes);
+app.use('/api/payment', paymentRoutes);
 
-
-const PORT = 7904;
+const PORT = process.env.PORT || 7904;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });

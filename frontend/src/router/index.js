@@ -26,6 +26,8 @@ import AdminReceiptSettings from '../views/admin/ReceiptSettings.vue'
 import ProductDetail from '../views/user/ProductDetail.vue';
 import AdminReports from '../views/admin/AdminReports.vue'
 import DigitalReceipt from '../views/user/DigitalReceipt.vue'
+import PaymentSuccess from '../views/user/PaymentSuccess.vue'
+import PaymentFailed from '../views/user/PaymentFailed.vue'
 
 const routes = [
   {
@@ -134,6 +136,16 @@ const routes = [
     name: 'DigitalReceipt',
     component: DigitalReceipt,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/payment-success',
+    name: 'PaymentSuccess',
+    component: PaymentSuccess
+  },
+  {
+    path: '/payment-failed',
+    name: 'PaymentFailed',
+    component: PaymentFailed
   },
 
 
