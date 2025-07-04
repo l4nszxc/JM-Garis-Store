@@ -2537,7 +2537,7 @@ exports.downloadLowStockReport = async (req, res) => {
         
         // Printed name
         const nameCell = lowStockSheet.getCell(`A${footerRow + 4}`);
-        nameCell.value = 'Inventory Manager';
+        nameCell.value = 'Signature Over Printed Name';
         nameCell.font = { name: 'Arial', size: 10, bold: true };
         nameCell.alignment = { horizontal: 'center', vertical: 'middle' };
         

@@ -92,7 +92,7 @@
                                 </td>
                                 <td>
                                     <span :class="['status-badge', order.status.toLowerCase().replace(/ /g, '-')]">
-                                        <template v-if="order.status === 'paid'">
+                                        <template v-if="order.status === 'paid', 'paid using gcash'">
                                             <i class="fas fa-check-circle"></i>
                                         </template>
                                         {{ order.status }}
@@ -350,7 +350,8 @@ export default {
                 { label: 'Preparing', value: 'preparing' },
                 { label: 'Ready for Pickup', value: 'ready for pickup' },
                 { label: 'Paid', value: 'paid' },
-                { label: 'Cancelled', value: 'cancelled' }
+                { label: 'Cancelled', value: 'cancelled' },
+                {label: 'Paid using GCash', value: 'paid using gcash' }
             ],
             showPaymentConfirmation: false,
             cashAmount: '',
@@ -993,6 +994,7 @@ export default {
     background-color: #d1e7dd;
     color: #0f5132;
 }
+
 
 .filter-btn.paid.active {
     background-color: #20c997;

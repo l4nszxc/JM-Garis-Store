@@ -17,7 +17,7 @@
           </div>
         </div>
         <div class="hero-image" v-motion-slide-visible-once-right>
-          <img src="https://i.ibb.co/tTMm9hg9/bf73f6e95a5d.png" alt="JM Garis Featured Product" />
+          <img src="https://i.ibb.co/zVWcJ0Ln/GROCEREASE-home.png" alt="JM Garis Store" />
         </div>
       </div>
     </section>
@@ -284,7 +284,10 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('https://i.ibb.co/J7CcWBfs/pattern.png');
+  background-image: url('https://i.ibb.co/qKVjY0S/bg-home.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   opacity: 0.1;
   z-index: 0;
 }

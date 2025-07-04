@@ -15,21 +15,30 @@
         <div class="forecast-options">
           <label>Forecast period:</label>
           <div class="forecast-period">
-            <select v-model="forecastDays">
-              <option value="7">7 days</option>
-              <option value="14">14 days</option>
-              <option value="30">30 days</option>
-              <option value="60">60 days</option>
-              <option value="90">90 days</option>
+            <select v-model="forecastPeriod">
+              <option value="daily">Daily (1 day)</option>
+              <option value="weekly">Weekly (7 days)</option>
+              <option value="monthly">Monthly (30 days)</option>
+              <option value="quarterly">Quarterly (90 days)</option>
+              <option value="annually">Annually (365 days)</option>
+            </select>
+          </div>
+
+          <div v-if="forecastPeriod === 'quarterly'" class="quarter-selection">
+            <label>Select Quarter:</label>
+            <select v-model="selectedQuarter">
+              <option value="Q1">Quarter 1 (Jan-Mar)</option>
+              <option value="Q2">Quarter 2 (Apr-Jun)</option>
+              <option value="Q3">Quarter 3 (Jul-Sep)</option>
+              <option value="Q4">Quarter 4 (Oct-Dec)</option>
             </select>
           </div>
 
           <label>Analysis method:</label>
           <div class="forecast-method">
-            <select v-model="forecastMethod">
-              <option value="seasonal">Seasonal Pattern Analysis</option>
-              <option value="advanced">Advanced ML with Seasonality</option>
-            </select>
+            <button @click="forecastMethod = 'seasonal'" class="analysis-button">
+              Seasonal Pattern Analysis
+            </button>
           </div>
         </div>
         
@@ -60,7 +69,7 @@
       <div v-if="!isGenerating && forecasts.length" class="forecasts-container">
         <h2>
           Demand Forecast & Inventory Optimization
-          <span class="forecast-period-badge">Next {{ forecastDays }} days</span>
+          <span class="forecast-period-badge">{{ getPeriodLabel() }}</span>
           <span class="method-badge">{{ getMethodLabel() }}</span>
         </h2>
         
@@ -99,15 +108,11 @@
             </div>
             
             <div class="demand-metrics">
-              <div class="metric">
-                <span class="metric-label">Current Stock Level</span>
-                <span class="metric-value">{{ forecast.current_stock || 'N/A' }} units</span>
+              <div class="metric highlight">
+                <span class="metric-label">Predicted {{ getPeriodUnit() }} Demand</span>
+                <span class="metric-value">{{ calculateAverage(forecast.forecast_data) }} units/{{ getPeriodUnit().toLowerCase() }}</span>
               </div>
               
-              <div class="metric highlight">
-                <span class="metric-label">Predicted Daily Demand</span>
-                <span class="metric-value">{{ calculateAverage(forecast.forecast_data) }} units/day</span>
-              </div>
               
               <div class="metric">
                 <span class="metric-label">Trend Analysis</span>
@@ -117,10 +122,9 @@
                 </div>
               </div>
             </div>
-            
             <div class="demand-chart">
               <div class="chart-header">
-                <h4>{{ forecastDays }}-Day Demand Forecast</h4>
+                <h4>{{ getPeriodLabel() }} Demand Forecast</h4>
                 <div class="chart-legend">
                   <div class="legend-item">
                     <div class="legend-dot prediction"></div>
@@ -163,20 +167,12 @@
               </div>
             </div>
             
-            <div class="inventory-optimization">
+            <<div class="inventory-optimization">
               <h4>Inventory Optimization</h4>
               <div class="optimization-metrics">
                 <div class="optimization-item">
                   <span class="optimization-label">Recommended Stock Level</span>
                   <span class="optimization-value">{{ getRecommendedStock(forecast) }} units</span>
-                </div>
-                <div class="optimization-item">
-                  <span class="optimization-label">Safety Stock Buffer</span>
-                  <span class="optimization-value">{{ getSafetyStock(forecast) }} units</span>
-                </div>
-                <div class="optimization-item">
-                  <span class="optimization-label">Reorder Point</span>
-                  <span class="optimization-value">{{ getReorderPoint(forecast) }} units</span>
                 </div>
               </div>
             </div>
@@ -189,16 +185,16 @@
                   <span>Order <strong>{{ getRecommendedStock(forecast) }} units</strong> to maintain optimal inventory</span>
                 </li>
                 <li>
-                  <i class="fas fa-exclamation-triangle"></i>
-                  <span>Set reorder alert at <strong>{{ getReorderPoint(forecast) }} units</strong> to prevent stockouts</span>
-                </li>
-                <li>
                   <i class="fas fa-calendar-check"></i>
                   <span>Review inventory levels every <strong>{{ getReviewPeriod() }} days</strong></span>
                 </li>
                 <li v-if="getPeakDemandDay(forecast)">
                   <i class="fas fa-arrow-up"></i>
                   <span>Prepare for peak demand on <strong>{{ getPeakDemandDay(forecast) }}</strong></span>
+                </li>
+                <li v-if="getStockAlert(forecast)">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  <span>{{ getStockAlert(forecast) }}</span>
                 </li>
               </ul>
             </div>
@@ -267,7 +263,8 @@ export default {
       forecasts: [],
       isGenerating: false,
       error: null,
-      forecastDays: '30',
+      forecastPeriod: 'weekly',
+      selectedQuarter: 'Q1',
       forecastMethod: 'seasonal',
       tooltipVisible: false,
       tooltipDate: '',
@@ -275,12 +272,67 @@ export default {
       dateBreakpoints: []
     };
   },
+  computed: {
+    forecastDays() {
+      const periodMap = {
+        'daily': 1,
+        'weekly': 7,
+        'monthly': 30,
+        'quarterly': 90,
+        'annually': 365
+      };
+      return periodMap[this.forecastPeriod] || 7;
+    }
+  },
   methods: {
     calculateAverage(forecastData) {
       if (!forecastData || !forecastData.length) return '0';
       
       const sum = forecastData.reduce((total, point) => total + point.yhat, 0);
       return (sum / forecastData.length).toFixed(1);
+    },
+    
+    getCurrentStock(forecast) {
+      // Try different possible property names for stock
+      const stock = forecast.current_stock || 
+                   forecast.stock_quantity || 
+                   forecast.stock || 
+                   forecast.total_stock ||
+                   0;
+      return parseInt(stock) || 0;
+    },
+    
+    getStockStatusClass(stock) {
+      const stockLevel = parseInt(stock) || 0;
+      if (stockLevel <= 10) return 'critical-stock';
+      if (stockLevel <= 30) return 'low-stock';
+      return 'normal-stock';
+    },
+    
+    getStockStatusText(stock) {
+      const stockLevel = parseInt(stock) || 0;
+      if (stockLevel === 0) return 'Out of Stock';
+      if (stockLevel <= 10) return 'Critical Stock';
+      if (stockLevel <= 30) return 'Low Stock';
+      return 'Normal Stock';
+    },
+    
+    getStockAlert(forecast) {
+      const currentStock = this.getCurrentStock(forecast);
+      const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
+      const totalDemand = avgDemand * this.forecastDays;
+      
+     
+      if (currentStock < totalDemand) {
+        const shortfall = Math.ceil(totalDemand - currentStock);
+        return `Stock may run out during forecast period. Consider ordering ${shortfall} additional units`;
+      }
+      
+      if (currentStock <= 10) {
+        return 'Critical stock level - immediate attention required';
+      }
+      
+      return null;
     },
     
     calculatePointHeight(point, forecast) {
@@ -341,33 +393,22 @@ export default {
     
     getRecommendedStock(forecast) {
       const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
-      const days = parseInt(this.forecastDays);
+      const days = this.forecastDays;
       const totalDemand = avgDemand * days;
       
       // Add 20% buffer for safety stock
       return Math.ceil(totalDemand * 1.2);
     },
     
-    getSafetyStock(forecast) {
-      const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
-      const days = parseInt(this.forecastDays);
-      
-      // Safety stock = 20% of total predicted demand
-      return Math.ceil(avgDemand * days * 0.2);
-    },
-    
-    getReorderPoint(forecast) {
-      const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
-      
-      // Reorder point = average daily demand * lead time (assume 7 days) + safety stock
-      const leadTime = 7;
-      const safetyStock = Math.ceil(avgDemand * 0.2);
-      return Math.ceil(avgDemand * leadTime + safetyStock);
-    },
-    
     getReviewPeriod() {
-      const days = Math.min(14, Math.floor(parseInt(this.forecastDays) / 3));
-      return Math.max(7, days);
+      const periodMap = {
+        'daily': 1,
+        'weekly': 3,
+        'monthly': 7,
+        'quarterly': 14,
+        'annually': 30
+      };
+      return periodMap[this.forecastPeriod] || 7;
     },
     
     getPeakDemandDay(forecast) {
@@ -391,6 +432,28 @@ export default {
         day: 'numeric',
         weekday: 'short'
       });
+    },
+    
+    getPeriodLabel() {
+      const labels = {
+        'daily': 'Daily',
+        'weekly': 'Weekly',
+        'monthly': 'Monthly',
+        'quarterly': `Quarterly (${this.selectedQuarter})`,
+        'annually': 'Annually'
+      };
+      return labels[this.forecastPeriod] || 'Weekly';
+    },
+    
+    getPeriodUnit() {
+      const units = {
+        'daily': 'Day',
+        'weekly': 'Week',
+        'monthly': 'Month',
+        'quarterly': 'Quarter',
+        'annually': 'Year'
+      };
+      return units[this.forecastPeriod] || 'Week';
     },
     
     getMethodLabel() {
@@ -524,7 +587,13 @@ export default {
           method = 'prophet';
         }
         
-        const response = await fetch(`http://localhost:7904/api/admin/forecasts?type=demand&days=${this.forecastDays}&method=${method}`, {
+        // Add quarter parameter if quarterly period is selected
+        let queryParams = `type=demand&days=${this.forecastDays}&method=${method}`;
+        if (this.forecastPeriod === 'quarterly') {
+          queryParams += `&quarter=${this.selectedQuarter}`;
+        }
+        
+        const response = await fetch(`http://localhost:7904/api/admin/forecasts?${queryParams}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -615,6 +684,20 @@ export default {
   position: relative;
 }
 
+.analysis-button {
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.analysis-button:hover {
+  background-color: #45a049;
+}
+
 .forecast-header {
   margin-bottom: 2rem;
 }
@@ -654,11 +737,28 @@ export default {
 }
 
 .forecast-period select,
-.forecast-method select {
+.forecast-method select,
+.quarter-selection select {
   padding: 0.75rem;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   min-width: 180px;
+  font-size: 0.9rem;
+}
+
+.quarter-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quarter-selection label {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.quarter-selection select {
+  min-width: 200px;
 }
 
 .generate-btn {
@@ -884,7 +984,7 @@ export default {
 
 .demand-metrics {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
 }
 
@@ -914,6 +1014,18 @@ export default {
   font-size: 1rem;
   font-weight: 600;
   color: #1e293b;
+}
+
+.metric-value.critical-stock {
+  color: #dc2626;
+}
+
+.metric-value.low-stock {
+  color: #f59e0b;
+}
+
+.metric-value.normal-stock {
+  color: #16a34a;
 }
 
 .trend-indicator {
@@ -1079,6 +1191,7 @@ export default {
   font-weight: 600;
   color: #1e293b;
 }
+
 
 .inventory-recommendations {
   background-color: #f0fdf4;
