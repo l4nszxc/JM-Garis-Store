@@ -7,28 +7,12 @@
     
     <div class="admin-content">
       <div class="forecast-header">
-        <h1>Sales & Demand Forecasting</h1>
-        <p class="description">Generate predictions for future sales and inventory requirements based on your historical sales data.</p>
+        <h1>Demand Forecasting & Inventory Optimization</h1>
+        <p class="description">Analyze historical sales data to predict inventory needs and optimize stock levels, reducing shortages and overstock situations.</p>
       </div>
       
       <div class="forecast-actions">
         <div class="forecast-options">
-          <label>Forecast type:</label>
-          <div class="forecast-type-selector">
-            <button 
-              @click="forecastType = 'sales'" 
-              :class="['forecast-type-btn', { active: forecastType === 'sales' }]"
-            >
-              <i class="fas fa-chart-line"></i> Sales Forecasting
-            </button>
-            <button 
-              @click="forecastType = 'demand'" 
-              :class="['forecast-type-btn', { active: forecastType === 'demand' }]"
-            >
-              <i class="fas fa-cubes"></i> Demand Forecasting
-            </button>
-          </div>
-          
           <label>Forecast period:</label>
           <div class="forecast-period">
             <select v-model="forecastDays">
@@ -43,10 +27,8 @@
           <label>Analysis method:</label>
           <div class="forecast-method">
             <select v-model="forecastMethod">
-              <option value="linear">Linear Trend</option>
-              <option value="moving-avg">Moving Average</option>
-              <option value="seasonal">Seasonal Analysis</option>
-              <option value="advanced">Advanced ML</option>
+              <option value="seasonal">Seasonal Pattern Analysis</option>
+              <option value="advanced">Advanced ML with Seasonality</option>
             </select>
           </div>
         </div>
@@ -56,8 +38,8 @@
           class="generate-btn"
           :disabled="isGenerating"
         >
-          <i class="fas fa-magic"></i>
-          {{ isGenerating ? 'Generating...' : 'Generate Forecasts' }}
+          <i class="fas fa-chart-line"></i>
+          {{ isGenerating ? 'Analyzing...' : 'Generate Demand Forecast' }}
         </button>
       </div>
       
@@ -71,27 +53,25 @@
           <i class="fas fa-chart-line"></i>
           <div class="dots"><span>.</span><span>.</span><span>.</span></div>
         </div>
-        <p>Analyzing historical data and generating forecasts...</p>
-        <p class="generating-detail">This may take a few moments as we train the model using your sales history.</p>
+        <p>Analyzing historical sales data and seasonal patterns...</p>
+        <p class="generating-detail">Calculating optimal inventory levels and identifying demand trends.</p>
       </div>
       
       <div v-if="!isGenerating && forecasts.length" class="forecasts-container">
         <h2>
-          {{ forecastType === 'sales' ? 'Sales Forecast' : 'Demand Forecast' }}
+          Demand Forecast & Inventory Optimization
           <span class="forecast-period-badge">Next {{ forecastDays }} days</span>
           <span class="method-badge">{{ getMethodLabel() }}</span>
         </h2>
         
         <div class="forecast-explanation">
           <div class="explanation-card">
-            <i class="fas fa-lightbulb"></i>
+            <i class="fas fa-cubes"></i>
             <div>
-              <h3>{{ forecastType === 'sales' ? 'Sales Forecasting' : 'Demand Forecasting' }}</h3>
-              <p v-if="forecastType === 'sales'">
-                Predict future sales for products/categories. Helps with inventory planning and revenue projections.
-              </p>
-              <p v-else>
-                Estimate how many units of a product will be needed in the future. Prevents stockouts or overstocking.
+              <h3>Demand Forecasting System</h3>
+              <p>
+                Predicts future inventory needs based on historical sales patterns, seasonal trends, and product performance. 
+                Helps prevent stockouts and reduce overstock situations through data-driven insights.
               </p>
               <p class="model-info">
                 <i class="fas fa-info-circle"></i>
@@ -118,21 +98,19 @@
               </div>
             </div>
             
-            <div class="forecast-metrics">
+            <div class="demand-metrics">
               <div class="metric">
-                <span class="metric-label">Current Daily {{ forecastType === 'sales' ? 'Revenue' : 'Sales' }}</span>
-                <span class="metric-value">{{ forecastType === 'sales' ? '₱' : '' }}{{ forecast.current_sales }}{{ forecastType === 'demand' ? ' units' : '' }}</span>
+                <span class="metric-label">Current Stock Level</span>
+                <span class="metric-value">{{ forecast.current_stock || 'N/A' }} units</span>
               </div>
               
               <div class="metric highlight">
-                <span class="metric-label">Forecasted {{ forecastType === 'sales' ? 'Revenue' : 'Demand' }}</span>
-                <span class="metric-value">
-                  {{ forecastType === 'sales' ? '₱' : '' }}{{ calculateAverage(forecast.forecast_data) }}{{ forecastType === 'sales' ? '' : ' units' }}/day
-                </span>
+                <span class="metric-label">Predicted Daily Demand</span>
+                <span class="metric-value">{{ calculateAverage(forecast.forecast_data) }} units/day</span>
               </div>
               
               <div class="metric">
-                <span class="metric-label">Trend</span>
+                <span class="metric-label">Trend Analysis</span>
                 <div class="trend-indicator" :class="getTrendClass(forecast)">
                   <i :class="getTrendIcon(forecast)"></i>
                   {{ getTrendLabel(forecast) }}
@@ -140,13 +118,13 @@
               </div>
             </div>
             
-            <div class="forecast-chart">
+            <div class="demand-chart">
               <div class="chart-header">
-                <h4>{{ forecastDays }}-Day Forecast</h4>
+                <h4>{{ forecastDays }}-Day Demand Forecast</h4>
                 <div class="chart-legend">
                   <div class="legend-item">
                     <div class="legend-dot prediction"></div>
-                    <span>Prediction</span>
+                    <span>Predicted Demand</span>
                   </div>
                   <div class="legend-item">
                     <div class="legend-dot confidence"></div>
@@ -185,47 +163,63 @@
               </div>
             </div>
             
-            <div class="forecast-confidence">
-              <span class="confidence-label">Model Confidence</span>
-              <div class="confidence-meter">
-                <div class="confidence-bar" :style="{ width: getConfidenceWidth(forecast) }"></div>
+            <div class="inventory-optimization">
+              <h4>Inventory Optimization</h4>
+              <div class="optimization-metrics">
+                <div class="optimization-item">
+                  <span class="optimization-label">Recommended Stock Level</span>
+                  <span class="optimization-value">{{ getRecommendedStock(forecast) }} units</span>
+                </div>
+                <div class="optimization-item">
+                  <span class="optimization-label">Safety Stock Buffer</span>
+                  <span class="optimization-value">{{ getSafetyStock(forecast) }} units</span>
+                </div>
+                <div class="optimization-item">
+                  <span class="optimization-label">Reorder Point</span>
+                  <span class="optimization-value">{{ getReorderPoint(forecast) }} units</span>
+                </div>
               </div>
-              <span class="confidence-value">{{ getConfidencePercent(forecast) }}%</span>
             </div>
             
-            <div class="forecast-recommendations">
-              <h4>Recommendations</h4>
+            <div class="inventory-recommendations">
+              <h4>Inventory Recommendations</h4>
               <ul class="recommendations-list">
-                <li v-if="forecastType === 'demand'">
+                <li>
                   <i class="fas fa-shopping-cart"></i>
                   <span>Order <strong>{{ getRecommendedStock(forecast) }} units</strong> to maintain optimal inventory</span>
                 </li>
-                <li v-else>
-                  <i class="fas fa-chart-pie"></i>
-                  <span>Expected revenue: <strong>₱{{ getExpectedRevenue(forecast) }}</strong> in next {{ forecastDays }} days</span>
+                <li>
+                  <i class="fas fa-exclamation-triangle"></i>
+                  <span>Set reorder alert at <strong>{{ getReorderPoint(forecast) }} units</strong> to prevent stockouts</span>
                 </li>
                 <li>
-                  <i class="fas fa-history"></i>
-                  <span>Schedule next inventory review in <strong>{{ getReviewDate() }}</strong></span>
+                  <i class="fas fa-calendar-check"></i>
+                  <span>Review inventory levels every <strong>{{ getReviewPeriod() }} days</strong></span>
                 </li>
                 <li v-if="getPeakDemandDay(forecast)">
-                  <i class="fas fa-calendar-day"></i>
+                  <i class="fas fa-arrow-up"></i>
                   <span>Prepare for peak demand on <strong>{{ getPeakDemandDay(forecast) }}</strong></span>
                 </li>
               </ul>
             </div>
             
-            <div class="forecast-seasonal-info" v-if="forecastMethod === 'seasonal' && getSeasonal(forecast)">
-              <h4>Seasonal Patterns</h4>
+            <div class="seasonal-analysis" v-if="getSeasonal(forecast)">
+              <h4>Seasonal Pattern Analysis</h4>
               <div class="seasonal-pattern">
                 <div class="pattern-item">
                   <i class="fas fa-arrow-up text-success"></i>
-                  <span>Peak: {{ getSeasonal(forecast).peak }}</span>
+                  <span>Peak Demand: {{ getSeasonal(forecast).peak }}</span>
                 </div>
                 <div class="pattern-item">
-                  <i class="fas fa-arrow-down text-danger"></i>
-                  <span>Low: {{ getSeasonal(forecast).low }}</span>
+                  <i class="fas fa-arrow-down text-warning"></i>
+                  <span>Low Demand: {{ getSeasonal(forecast).low }}</span>
                 </div>
+              </div>
+              <div class="seasonal-insights">
+                <p class="insight">
+                  <i class="fas fa-lightbulb"></i>
+                  {{ getSeasonalInsight(forecast) }}
+                </p>
               </div>
             </div>
           </div>
@@ -233,12 +227,12 @@
       </div>
       
       <div v-if="!isGenerating && !forecasts.length && !error" class="empty-state">
-        <i class="fas fa-chart-bar"></i>
-        <h3>No Forecasts Generated Yet</h3>
-        <p>Click the "Generate Forecasts" button to create sales and demand projections based on your historical data.</p>
+        <i class="fas fa-cubes"></i>
+        <h3>No Demand Forecast Available</h3>
+        <p>Generate demand forecasts to optimize your inventory levels and prevent stockouts.</p>
         <div class="training-info">
-          <i class="fas fa-brain"></i>
-          <p>The forecasting model needs historical sales data to make accurate predictions. More historical data leads to better forecasts.</p>
+          <i class="fas fa-chart-bar"></i>
+          <p>The system analyzes historical sales data to identify trends and seasonal patterns for accurate demand prediction.</p>
         </div>
       </div>
 
@@ -273,9 +267,8 @@ export default {
       forecasts: [],
       isGenerating: false,
       error: null,
-      forecastType: 'sales', // 'sales' or 'demand'
       forecastDays: '30',
-      forecastMethod: 'linear', // 'linear', 'moving-avg', 'seasonal', 'advanced'
+      forecastMethod: 'seasonal',
       tooltipVisible: false,
       tooltipDate: '',
       tooltipValue: '',
@@ -286,12 +279,8 @@ export default {
     calculateAverage(forecastData) {
       if (!forecastData || !forecastData.length) return '0';
       
-      const sum = forecastData.reduce((total, point) => {
-        const value = this.forecastType === 'sales' ? point.yhat * point.price : point.yhat;
-        return total + value;
-      }, 0);
-      
-      return (sum / forecastData.length).toFixed(2);
+      const sum = forecastData.reduce((total, point) => total + point.yhat, 0);
+      return (sum / forecastData.length).toFixed(1);
     },
     
     calculatePointHeight(point, forecast) {
@@ -304,7 +293,6 @@ export default {
     },
     
     calculatePointLowerBound(point, forecast) {
-      const values = forecast.forecast_data.map(p => p.yhat_lower);
       const allValues = forecast.forecast_data.flatMap(p => [p.yhat, p.yhat_lower, p.yhat_upper]);
       const min = Math.min(...allValues);
       const max = Math.max(...allValues);
@@ -346,43 +334,40 @@ export default {
       const change = last - first;
       const percentChange = first === 0 ? 0 : (change / first) * 100;
       
-      if (Math.abs(percentChange) < 1) return 'Stable';
+      if (Math.abs(percentChange) < 1) return 'Stable Demand';
       
       return `${Math.abs(percentChange).toFixed(1)}% ${percentChange > 0 ? 'Increase' : 'Decrease'}`;
     },
     
-    getConfidenceWidth(forecast) {
-      // Calculate confidence based on model accuracy and data quality
-      if (!forecast.model_accuracy) return '75%';
-      
-      const accuracy = parseFloat(forecast.model_accuracy) || 0;
-      return `${Math.max(50, Math.min(98, accuracy))}%`;
-    },
-    
-    getConfidencePercent(forecast) {
-      return parseInt(this.getConfidenceWidth(forecast));
-    },
-    
     getRecommendedStock(forecast) {
       const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
-      // Add buffer based on confidence level
-      const confidencePercent = this.getConfidencePercent(forecast);
-      const buffer = 1 + ((100 - confidencePercent) / 100); // Lower confidence = higher buffer
-      return Math.ceil(avgDemand * (parseInt(this.forecastDays) / 7) * buffer);
-    },
-    
-    getExpectedRevenue(forecast) {
-      const avgSales = parseFloat(this.calculateAverage(forecast.forecast_data));
       const days = parseInt(this.forecastDays);
-      return (avgSales * days).toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
+      const totalDemand = avgDemand * days;
+      
+      // Add 20% buffer for safety stock
+      return Math.ceil(totalDemand * 1.2);
     },
     
-    getReviewDate() {
-      const days = Math.min(14, Math.floor(parseInt(this.forecastDays) / 2));
-      return `${days} days`;
+    getSafetyStock(forecast) {
+      const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
+      const days = parseInt(this.forecastDays);
+      
+      // Safety stock = 20% of total predicted demand
+      return Math.ceil(avgDemand * days * 0.2);
+    },
+    
+    getReorderPoint(forecast) {
+      const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
+      
+      // Reorder point = average daily demand * lead time (assume 7 days) + safety stock
+      const leadTime = 7;
+      const safetyStock = Math.ceil(avgDemand * 0.2);
+      return Math.ceil(avgDemand * leadTime + safetyStock);
+    },
+    
+    getReviewPeriod() {
+      const days = Math.min(14, Math.floor(parseInt(this.forecastDays) / 3));
+      return Math.max(7, days);
     },
     
     getPeakDemandDay(forecast) {
@@ -398,7 +383,7 @@ export default {
         }
       });
       
-      if (highestIndex === 0) return null; // No peak if it's the first day
+      if (highestIndex === 0) return null;
       
       const peakDate = new Date(forecast.forecast_data[highestIndex].ds);
       return peakDate.toLocaleDateString('en-US', { 
@@ -410,10 +395,8 @@ export default {
     
     getMethodLabel() {
       const methods = {
-        'linear': 'Linear Trend Analysis',
-        'moving-avg': 'Moving Average',
-        'seasonal': 'Seasonal Pattern Detection',
-        'advanced': 'Advanced Machine Learning'
+        'seasonal': 'Seasonal Pattern Analysis',
+        'advanced': 'Advanced ML with Seasonality'
       };
       return methods[this.forecastMethod] || this.forecastMethod;
     },
@@ -429,7 +412,7 @@ export default {
       const accuracy = parseFloat(forecast.model_accuracy) || 70;
       if (accuracy >= 85) return 'High Accuracy';
       if (accuracy >= 70) return 'Medium Accuracy';
-      return 'Low Confidence';
+      return 'Requires Review';
     },
     
     getTrainingDataInfo() {
@@ -438,18 +421,19 @@ export default {
       const sample = this.forecasts[0];
       if (!sample.training_size && !sample.validation_size) return '';
       
-      return `Model trained on ${sample.training_size || 0} data points, validated on ${sample.validation_size || 0} data points`;
+      return `Analyzed ${sample.training_size || 0} historical data points with ${sample.validation_size || 0} validation samples`;
     },
     
     getSeasonal(forecast) {
-      if (!forecast || (this.forecastMethod !== 'seasonal' && this.forecastMethod !== 'advanced')) {
-        return null;
-      }
-      
       return forecast.seasonal_patterns || forecast.seasonal_info || {
         peak: 'Weekends',
         low: 'Mid-week'
       };
+    },
+    
+    getSeasonalInsight(forecast) {
+      const seasonal = this.getSeasonal(forecast);
+      return `Historical data shows higher demand during ${seasonal.peak} and lower demand during ${seasonal.low}. Plan inventory accordingly.`;
     },
         
     showTooltip(event, point, index) {
@@ -462,9 +446,7 @@ export default {
         weekday: 'short'
       });
       
-      this.tooltipValue = this.forecastType === 'sales' 
-        ? `₱${(point.yhat * point.price).toFixed(2)}`
-        : `${point.yhat.toFixed(1)} units`;
+      this.tooltipValue = `${point.yhat.toFixed(1)} units demand`;
         
       const tooltip = this.$refs.tooltip;
       if (tooltip) {
@@ -490,13 +472,9 @@ export default {
       
       const data = forecast.forecast_data;
       const totalDays = data.length;
-      
-      // Generate date breakpoints
       const breakpoints = [];
       
-      // For shorter periods (7-14 days), show more markers
       if (totalDays <= 14) {
-        // Show every other day
         for (let i = 0; i < totalDays; i += 2) {
           const date = new Date(data[i].ds);
           breakpoints.push({
@@ -505,7 +483,6 @@ export default {
           });
         }
       } else if (totalDays <= 30) {
-        // For medium periods show weekly markers
         for (let i = 0; i < totalDays; i += 7) {
           const date = new Date(data[i].ds);
           breakpoints.push({
@@ -514,8 +491,7 @@ export default {
           });
         }
       } else {
-        // For longer periods show fewer markers
-        const interval = Math.floor(totalDays / 4); // 4 markers spread out
+        const interval = Math.floor(totalDays / 4);
         for (let i = 0; i < totalDays; i += interval) {
           const date = new Date(data[i].ds);
           breakpoints.push({
@@ -525,7 +501,6 @@ export default {
         }
       }
       
-      // Always show the last date
       const lastDate = new Date(data[totalDays - 1].ds);
       breakpoints.push({
         index: totalDays - 1,
@@ -544,13 +519,12 @@ export default {
       try {
         const token = localStorage.getItem('token');
         
-        // Map the forecast method correctly
         let method = this.forecastMethod;
         if (method === 'advanced') {
-          method = 'prophet';  // Use prophet for advanced
+          method = 'prophet';
         }
         
-        const response = await fetch(`http://localhost:7904/api/admin/forecasts?type=${this.forecastType}&days=${this.forecastDays}&method=${method}`, {
+        const response = await fetch(`http://localhost:7904/api/admin/forecasts?type=demand&days=${this.forecastDays}&method=${method}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -558,25 +532,21 @@ export default {
         
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to generate forecasts');
+          throw new Error(errorData.message || 'Failed to generate demand forecast');
         }
         
         const data = await response.json();
         
         if (data.status === 'error') {
-          throw new Error(data.message || 'Failed to generate forecasts');
+          throw new Error(data.message || 'Failed to generate demand forecast');
         }
         
-        // Process and normalize the forecast data
         this.forecasts = Object.values(data.data || {}).map(item => {
-          // Ensure we have price information for forecasts
           return {
             ...item,
             forecast_data: Array.isArray(item.forecast_data) ? 
               item.forecast_data.map(point => ({
                 ...point,
-                price: item.price || 100,
-                // Ensure forecast values are non-negative
                 yhat: Math.max(0, point.yhat),
                 yhat_lower: Math.max(0, point.yhat_lower),
                 yhat_upper: Math.max(0, point.yhat_upper)
@@ -584,27 +554,13 @@ export default {
           };
         });
         
-        // Add seasonal information from the Python model
-        if (this.forecastMethod === 'seasonal' || this.forecastMethod === 'advanced') {
-          this.forecasts = this.forecasts.map(forecast => {
-            return {
-              ...forecast,
-              seasonal_info: forecast.seasonal_patterns || {
-                peak: 'Weekends',
-                low: 'Mid-week'
-              }
-            };
-          });
-        }
-        
-        // Generate date breakpoints if we have forecasts
         if (this.forecasts.length > 0) {
           this.generateDateBreakpoints(this.forecasts[0]);
         }
         
       } catch (error) {
-        console.error('Error generating forecasts:', error);
-        this.error = error.message || 'Failed to generate forecasts. Please try again.';
+        console.error('Error generating demand forecast:', error);
+        this.error = error.message || 'Failed to generate demand forecast. Please try again.';
       } finally {
         this.isGenerating = false;
       }
@@ -650,7 +606,7 @@ export default {
   font-family: Arial, sans-serif;
   min-height: 100vh;
   background-color: #f5f5f5;
-  padding-left: 250px; /* Match sidebar width */
+  padding-left: 250px;
 }
 
 .admin-content {
@@ -697,41 +653,17 @@ export default {
   color: #64748b;
 }
 
-.forecast-type-selector {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.forecast-type-btn {
-  padding: 0.75rem 1.25rem;
-  border: 1px solid #e2e8f0;
-  background: white;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #64748b;
-  transition: all 0.2s;
-}
-
-.forecast-type-btn.active {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
-}
-
 .forecast-period select,
 .forecast-method select {
   padding: 0.75rem;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
-  min-width: 140px;
+  min-width: 180px;
 }
 
 .generate-btn {
   padding: 0.75rem 1.5rem;
-  background: #10b981;
+  background: #3b82f6;
   color: white;
   border: none;
   border-radius: 8px;
@@ -749,61 +681,8 @@ export default {
 }
 
 .generate-btn:not(:disabled):hover {
-  background: #059669;
+  background: #2563eb;
   transform: translateY(-1px);
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 5rem 2rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  text-align: center;
-}
-
-.empty-state i {
-  font-size: 4rem;
-  color: #e2e8f0;
-  margin-bottom: 1.5rem;
-}
-
-.empty-state h3 {
-  font-size: 1.5rem;
-  color: #1e293b;
-  margin-bottom: 1rem;
-}
-
-.empty-state p {
-  color: #64748b;
-  max-width: 500px;
-  line-height: 1.6;
-}
-
-.training-info {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  background-color: #f0f9ff;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-top: 2rem;
-  text-align: left;
-  max-width: 500px;
-}
-
-.training-info i {
-  font-size: 1.5rem;
-  color: #3b82f6;
-  margin-top: 0.25rem;
-}
-
-.training-info p {
-  margin: 0;
-  font-size: 0.9rem;
 }
 
 .loading-container {
@@ -864,12 +743,6 @@ export default {
   }
 }
 
-.generating-detail {
-  color: #94a3b8;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-}
-
 .error-message {
   background-color: #fee2e2;
   color: #b91c1c;
@@ -879,10 +752,6 @@ export default {
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 2rem;
-}
-
-.forecasts-container {
-  margin-top: 2rem;
 }
 
 .forecasts-container h2 {
@@ -905,15 +774,6 @@ export default {
   font-weight: 500;
 }
 
-.method-badge {
-  background-color: #f0fdf4;
-  color: #166534;
-}
-
-.forecast-explanation {
-  margin-bottom: 2rem;
-}
-
 .explanation-card {
   background-color: #f0f9ff;
   border-left: 4px solid #3b82f6;
@@ -921,6 +781,7 @@ export default {
   border-radius: 8px;
   display: flex;
   gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .explanation-card i {
@@ -954,7 +815,7 @@ export default {
 
 .forecast-items {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 2rem;
 }
 
@@ -970,8 +831,8 @@ export default {
 }
 
 .forecast-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 .forecast-card-header {
@@ -1021,7 +882,7 @@ export default {
   color: #b91c1c;
 }
 
-.forecast-metrics {
+.demand-metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
@@ -1037,7 +898,7 @@ export default {
 
 .metric.highlight {
   background-color: #f0fdf4;
-  padding: 0.5rem;
+  padding: 0.75rem 0.5rem;
   border-radius: 8px;
   border: 1px solid #dcfce7;
 }
@@ -1081,7 +942,7 @@ export default {
   color: #475569;
 }
 
-.forecast-chart {
+.demand-chart {
   padding: 0.5rem 0;
 }
 
@@ -1177,83 +1038,55 @@ export default {
   white-space: nowrap;
 }
 
-.tooltip {
-  position: fixed;
-  background-color: #1e293b;
-  color: white;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  pointer-events: none;
-  z-index: 1000;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transform: translate(-50%, -100%);
+.inventory-optimization {
+  background-color: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
 }
 
-.tooltip::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -5px;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid #1e293b;
+.inventory-optimization h4 {
+  font-size: 0.9rem;
+  color: #475569;
+  margin: 0 0 0.75rem 0;
 }
 
-.tooltip-date {
-  font-weight: 500;
-  margin-bottom: 0.25rem;
-}
-
-.tooltip-value {
-  font-weight: 600;
-}
-
-.forecast-confidence {
+.optimization-metrics {
   display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.optimization-item {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.confidence-label {
-  font-size: 0.8rem;
+.optimization-item:last-child {
+  border-bottom: none;
+}
+
+.optimization-label {
+  font-size: 0.85rem;
   color: #64748b;
-  min-width: 120px;
 }
 
-.confidence-meter {
-  flex: 1;
-  height: 6px;
-  background-color: #e2e8f0;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.confidence-bar {
-  height: 100%;
-  background-color: #3b82f6;
-  border-radius: 3px;
-  transition: width 0.5s;
-}
-
-.confidence-value {
-  font-size: 0.8rem;
+.optimization-value {
+  font-size: 0.9rem;
   font-weight: 600;
   color: #1e293b;
-  min-width: 45px;
-  text-align: right;
 }
 
-.forecast-recommendations {
-  background-color: #f8fafc;
+.inventory-recommendations {
+  background-color: #f0fdf4;
   padding: 1rem;
   border-radius: 8px;
 }
 
-.forecast-recommendations h4 {
+.inventory-recommendations h4 {
   font-size: 0.9rem;
   color: #475569;
   margin: 0 0 0.5rem 0;
@@ -1286,12 +1119,12 @@ export default {
   font-weight: 600;
 }
 
-.forecast-seasonal-info {
+.seasonal-analysis {
   border-top: 1px solid #e2e8f0;
   padding-top: 1rem;
 }
 
-.forecast-seasonal-info h4 {
+.seasonal-analysis h4 {
   font-size: 0.9rem;
   color: #475569;
   margin: 0 0 0.5rem 0;
@@ -1301,6 +1134,7 @@ export default {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .pattern-item {
@@ -1315,20 +1149,115 @@ export default {
   color: #16a34a;
 }
 
-.text-danger {
-  color: #dc2626;
+.text-warning {
+  color: #ea580c;
+}
+
+.seasonal-insights {
+  background-color: #fffbeb;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border-left: 3px solid #f59e0b;
+}
+
+.insight {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #92400e;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  line-height: 1.4;
+}
+
+.insight i {
+  color: #f59e0b;
+  margin-top: 0.1rem;
+}
+
+.tooltip {
+  position: fixed;
+  background-color: #1e293b;
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translate(-50%, -100%);
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #1e293b;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.empty-state i {
+  font-size: 4rem;
+  color: #e2e8f0;
+  margin-bottom: 1.5rem;
+}
+
+.empty-state h3 {
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+
+.empty-state p {
+  color: #64748b;
+  max-width: 500px;
+  line-height: 1.6;
+}
+
+.training-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background-color: #f0f9ff;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 2rem;
+  text-align: left;
+  max-width: 500px;
+}
+
+.training-info i {
+  font-size: 1.5rem;
+  color: #3b82f6;
+  margin-top: 0.25rem;
+}
+
+.training-info p {
+  margin: 0;
+  font-size: 0.9rem;
 }
 
 /* Responsive Design */
-@media (max-width: 1200px) {
-  .forecast-metrics {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
 @media (max-width: 768px) {
   .admin-container {
-    padding-left: 60px; /* Match collapsed sidebar width */
+    padding-left: 60px;
   }
   
   .admin-content {
@@ -1346,20 +1275,6 @@ export default {
     align-items: flex-start;
   }
   
-  .forecast-type-selector {
-    width: 100%;
-  }
-  
-  .forecast-type-btn {
-    flex: 1;
-    justify-content: center;
-  }
-  
-  .forecast-period select,
-  .forecast-method select {
-    width: 100%;
-  }
-  
   .generate-btn {
     width: 100%;
     justify-content: center;
@@ -1369,30 +1284,8 @@ export default {
     grid-template-columns: 1fr;
   }
   
-  .chart-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .forecast-card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  
-  .accuracy-badge {
-    align-self: flex-start;
-  }
-  
-  .forecast-metrics {
+  .demand-metrics {
     grid-template-columns: 1fr;
-  }
-  
-  .metric {
-    padding: 0.5rem;
   }
 }
 </style>
