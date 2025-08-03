@@ -374,6 +374,15 @@ exports.getDashboardStats = async (req, res) => {
       WHERE role = 'user'
     `);
 
+    // Get staff stats
+    const [staffStats] = await db.execute(`
+      SELECT 
+        COUNT(*) as totalStaff,
+        COUNT(*) as activeStaff
+      FROM users
+      WHERE role = 'staff'
+    `);
+
     // Get top staff
     const [topStaff] = await db.execute(`
       SELECT 
@@ -397,6 +406,8 @@ exports.getDashboardStats = async (req, res) => {
       potentialGrowth: potentialGrowth,
       totalUsers: userStats[0].totalUsers || 0,
       newUsers: userStats[0].newUsers || 0,
+      totalStaff: staffStats[0].totalStaff || 0,
+      activeStaff: staffStats[0].activeStaff || 0,
       topStaff: topStaff || []
     });
 
@@ -2551,16 +2562,295 @@ exports.downloadLowStockReport = async (req, res) => {
         lowStockSheet.getRow(1).height = 25;
         lowStockSheet.getRow(2).height = 20;
         
-        // Set response headers
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename="low_stock_report_${new Date().toISOString().split('T')[0]}.xlsx"`);
+        res.setHeader('Content-Disposition', `attachment; filename=low-stock-report-${formattedDate}.xlsx`);
         
-        // Write to response
         await workbook.xlsx.write(res);
         res.end();
         
     } catch (error) {
         console.error('Error generating low stock report:', error);
-        res.status(500).json({ message: 'Failed to generate low stock report' });
+        res.status(500).json({ message: 'Error generating low stock report' });
     }
+};
+
+// Staff Analytics Functions
+exports.getStaffAnalyticsSummary = async (req, res) => {
+  try {
+    const period = req.query.period || 'week';
+    
+    // Get time period condition
+    let timePeriod;
+    switch(period) {
+      case 'day':
+        timePeriod = 'DATE(o.created_at) = CURRENT_DATE()';
+        break;
+      case 'week':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)';
+        break;
+      case 'month':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)';
+        break;
+      case 'quarter':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)';
+        break;
+      case 'year':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY)';
+        break;
+      default:
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)';
+    }
+
+    // Get total staff count
+    const [staffCount] = await db.execute(`
+      SELECT 
+        COUNT(*) as totalStaff,
+        COUNT(*) as activeStaff
+      FROM users
+      WHERE role = 'staff'
+    `);
+
+    // Get total sales and orders from staff
+    const [salesData] = await db.execute(`
+      SELECT 
+        COUNT(DISTINCT o.order_id) as totalOrdersAccepted,
+        COUNT(DISTINCT CASE WHEN o.status = 'paid' THEN o.order_id END) as totalSales,
+        COALESCE(SUM(CASE WHEN o.status = 'paid' THEN o.total_amount END), 0) as totalSalesAmount
+      FROM orders o
+      INNER JOIN users u ON o.accepted_by = u.id
+      WHERE u.role = 'staff' AND ${timePeriod}
+    `);
+
+    // Calculate average performance
+    const totalStaff = staffCount[0].totalStaff || 1;
+    const totalOrdersAccepted = salesData[0].totalOrdersAccepted || 0;
+    const avgPerformance = Math.round((totalOrdersAccepted / totalStaff) * 10) / 10;
+
+    res.json({
+      totalStaff: staffCount[0].totalStaff || 0,
+      activeStaff: staffCount[0].activeStaff || 0,
+      totalSales: salesData[0].totalSales || 0,
+      totalOrdersAccepted: totalOrdersAccepted,
+      avgPerformance: avgPerformance || 0
+    });
+
+  } catch (error) {
+    console.error('Error getting staff analytics summary:', error);
+    res.status(500).json({ message: 'Error getting staff analytics summary' });
+  }
+};
+
+exports.getStaffPerformanceData = async (req, res) => {
+  try {
+    const period = req.query.period || 'week';
+    
+    // Get time period condition
+    let timePeriod;
+    switch(period) {
+      case 'day':
+        timePeriod = 'DATE(o.created_at) = CURRENT_DATE()';
+        break;
+      case 'week':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)';
+        break;
+      case 'month':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)';
+        break;
+      case 'quarter':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)';
+        break;
+      case 'year':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY)';
+        break;
+      default:
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)';
+    }
+
+    // Get staff performance data
+    const [staffPerformance] = await db.execute(`
+      SELECT 
+        u.id as staff_id,
+        u.username,
+        u.created_at as last_active,
+        COUNT(DISTINCT o.order_id) as orders_accepted,
+        COUNT(DISTINCT CASE WHEN o.status = 'paid' THEN o.order_id END) as sales_count,
+        COALESCE(SUM(CASE WHEN o.status = 'paid' THEN o.total_amount END), 0) as total_sales,
+        ROUND(
+          (COUNT(DISTINCT CASE WHEN o.status = 'paid' THEN o.order_id END) * 100.0) / 
+          NULLIF(COUNT(DISTINCT o.order_id), 0), 1
+        ) as performance_score
+      FROM users u
+      LEFT JOIN orders o ON u.id = o.accepted_by AND ${timePeriod}
+      WHERE u.role = 'staff'
+      GROUP BY u.id, u.username, u.created_at
+      ORDER BY performance_score DESC, total_sales DESC
+    `);
+
+    res.json(staffPerformance);
+
+  } catch (error) {
+    console.error('Error getting staff performance data:', error);
+    res.status(500).json({ message: 'Error getting staff performance data' });
+  }
+};
+
+exports.getStaffSalesChart = async (req, res) => {
+  try {
+    const period = req.query.period || 'week';
+    
+    // Get time period and grouping
+    let timePeriod, dateFormat, labelFormat;
+    switch(period) {
+      case 'day':
+        timePeriod = 'DATE(o.created_at) = CURRENT_DATE()';
+        dateFormat = '%H:00';
+        labelFormat = 'hour';
+        break;
+      case 'week':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)';
+        dateFormat = '%Y-%m-%d';
+        labelFormat = 'day';
+        break;
+      case 'month':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)';
+        dateFormat = '%Y-%m-%d';
+        labelFormat = 'day';
+        break;
+      case 'quarter':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)';
+        dateFormat = '%Y-%u';
+        labelFormat = 'week';
+        break;
+      case 'year':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY)';
+        dateFormat = '%Y-%m';
+        labelFormat = 'month';
+        break;
+      default:
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)';
+        dateFormat = '%Y-%m-%d';
+        labelFormat = 'day';
+    }
+
+    // Get top 5 staff for the chart
+    const [topStaff] = await db.execute(`
+      SELECT 
+        u.id,
+        u.username,
+        COALESCE(SUM(CASE WHEN o.status = 'paid' THEN o.total_amount END), 0) as total_sales
+      FROM users u
+      LEFT JOIN orders o ON u.id = o.accepted_by AND ${timePeriod}
+      WHERE u.role = 'staff'
+      GROUP BY u.id, u.username
+      ORDER BY total_sales DESC
+      LIMIT 5
+    `);
+
+    // Get sales data by staff and time period
+    const staffIds = topStaff.map(staff => staff.id).join(',');
+    if (staffIds) {
+      const [salesData] = await db.execute(`
+        SELECT 
+          u.username,
+          DATE_FORMAT(o.created_at, '${dateFormat}') as time_period,
+          COALESCE(SUM(CASE WHEN o.status = 'paid' THEN o.total_amount END), 0) as sales
+        FROM users u
+        LEFT JOIN orders o ON u.id = o.accepted_by AND ${timePeriod}
+        WHERE u.id IN (${staffIds})
+        GROUP BY u.username, time_period
+        ORDER BY time_period, u.username
+      `);
+
+      // Format data for Chart.js
+      const labels = [...new Set(salesData.map(item => item.time_period))].sort();
+      const datasets = topStaff.map((staff, index) => {
+        const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
+        const staffData = labels.map(label => {
+          const dataPoint = salesData.find(item => 
+            item.username === staff.username && item.time_period === label
+          );
+          return dataPoint ? parseFloat(dataPoint.sales) : 0;
+        });
+
+        return {
+          label: staff.username,
+          data: staffData,
+          backgroundColor: colors[index % colors.length],
+          borderColor: colors[index % colors.length],
+          borderWidth: 2
+        };
+      });
+
+      res.json({ labels, datasets });
+    } else {
+      res.json({ labels: [], datasets: [] });
+    }
+
+  } catch (error) {
+    console.error('Error getting staff sales chart data:', error);
+    res.status(500).json({ message: 'Error getting staff sales chart data' });
+  }
+};
+
+exports.getStaffOrdersChart = async (req, res) => {
+  try {
+    const period = req.query.period || 'week';
+    
+    // Get time period condition
+    let timePeriod;
+    switch(period) {
+      case 'day':
+        timePeriod = 'DATE(o.created_at) = CURRENT_DATE()';
+        break;
+      case 'week':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)';
+        break;
+      case 'month':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)';
+        break;
+      case 'quarter':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)';
+        break;
+      case 'year':
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY)';
+        break;
+      default:
+        timePeriod = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)';
+    }
+
+    // Get orders accepted by staff
+    const [ordersData] = await db.execute(`
+      SELECT 
+        u.username,
+        COUNT(DISTINCT o.order_id) as orders_accepted
+      FROM users u
+      LEFT JOIN orders o ON u.id = o.accepted_by AND ${timePeriod}
+      WHERE u.role = 'staff'
+      GROUP BY u.id, u.username
+      HAVING orders_accepted > 0
+      ORDER BY orders_accepted DESC
+      LIMIT 8
+    `);
+
+    // Format data for Chart.js doughnut chart
+    const labels = ordersData.map(item => item.username);
+    const data = ordersData.map(item => item.orders_accepted);
+    const colors = [
+      '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+      '#06b6d4', '#84cc16', '#f97316'
+    ];
+
+    const datasets = [{
+      data: data,
+      backgroundColor: colors.slice(0, data.length),
+      borderWidth: 2,
+      borderColor: '#ffffff'
+    }];
+
+    res.json({ labels, datasets });
+
+  } catch (error) {
+    console.error('Error getting staff orders chart data:', error);
+    res.status(500).json({ message: 'Error getting staff orders chart data' });
+  }
 };

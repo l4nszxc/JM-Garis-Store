@@ -88,6 +88,21 @@
             </div>
           </div>
         </div>
+
+        <div class="metric-card staff clickable-card" @click="goToStaffAnalytics()">
+          <div class="metric-icon">
+            <i class="fas fa-user-tie"></i>
+          </div>
+          <div class="metric-content">
+            <h3>Total Staff</h3>
+            <p class="number">{{ stats.totalStaff }}</p>
+            <p class="subtext">{{ stats.activeStaff }} active staff</p>
+            <div class="card-overlay">
+              <i class="fas fa-chart-bar"></i>
+              <span>View Staff Analytics</span>
+            </div>
+          </div>
+        </div>
       </div>
       
       <!-- Sales Trend Chart -->
@@ -314,6 +329,8 @@ export default {
         totalStock: 0,
         totalUsers: 0,
         newUsers: 0,
+        totalStaff: 0,
+        activeStaff: 0,
         topProducts: [],
         topStaff: [],
         topCustomers: [],
@@ -335,6 +352,11 @@ export default {
     // Add this new method to navigate to users list
     goToUsersList() {
       this.$router.push('/admin/users');
+    },
+
+    // Add this new method to navigate to staff analytics
+    goToStaffAnalytics() {
+      this.$router.push('/admin/staff-analytics');
     },
 
     async changeTopSellingPeriod(period) {
@@ -772,7 +794,7 @@ export default {
   /* Metrics Grid */
   .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 1.5rem;
     margin-bottom: 2rem;
   }
@@ -820,6 +842,11 @@ export default {
   .users .metric-icon {
     background-color: #eff6ff;
     color: #2563eb;
+  }
+  
+  .staff .metric-icon {
+    background-color: #f0f9ff;
+    color: #0284c7;
   }
   
   .metric-icon i {
@@ -1255,7 +1282,7 @@ export default {
   /* Responsive Design */
   @media (max-width: 1280px) {
     .metrics-grid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(3, 1fr);
     }
     
     .dashboard-columns {

@@ -60,5 +60,10 @@ router.get('/download-reports', authenticate, isAdmin, adminController.downloadR
 
 router.get('/download-low-stock', adminController.downloadLowStockReport);
 
+// Staff Analytics Routes
+router.get('/staff-analytics/summary', authenticate, isAdmin, adminController.getStaffAnalyticsSummary);
+router.get('/staff-analytics/performance', authenticate, isAdmin, adminController.getStaffPerformanceData);
+router.get('/staff-analytics/sales-chart', authenticate, isAdmin, adminController.getStaffSalesChart);
+router.get('/staff-analytics/orders-chart', authenticate, isAdmin, adminController.getStaffOrdersChart);
 
 module.exports = router;

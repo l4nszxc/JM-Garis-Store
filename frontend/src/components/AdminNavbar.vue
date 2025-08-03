@@ -25,6 +25,13 @@
           <span>Analytics</span>
         </router-link>
 
+        <router-link to="/admin/staff-analytics" class="menu-item" active-class="active">
+          <div class="icon-container staff-analytics-icon">
+            <i class="fas fa-users-cog"></i>
+          </div>
+          <span>Staff Analytics</span>
+        </router-link>
+
         <router-link to="/admin/forecast" class="menu-item" active-class="active">
           <div class="icon-container forecast-icon">
             <i class="fas fa-chart-bar"></i>
@@ -492,6 +499,11 @@ export default {
 
 .analytics-icon {
   background-color: #17a2b8;
+  color: white;
+}
+
+.staff-analytics-icon {
+  background-color: #6c757d;
   color: white;
 }
 
