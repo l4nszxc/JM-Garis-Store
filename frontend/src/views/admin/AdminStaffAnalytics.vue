@@ -325,12 +325,14 @@ export default {
 
         if (salesResponse.ok) {
           const salesData = await salesResponse.json();
+          // Store as non-reactive data using Object.freeze or JSON parse/stringify
           this.salesChartData = salesData && salesData.labels && salesData.datasets 
-            ? salesData 
+            ? JSON.parse(JSON.stringify(salesData))
             : { labels: ['No Data'], datasets: [{ label: 'No Data', data: [0], backgroundColor: ['#e2e8f0'] }] };
           
           // Update chart if it exists and is not destroyed
           if (this.salesChart && !this.salesChart.destroyed) {
+            // Use update method which now handles reinitializing
             this.$nextTick(() => {
               this.updateSalesChart();
             });
@@ -348,12 +350,14 @@ export default {
 
         if (ordersResponse.ok) {
           const ordersData = await ordersResponse.json();
+          // Store as non-reactive data using JSON parse/stringify
           this.ordersChartData = ordersData && ordersData.labels && ordersData.datasets
-            ? ordersData
+            ? JSON.parse(JSON.stringify(ordersData))
             : { labels: ['No Data'], datasets: [{ label: 'No Data', data: [0], backgroundColor: ['#e2e8f0'] }] };
           
           // Update chart if it exists and is not destroyed
           if (this.ordersChart && !this.ordersChart.destroyed) {
+            // Use update method which now handles reinitializing
             this.$nextTick(() => {
               this.updateOrdersChart();
             });
@@ -400,50 +404,34 @@ export default {
           return;
         }
         
-        // Reset canvas dimensions to prevent context issues
+        // Clear canvas to prevent context issues
         const canvas = this.$refs.salesChart;
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-        
-        // Get canvas context with error handling
-        let ctx;
-        try {
-          ctx = canvas.getContext('2d');
-        } catch (error) {
-          console.error('Error getting canvas context:', error);
-          return;
-        }
-        
-        if (!ctx) {
-          console.warn('Could not get canvas context for sales chart');
-          return;
+        const context = canvas.getContext('2d');
+        if (context) {
+          context.clearRect(0, 0, canvas.width, canvas.height);
         }
         
         // Ensure we have valid chart data with deep copy to avoid reactivity issues
         const chartData = this.salesChartData && this.salesChartData.labels && this.salesChartData.datasets
-          ? {
-              labels: [...this.salesChartData.labels],
-              datasets: this.salesChartData.datasets.map(dataset => ({
-                ...dataset,
-                data: [...dataset.data]
-              }))
-            }
+          ? JSON.parse(JSON.stringify({
+              labels: this.salesChartData.labels,
+              datasets: this.salesChartData.datasets
+            }))
           : { labels: ['No Data'], datasets: [{ label: 'No Data', data: [0], backgroundColor: '#e2e8f0' }] };
         
         // Create chart with error handling and safer options
         try {
-          this.salesChart = new Chart(ctx, {
+          this.salesChart = new Chart(canvas, {
             type: 'bar',
             data: chartData,
             options: {
               responsive: true,
               maintainAspectRatio: false,
+              devicePixelRatio: 1, // Fix for high DPI displays
               interaction: {
                 intersect: false
               },
-              animation: {
-                duration: 300
-              },
+              animation: false, // Disable animations to prevent context issues
               plugins: {
                 legend: {
                   display: chartData.datasets && chartData.datasets.length > 1
@@ -489,50 +477,34 @@ export default {
           return;
         }
         
-        // Reset canvas dimensions to prevent context issues
+        // Clear canvas to prevent context issues
         const canvas = this.$refs.ordersChart;
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-        
-        // Get canvas context with error handling
-        let ctx;
-        try {
-          ctx = canvas.getContext('2d');
-        } catch (error) {
-          console.error('Error getting canvas context:', error);
-          return;
-        }
-        
-        if (!ctx) {
-          console.warn('Could not get canvas context for orders chart');
-          return;
+        const context = canvas.getContext('2d');
+        if (context) {
+          context.clearRect(0, 0, canvas.width, canvas.height);
         }
         
         // Ensure we have valid chart data with deep copy to avoid reactivity issues
         const chartData = this.ordersChartData && this.ordersChartData.labels && this.ordersChartData.datasets
-          ? {
-              labels: [...this.ordersChartData.labels],
-              datasets: this.ordersChartData.datasets.map(dataset => ({
-                ...dataset,
-                data: [...dataset.data]
-              }))
-            }
+          ? JSON.parse(JSON.stringify({
+              labels: this.ordersChartData.labels,
+              datasets: this.ordersChartData.datasets
+            }))
           : { labels: ['No Data'], datasets: [{ label: 'No Data', data: [0], backgroundColor: '#e2e8f0' }] };
         
         // Create chart with error handling and safer options
         try {
-          this.ordersChart = new Chart(ctx, {
+          this.ordersChart = new Chart(canvas, {
             type: 'doughnut',
             data: chartData,
             options: {
               responsive: true,
               maintainAspectRatio: false,
+              devicePixelRatio: 1, // Fix for high DPI displays
               interaction: {
                 intersect: false
               },
-              animation: {
-                duration: 300
-              },
+              animation: false, // Disable animations to prevent context issues
               plugins: {
                 legend: {
                   position: 'bottom',
@@ -556,11 +528,6 @@ export default {
         // Check if chart exists and is not destroyed
         if (!this.salesChart || this.salesChart.destroyed) {
           console.warn('Sales chart does not exist or was destroyed, reinitializing...');
-          this.$nextTick(() => {
-            if (this.$refs.salesChart) {
-              this.initSalesChart();
-            }
-          });
           return;
         }
 
@@ -570,20 +537,17 @@ export default {
           return;
         }
 
-        // Update chart data safely by copying arrays to avoid reactivity issues
-        this.salesChart.data.labels = [...this.salesChartData.labels];
-        this.salesChart.data.datasets = this.salesChartData.datasets.map(dataset => ({
-          ...dataset,
-          data: [...dataset.data]
-        }));
+        // Destroy and recreate instead of updating to avoid reactivity issues
+        this.salesChart.destroy();
+        this.salesChart = null;
         
-        // Use resize and update without animation to prevent issues
-        this.salesChart.resize();
-        this.salesChart.update('none');
+        this.$nextTick(() => {
+          this.initSalesChart();
+        });
         
       } catch (error) {
         console.error('Error updating sales chart:', error);
-        // Destroy and reinitialize on error
+        // Clean up on error
         try {
           if (this.salesChart && !this.salesChart.destroyed) {
             this.salesChart.destroy();
@@ -592,12 +556,6 @@ export default {
           console.error('Error destroying sales chart:', destroyError);
         }
         this.salesChart = null;
-        
-        this.$nextTick(() => {
-          if (this.$refs.salesChart) {
-            this.initSalesChart();
-          }
-        });
       }
     },
 
@@ -606,11 +564,6 @@ export default {
         // Check if chart exists and is not destroyed
         if (!this.ordersChart || this.ordersChart.destroyed) {
           console.warn('Orders chart does not exist or was destroyed, reinitializing...');
-          this.$nextTick(() => {
-            if (this.$refs.ordersChart) {
-              this.initOrdersChart();
-            }
-          });
           return;
         }
 
@@ -620,20 +573,17 @@ export default {
           return;
         }
 
-        // Update chart data safely by copying arrays to avoid reactivity issues
-        this.ordersChart.data.labels = [...this.ordersChartData.labels];
-        this.ordersChart.data.datasets = this.ordersChartData.datasets.map(dataset => ({
-          ...dataset,
-          data: [...dataset.data]
-        }));
+        // Destroy and recreate instead of updating to avoid reactivity issues
+        this.ordersChart.destroy();
+        this.ordersChart = null;
         
-        // Use resize and update without animation to prevent issues
-        this.ordersChart.resize();
-        this.ordersChart.update('none');
+        this.$nextTick(() => {
+          this.initOrdersChart();
+        });
         
       } catch (error) {
         console.error('Error updating orders chart:', error);
-        // Destroy and reinitialize on error
+        // Clean up on error
         try {
           if (this.ordersChart && !this.ordersChart.destroyed) {
             this.ordersChart.destroy();
@@ -642,12 +592,6 @@ export default {
           console.error('Error destroying orders chart:', destroyError);
         }
         this.ordersChart = null;
-        
-        this.$nextTick(() => {
-          if (this.$refs.ordersChart) {
-            this.initOrdersChart();
-          }
-        });
       }
     },
 
@@ -711,24 +655,57 @@ export default {
         this.salesChartData = { labels: ['Loading...'], datasets: [{ label: 'Loading', data: [0], backgroundColor: '#e2e8f0' }] };
         this.ordersChartData = { labels: ['Loading...'], datasets: [{ label: 'Loading', data: [0], backgroundColor: '#e2e8f0' }] };
         
-        // Wait for DOM to be ready and then initialize charts with default data
+        // Wait for DOM to be fully ready with longer delay for chart initialization
         this.$nextTick(() => {
           setTimeout(() => {
             try {
-              if (this.$refs.salesChart && this.$refs.ordersChart) {
+              // Double check that canvas elements exist and are ready
+              if (this.$refs.salesChart && this.$refs.ordersChart && 
+                  this.$refs.salesChart.offsetWidth > 0 && this.$refs.ordersChart.offsetWidth > 0) {
                 this.initSalesChart();
                 this.initOrdersChart();
+                
+                // Fetch real data after successful chart initialization
+                setTimeout(async () => {
+                  try {
+                    await this.fetchStaffAnalytics();
+                  } catch (dataError) {
+                    console.error('Error fetching initial data:', dataError);
+                  }
+                }, 300);
+                
+                // Add resize observer for responsive chart handling
+                if (window.ResizeObserver) {
+                  this.resizeObserver = new ResizeObserver(() => {
+                    if (this.salesChart && !this.salesChart.destroyed) {
+                      this.salesChart.resize();
+                    }
+                    if (this.ordersChart && !this.ordersChart.destroyed) {
+                      this.ordersChart.resize();
+                    }
+                  });
+                  
+                  if (this.$refs.salesChart) {
+                    this.resizeObserver.observe(this.$refs.salesChart.parentElement);
+                  }
+                  if (this.$refs.ordersChart) {
+                    this.resizeObserver.observe(this.$refs.ordersChart.parentElement);
+                  }
+                }
+              } else {
+                // Retry chart initialization if canvas not ready
+                setTimeout(() => {
+                  if (this.$refs.salesChart && this.$refs.ordersChart) {
+                    this.initSalesChart();
+                    this.initOrdersChart();
+                  }
+                }, 500);
               }
             } catch (error) {
               console.error('Error initializing charts:', error);
             }
-          }, 200);
+          }, 300);
         });
-        
-        // Fetch real data after charts are initialized
-        setTimeout(async () => {
-          await this.fetchStaffAnalytics();
-        }, 500);
       }
     } catch (error) {
       console.error('Error in mounted lifecycle:', error);
@@ -737,6 +714,13 @@ export default {
 
   beforeUnmount() {
     try {
+      // Clean up resize observer
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect();
+        this.resizeObserver = null;
+      }
+      
+      // Destroy charts
       if (this.salesChart) {
         this.salesChart.destroy();
         this.salesChart = null;
@@ -1233,20 +1217,26 @@ tr:nth-child(3) .rank {
 @media (max-width: 1280px) {
   .metrics-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
   }
   
   .charts-container {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .chart-wrapper {
+    height: 280px;
   }
 }
 
 @media (max-width: 768px) {
   .admin-container {
-    padding-left: 60px;
+    padding-left: 0;
   }
   
   .admin-content {
-    padding: 1.5rem;
+    padding: 1rem;
   }
   
   .dashboard-header {
@@ -1255,14 +1245,45 @@ tr:nth-child(3) .rank {
     gap: 1rem;
   }
   
+  .dashboard-header h1 {
+    font-size: 1.5rem;
+  }
+  
   .metrics-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .metric-card {
+    padding: 1rem;
+  }
+  
+  .metric-icon {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .metric-content .number {
+    font-size: 1.5rem;
   }
   
   .chart-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+  }
+  
+  .chart-filters {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  
+  .chart-filter-btn {
+    flex: 1;
+    min-width: calc(33.333% - 0.33rem);
+    text-align: center;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.8rem;
   }
   
   .chart-wrapper {
@@ -1272,35 +1293,153 @@ tr:nth-child(3) .rank {
   .section-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .section-filters {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+  
+  table {
+    min-width: 600px;
+  }
+  
+  th, td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.85rem;
+  }
+  
+  .staff-info {
+    gap: 0.5rem;
+  }
+  
+  .staff-avatar {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .staff-name {
+    font-size: 0.9rem;
+  }
+  
+  .staff-role {
+    font-size: 0.75rem;
   }
 }
 
 @media (max-width: 480px) {
   .admin-content {
+    padding: 0.75rem;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .metric-card {
+    padding: 0.75rem;
+  }
+  
+  .metric-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .metric-content .number {
+    font-size: 1.25rem;
+  }
+  
+  .chart-card {
     padding: 1rem;
   }
   
   .chart-filters {
-    flex-wrap: wrap;
+    gap: 0.25rem;
   }
   
   .chart-filter-btn {
-    flex: 1;
-    text-align: center;
+    padding: 0.3rem 0.4rem;
+    font-size: 0.75rem;
+    min-width: calc(50% - 0.125rem);
+  }
+  
+  .chart-wrapper {
+    height: 200px;
+  }
+  
+  .dashboard-section {
+    padding: 1rem;
   }
   
   .table-container {
     margin: 0 -1rem;
+    padding: 0 1rem;
     border-radius: 0;
   }
   
   .table-container table {
+    min-width: 500px;
     border-radius: 0;
   }
   
+  th, td {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
+  }
+  
   .section-filters {
+    gap: 0.25rem;
     width: 100%;
     justify-content: space-between;
+  }
+  
+  .filter-btn {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .time-filter select {
+    padding: 0.4rem 1.5rem 0.4rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Additional responsive improvements */
+@media (max-width: 360px) {
+  .admin-content {
+    padding: 0.5rem;
+  }
+  
+  .metric-card {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .metric-icon {
+    margin: 0 auto 0.5rem;
+  }
+  
+  .chart-filter-btn {
+    min-width: 100%;
+    margin-bottom: 0.25rem;
+  }
+  
+  .chart-filters {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .section-filters {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }
 </style>
