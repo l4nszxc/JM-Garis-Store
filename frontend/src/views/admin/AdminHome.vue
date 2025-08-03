@@ -499,6 +499,8 @@ export default {
             potentialGrowth: data.potentialGrowth || 0,
             totalUsers: data.totalUsers || 0,
             newUsers: data.newUsers || 0,
+            totalStaff: data.totalStaff || 0,
+            activeStaff: data.activeStaff || 0,
             topStaff: data.topStaff || []
           };
 
