@@ -1,5 +1,5 @@
 <template>
-  <div class="rewards-page">
+  <div class="rewards-page min-h-screen bg-gray-100">
     <Navbar :username="username" @logout="showLogoutModal = true" />
     
     <div v-if="loading" class="loading-container">
@@ -20,7 +20,14 @@
             <div class="points-card">
               <div class="points-number">{{ points }}</div>
               <div class="points-label">Available Points</div>
-              <div class="points-value">Worth ₱{{ (points * 0.5).toFixed(0) }}</div>
+              <div class="points-value">Worth ₱{{ convertPointsToPeso(points) }}</div>
+            </div>
+            
+            <!-- New Convertible Points Display -->
+            <div class="conversion-card">
+              <div class="conversion-number">₱{{ convertPointsToPeso(points) }}</div>
+              <div class="conversion-label">Convertible Value</div>
+              <div class="conversion-rate">Rate: 2 points = ₱1</div>
             </div>
           </div>
         </div>
@@ -32,13 +39,79 @@
           </div>
           <div class="divider"></div>
           <div class="stat-item">
+            <div class="stat-number">₱{{ convertPointsToPeso(totalPointsEarned) }}</div>
+            <div class="stat-label">Total Value Earned</div>
+          </div>
+          <div class="divider"></div>
+          <div class="stat-item">
             <div class="stat-number">30:100</div>
             <div class="stat-label">Point Ratio</div>
           </div>
           <div class="divider"></div>
           <div class="stat-item">
-            <div class="stat-number">10:₱5</div>
-            <div class="stat-label">Redemption Rate</div>
+            <div class="stat-number">2:₱1</div>
+            <div class="stat-label">Conversion Rate</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Point Conversion Summary Card -->
+      <div class="conversion-summary-section" v-if="autoShowConversion">
+        <div class="conversion-summary-header">
+          <h2>💰 Point Conversion Summary</h2>
+          <div class="auto-convert-toggle">
+            <label class="toggle-label">
+              <input 
+                type="checkbox" 
+                v-model="autoShowConversion" 
+                @change="toggleAutoConversion"
+              >
+              <span class="toggle-slider"></span>
+              Auto-show conversion
+            </label>
+          </div>
+        </div>
+        
+        <div class="conversion-grid">
+          <div class="conversion-item">
+            <div class="conversion-icon">🪙</div>
+            <div class="conversion-details">
+              <div class="conversion-amount">{{ points }} Points</div>
+              <div class="conversion-desc">Your current balance</div>
+            </div>
+          </div>
+          
+          <div class="conversion-arrow">→</div>
+          
+          <div class="conversion-item">
+            <div class="conversion-icon">💵</div>
+            <div class="conversion-details">
+              <div class="conversion-amount peso">₱{{ convertPointsToPeso(points) }}</div>
+              <div class="conversion-desc">Equivalent cash value</div>
+            </div>
+          </div>
+          
+          <div class="conversion-item">
+            <div class="conversion-icon">🎯</div>
+            <div class="conversion-details">
+              <div class="conversion-amount">{{ Math.floor(points / 10) }}</div>
+              <div class="conversion-desc">Possible rewards</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="conversion-info-box">
+          <div class="info-row">
+            <span class="info-label">Conversion Rate:</span>
+            <span class="info-value">2 points = ₱1.00</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Minimum Redemption:</span>
+            <span class="info-value">10 points (₱5.00)</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Next Milestone:</span>
+            <span class="info-value">{{ getNextMilestone() }}</span>
           </div>
         </div>
       </div>
@@ -133,7 +206,7 @@
       <div class="rewards-section">
         <div class="section-header">
           <h2>Redeem Rewards</h2>
-          <div class="conversion-info">10 points = ₱5 discount</div>
+          <div class="conversion-info">2 points = ₱1 discount</div>
         </div>
         
         <div v-if="availableRewards.length" class="rewards-grid">
@@ -144,7 +217,13 @@
             </div>
             <div class="reward-amount">₱{{ reward.discount_amount }} OFF</div>
             <div class="reward-description">{{ reward.description }}</div>
-            <div class="reward-value">Value: ₱{{ (reward.points_required * 0.5).toFixed(0) }}</div>
+            <!-- Updated to show peso equivalent -->
+            <div class="reward-value">
+              Point Value: ₱{{ convertPointsToPeso(reward.points_required) }} 
+              <span class="savings-indicator" v-if="reward.discount_amount > convertPointsToPeso(reward.points_required)">
+                (Save ₱{{ (reward.discount_amount - convertPointsToPeso(reward.points_required)).toFixed(2) }})
+              </span>
+            </div>
             <button 
               @click="showRedemptionConfirmation(reward)"
               :disabled="points < reward.points_required"
@@ -152,7 +231,7 @@
               :class="{ disabled: points < reward.points_required }"
             >
               <span v-if="points >= reward.points_required">Redeem Now</span>
-              <span v-else>Need {{ reward.points_required - points }} more</span>
+              <span v-else>Need {{ reward.points_required - points }} more (₱{{ convertPointsToPeso(reward.points_required - points) }})</span>
             </button>
           </div>
         </div>
@@ -179,7 +258,8 @@
                 <div class="history-date">{{ formatDate(item.created_at || item.date) }}</div>
               </div>
               <div class="history-points" :class="{ earned: item.points > 0, redeemed: item.points < 0 }">
-                {{ Math.abs(item.points) }} pts
+                <div class="points-display">{{ Math.abs(item.points) }} pts</div>
+                <div class="peso-display">₱{{ convertPointsToPeso(Math.abs(item.points)) }}</div>
               </div>
             </div>
           </div>
@@ -193,7 +273,6 @@
       </div>
     </div>
 
-    <!-- ...existing modals... -->
     <!-- Redemption Confirmation Modal -->
     <div v-if="showConfirmModal" class="modal-overlay" @click="cancelRedemption">
       <div class="modal" @click.stop>
@@ -209,12 +288,16 @@
               <strong>{{ selectedReward?.points_required }}</strong>
             </div>
             <div class="summary-row">
+              <span>Point value:</span>
+              <span>₱{{ convertPointsToPeso(selectedReward?.points_required || 0) }}</span>
+            </div>
+            <div class="summary-row">
               <span>Discount value:</span>
               <strong>₱{{ selectedReward?.discount_amount }}</strong>
             </div>
-            <div class="summary-row">
-              <span>Points value:</span>
-              <span>₱{{ (selectedReward?.points_required * 0.5).toFixed(0) }}</span>
+            <div class="summary-row bonus" v-if="selectedReward && selectedReward.discount_amount > convertPointsToPeso(selectedReward.points_required)">
+              <span>Bonus value:</span>
+              <strong class="bonus-amount">₱{{ (selectedReward.discount_amount - convertPointsToPeso(selectedReward.points_required)).toFixed(2) }}</strong>
             </div>
           </div>
           
@@ -240,7 +323,7 @@
         </div>
         
         <div class="modal-content">
-          <p>You've successfully redeemed <strong>{{ redeemedPoints }} points</strong> for a <strong>₱{{ redeemedAmount }} discount</strong>.</p>
+          <p>You've successfully redeemed <strong>{{ redeemedPoints }} points</strong> (₱{{ convertPointsToPeso(redeemedPoints) }} value) for a <strong>₱{{ redeemedAmount }} discount</strong>.</p>
           
           <div class="usage-steps">
             <h4>How to use your discount:</h4>
@@ -297,6 +380,7 @@ export default {
       selectedReward: null,
       redeemedPoints: 0,
       redeemedAmount: 0,
+      autoShowConversion: true,
       loading: true,
       error: null
     };
@@ -305,8 +389,44 @@ export default {
     if (this.initializeUser()) {
       await this.fetchUserData();
     }
+    
+    // Load auto conversion preference from localStorage
+    const savedPreference = localStorage.getItem('autoShowConversion');
+    if (savedPreference !== null) {
+      this.autoShowConversion = JSON.parse(savedPreference);
+    }
   },
   methods: {
+    // New method to convert points to peso
+    convertPointsToPeso(points) {
+      if (!points || points < 0) return '0.00';
+      // 2 points = 1 peso, so divide by 2
+      return (points / 2).toFixed(2);
+    },
+
+    // New method to get next milestone
+    getNextMilestone() {
+      const currentPoints = this.points;
+      const milestones = [10, 20, 50, 100, 200, 500, 1000];
+      
+      for (let milestone of milestones) {
+        if (currentPoints < milestone) {
+          const needed = milestone - currentPoints;
+          return `${needed} points to reach ${milestone} points (₱${this.convertPointsToPeso(milestone)})`;
+        }
+      }
+      
+      // If past all milestones
+      const nextMilestone = Math.ceil(currentPoints / 100) * 100;
+      const needed = nextMilestone - currentPoints;
+      return `${needed} points to reach ${nextMilestone} points (₱${this.convertPointsToPeso(nextMilestone)})`;
+    },
+
+    // New method to toggle auto conversion display
+    toggleAutoConversion() {
+      localStorage.setItem('autoShowConversion', JSON.stringify(this.autoShowConversion));
+    },
+
     async fetchWithAuth(url, options = {}) {
       try {
         const token = localStorage.getItem('token');
@@ -460,17 +580,14 @@ export default {
       return icons[tierName] || '👤';
     },
 
-    // Get the current tier name based on actual spending
-   getCurrentTierName() {
+    getCurrentTierName() {
         console.log('Current loyalty status:', this.loyaltyStatus);
         
-        // First check if user has an active loyalty tier from database
         if (this.loyaltyStatus && this.loyaltyStatus.tier_name) {
             console.log('Using database tier:', this.loyaltyStatus.tier_name);
             return this.loyaltyStatus.tier_name;
         }
 
-        // Fallback to calculation based on spending
         if (!this.loyaltyStatus || !this.loyaltyStatus.current_month_spend) {
             console.log('No loyalty status or spending data, returning Member');
             return 'Member';
@@ -479,7 +596,6 @@ export default {
         const spend = parseFloat(this.loyaltyStatus.current_month_spend);
         console.log('Calculating tier for spend:', spend);
         
-        // Check tier based on actual spending thresholds
         if (spend >= 21000) {
             console.log('Qualifies for Gold');
             return 'Gold';
@@ -496,32 +612,27 @@ export default {
     },
 
     getCurrentTierBonus() {
-        // Use database value if available and valid
         if (this.loyaltyStatus && 
             this.loyaltyStatus.bonus_percentage !== null && 
             this.loyaltyStatus.bonus_percentage !== undefined) {
             return this.loyaltyStatus.bonus_percentage;
         }
 
-        // Fallback calculation
         const currentTier = this.getCurrentTierName();
         const tier = this.loyaltyTiers.find(t => t.name === currentTier);
         return tier ? tier.bonus_percentage : 0;
     },
 
-    // Check if user is at current tier (based on actual spending)
     isCurrentTier(tierName) {
       return this.getCurrentTierName() === tierName;
     },
 
-    // Fixed tier progress calculation based on actual spending
     getTierProgress() {
         if (!this.loyaltyStatus || !this.loyaltyStatus.current_month_spend) return 0;
         
         const currentSpend = this.loyaltyStatus.current_month_spend;
         const currentTier = this.getCurrentTierName();
         
-        // If already at Gold tier, return 100%
         if (currentTier === 'Gold') return 100;
         
         let nextTierMin = 0;
@@ -529,13 +640,13 @@ export default {
         
         if (currentTier === 'Member') {
             currentTierMin = 0;
-            nextTierMin = 10000; // Bronze threshold
+            nextTierMin = 10000;
         } else if (currentTier === 'Bronze') {
             currentTierMin = 10000;
-            nextTierMin = 16000; // Silver threshold
+            nextTierMin = 16000;
         } else if (currentTier === 'Silver') {
             currentTierMin = 16000;
-            nextTierMin = 21000; // Gold threshold
+            nextTierMin = 21000;
         }
         
         if (nextTierMin === 0) return 100;
@@ -546,7 +657,6 @@ export default {
         return Math.min(Math.max((currentProgress / progressRange) * 100, 0), 100);
     },
 
-    // Fixed next tier info based on actual spending
     getNextTierInfo() {
         if (!this.loyaltyStatus) return 'Spend ₱10,000 for Bronze tier';
         
@@ -722,7 +832,6 @@ export default {
 </script>
 
 <style scoped>
-/* ...existing styles remain the same... */
 .rewards-page {
   min-height: 100vh;
   background: #fafafa;
@@ -789,10 +898,12 @@ export default {
 }
 
 .points-display {
+  display: flex;
+  gap: 1rem;
   flex-shrink: 0;
 }
 
-.points-card {
+.points-card, .conversion-card {
   background: linear-gradient(135deg, #10b981, #059669);
   color: white;
   padding: 1.5rem;
@@ -801,19 +912,23 @@ export default {
   min-width: 160px;
 }
 
-.points-number {
+.conversion-card {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.points-number, .conversion-number {
   font-size: 2.5rem;
   font-weight: 700;
   line-height: 1;
 }
 
-.points-label {
+.points-label, .conversion-label {
   font-size: 0.875rem;
   opacity: 0.9;
   margin-top: 0.25rem;
 }
 
-.points-value {
+.points-value, .conversion-rate {
   font-size: 0.75rem;
   opacity: 0.8;
   margin-top: 0.5rem;
@@ -848,6 +963,149 @@ export default {
   width: 1px;
   height: 32px;
   background: #e5e7eb;
+}
+
+/* New Conversion Summary Section */
+.conversion-summary-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 2px solid #f0f9ff;
+}
+
+.conversion-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.conversion-summary-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.auto-convert-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"] {
+  display: none;
+}
+
+.toggle-slider {
+  width: 40px;
+  height: 20px;
+  background: #e5e7eb;
+  border-radius: 10px;
+  position: relative;
+  transition: background 0.3s ease;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+
+.toggle-label input[type="checkbox"]:checked + .toggle-slider {
+  background: #10b981;
+}
+
+.toggle-label input[type="checkbox"]:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+.conversion-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.conversion-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+}
+
+.conversion-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.conversion-amount {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.conversion-amount.peso {
+  color: #10b981;
+  font-size: 1.5rem;
+}
+
+.conversion-desc {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.conversion-arrow {
+  font-size: 1.5rem;
+  color: #6b7280;
+  margin: 0 1rem;
+}
+
+.conversion-info-box {
+  background: #f0f9ff;
+  border: 1px solid #e0f2fe;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.info-label {
+  color: #6b7280;
+}
+
+.info-value {
+  color: #111827;
+  font-weight: 500;
 }
 
 /* Loyalty Section */
@@ -1165,6 +1423,12 @@ export default {
   margin-bottom: 1rem;
 }
 
+.savings-indicator {
+  color: #10b981;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
 .reward-button {
   width: 100%;
   background: #10b981;
@@ -1263,16 +1527,34 @@ export default {
 }
 
 .history-points {
+  text-align: right;
+}
+
+.points-display {
   font-weight: 600;
   font-size: 0.875rem;
 }
 
-.history-points.earned {
+.peso-display {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-top: 0.25rem;
+}
+
+.history-points.earned .points-display {
   color: #10b981;
 }
 
-.history-points.redeemed {
+.history-points.earned .peso-display {
+  color: #059669;
+}
+
+.history-points.redeemed .points-display {
   color: #dc2626;
+}
+
+.history-points.redeemed .peso-display {
+  color: #b91c1c;
 }
 
 /* Empty States */
@@ -1377,6 +1659,17 @@ export default {
   border-bottom: 1px solid #e5e7eb;
 }
 
+.summary-row.bonus {
+  background: #f0fdf4;
+  padding: 0.5rem;
+  margin: 0.5rem -0.5rem;
+  border-radius: 4px;
+}
+
+.bonus-amount {
+  color: #16a34a;
+}
+
 .modal-note {
   display: flex;
   align-items: flex-start;
@@ -1471,12 +1764,39 @@ export default {
     gap: 1.5rem;
   }
 
-  .points-card {
+  .points-display {
     align-self: center;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .conversion-summary-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .auto-convert-toggle {
+    align-self: center;
+  }
+
+  .conversion-grid {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .conversion-arrow {
+    transform: rotate(90deg);
+    margin: 0;
   }
 
   .stats-row {
     gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .conversion-info-box {
+    font-size: 0.8rem;
   }
 
   .loyalty-header {
@@ -1515,6 +1835,7 @@ export default {
 
 @media (max-width: 480px) {
   .header-section,
+  .conversion-summary-section,
   .loyalty-section,
   .tiers-section,
   .rewards-section,
@@ -1526,7 +1847,7 @@ export default {
     font-size: 1.5rem;
   }
 
-  .points-number {
+  .points-number, .conversion-number {
     font-size: 2rem;
   }
 
