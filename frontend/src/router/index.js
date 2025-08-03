@@ -274,6 +274,12 @@ const routes = [
     component: () => import('../views/staff/StaffProfile.vue'),
     meta: { requiresAuth: true, role: 'staff' }
   },
+  {
+    path: '/staff/analytics',
+    name: 'StaffAnalytics',
+    component: () => import('../views/staff/StaffAnalytics.vue'),
+    meta: { requiresAuth: true, role: 'staff' }
+  },
 ]
 
 const router = createRouter({

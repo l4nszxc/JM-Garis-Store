@@ -346,3 +346,281 @@ exports.createPhysicalOrder = async (req, res) => {
         connection.release();
     }
 };
+
+// Staff Analytics Methods
+exports.getStaffAnalyticsStats = async (req, res) => {
+    try {
+        const staffId = req.user.id;
+        const { timeFilter } = req.query;
+        
+        const now = new Date();
+        let startDate, endDate, previousStartDate, previousEndDate;
+        
+        switch(timeFilter) {
+            case 'today':
+                startDate = new Date(now);
+                startDate.setHours(0, 0, 0, 0);
+                endDate = new Date(now);
+                endDate.setHours(23, 59, 59, 999);
+                previousStartDate = new Date(startDate);
+                previousStartDate.setDate(previousStartDate.getDate() - 1);
+                previousEndDate = new Date(endDate);
+                previousEndDate.setDate(previousEndDate.getDate() - 1);
+                break;
+            case 'week':
+                const weekStart = new Date(now);
+                weekStart.setDate(now.getDate() - now.getDay());
+                weekStart.setHours(0, 0, 0, 0);
+                startDate = weekStart;
+                endDate = new Date(weekStart);
+                endDate.setDate(weekStart.getDate() + 6);
+                endDate.setHours(23, 59, 59, 999);
+                previousStartDate = new Date(startDate);
+                previousStartDate.setDate(previousStartDate.getDate() - 7);
+                previousEndDate = new Date(endDate);
+                previousEndDate.setDate(previousEndDate.getDate() - 7);
+                break;
+            case 'month':
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                previousStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                previousEndDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+                break;
+            case 'year':
+                startDate = new Date(now.getFullYear(), 0, 1);
+                endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+                previousStartDate = new Date(now.getFullYear() - 1, 0, 1);
+                previousEndDate = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+                break;
+        }
+        
+        // Get current period stats - include all orders handled by this staff that generated revenue
+        let currentStatsQuery = `
+            SELECT 
+                COALESCE(SUM(o.total_amount), 0) as totalSales,
+                COUNT(o.order_id) as totalOrders,
+                COALESCE(AVG(o.total_amount), 0) as avgOrderValue
+            FROM orders o 
+            WHERE o.accepted_by = ? 
+            AND o.status IN ('paid', 'preparing', 'ready for pickup', 'completed', 'ready_for_pickup')
+        `;
+        
+        let currentParams = [staffId];
+        if (timeFilter !== 'all') {
+            currentStatsQuery += ' AND o.accepted_at BETWEEN ? AND ?';
+            currentParams.push(startDate, endDate);
+        }
+        
+        const [currentStats] = await db.execute(currentStatsQuery, currentParams);
+        
+        // Get previous period stats for comparison
+        let previousStatsQuery = `
+            SELECT 
+                COALESCE(SUM(o.total_amount), 0) as totalSales,
+                COUNT(o.order_id) as totalOrders
+            FROM orders o 
+            WHERE o.accepted_by = ? 
+            AND o.status IN ('paid', 'preparing', 'ready for pickup', 'completed', 'ready_for_pickup')
+        `;
+        
+        let previousParams = [staffId];
+        if (timeFilter !== 'all' && timeFilter !== 'year') {
+            previousStatsQuery += ' AND o.accepted_at BETWEEN ? AND ?';
+            previousParams.push(previousStartDate, previousEndDate);
+        }
+        
+        const [previousStats] = await db.execute(previousStatsQuery, previousParams);
+        
+        // Get today's income
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayEnd = new Date(today);
+        todayEnd.setHours(23, 59, 59, 999);
+        
+        const [todayStats] = await db.execute(`
+            SELECT COALESCE(SUM(o.total_amount), 0) as dailyIncome
+            FROM orders o 
+            WHERE o.accepted_by = ? 
+            AND o.status IN ('paid', 'preparing', 'ready for pickup', 'completed', 'ready_for_pickup')
+            AND o.accepted_at BETWEEN ? AND ?
+        `, [staffId, today, todayEnd]);
+        
+        // Get yesterday's income for comparison
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayEnd = new Date(yesterday);
+        yesterdayEnd.setHours(23, 59, 59, 999);
+        
+        const [yesterdayStats] = await db.execute(`
+            SELECT COALESCE(SUM(o.total_amount), 0) as dailyIncome
+            FROM orders o 
+            WHERE o.accepted_by = ? 
+            AND o.status IN ('paid', 'preparing', 'ready for pickup', 'completed', 'ready_for_pickup')
+            AND o.accepted_at BETWEEN ? AND ?
+        `, [staffId, yesterday, yesterdayEnd]);
+        
+        // Calculate growth percentages
+        const salesGrowth = previousStats[0]?.totalSales > 0 
+            ? ((currentStats[0].totalSales - previousStats[0].totalSales) / previousStats[0].totalSales) * 100 
+            : 0;
+            
+        const ordersGrowth = previousStats[0]?.totalOrders > 0 
+            ? ((currentStats[0].totalOrders - previousStats[0].totalOrders) / previousStats[0].totalOrders) * 100 
+            : 0;
+            
+        const dailyGrowth = yesterdayStats[0]?.dailyIncome > 0 
+            ? ((todayStats[0].dailyIncome - yesterdayStats[0].dailyIncome) / yesterdayStats[0].dailyIncome) * 100 
+            : 0;
+        
+        res.json({
+            totalSales: currentStats[0].totalSales || 0,
+            dailyIncome: todayStats[0].dailyIncome || 0,
+            totalOrders: currentStats[0].totalOrders || 0,
+            avgOrderValue: currentStats[0].avgOrderValue || 0,
+            salesGrowth: salesGrowth || 0,
+            ordersGrowth: ordersGrowth || 0,
+            dailyGrowth: dailyGrowth || 0
+        });
+        
+    } catch (error) {
+        console.error('Error fetching staff analytics stats:', error);
+        res.status(500).json({ message: 'Error fetching analytics data' });
+    }
+};
+
+exports.getTopCustomers = async (req, res) => {
+    try {
+        const staffId = req.user.id;
+        const { period } = req.query;
+        
+        const now = new Date();
+        let startDate;
+        let queryParams = [staffId];
+        let dateCondition = '';
+        
+        switch(period) {
+            case 'weekly':
+                startDate = new Date(now);
+                startDate.setDate(now.getDate() - 7);
+                dateCondition = 'AND o.accepted_at >= ?';
+                queryParams.push(startDate);
+                break;
+            case 'monthly':
+                startDate = new Date(now);
+                startDate.setMonth(now.getMonth() - 1);
+                dateCondition = 'AND o.accepted_at >= ?';
+                queryParams.push(startDate);
+                break;
+            case 'quarterly':
+                startDate = new Date(now);
+                startDate.setMonth(now.getMonth() - 3);
+                dateCondition = 'AND o.accepted_at >= ?';
+                queryParams.push(startDate);
+                break;
+            case 'annually':
+                startDate = new Date(now);
+                startDate.setFullYear(now.getFullYear() - 1);
+                dateCondition = 'AND o.accepted_at >= ?';
+                queryParams.push(startDate);
+                break;
+        }
+        
+        const query = `
+            SELECT 
+                u.id as user_id,
+                u.username as customer_name,
+                u.email,
+                COUNT(o.order_id) as order_count,
+                SUM(o.total_amount) as total_spent,
+                AVG(o.total_amount) as avg_order_value,
+                MAX(o.accepted_at) as last_order_date
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            WHERE o.accepted_by = ? 
+            AND o.status IN ('paid', 'preparing', 'ready for pickup', 'completed', 'ready_for_pickup')
+            ${dateCondition}
+            GROUP BY u.id, u.username, u.email
+            ORDER BY total_spent DESC, order_count DESC
+            LIMIT 10
+        `;
+        
+        const [customers] = await db.execute(query, queryParams);
+        
+        res.json(customers);
+        
+    } catch (error) {
+        console.error('Error fetching top customers:', error);
+        res.status(500).json({ message: 'Error fetching top customers' });
+    }
+};
+
+exports.getSalesInsights = async (req, res) => {
+    try {
+        const staffId = req.user.id;
+        
+        // Get most sold product by this staff
+        const [mostSoldProduct] = await db.execute(`
+            SELECT 
+                p.products_id,
+                p.name,
+                p.image,
+                SUM(oi.quantity) as totalSold,
+                SUM(oi.price * oi.quantity) as revenue
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.order_id
+            JOIN products p ON oi.product_id = p.products_id
+            WHERE o.accepted_by = ? 
+            AND o.status IN ('paid', 'preparing', 'ready for pickup', 'completed', 'ready_for_pickup')
+            GROUP BY p.products_id, p.name, p.image
+            ORDER BY totalSold DESC
+            LIMIT 1
+        `, [staffId]);
+        
+        // Get best sales day
+        const [bestDay] = await db.execute(`
+            SELECT 
+                DATE(o.accepted_at) as date,
+                COUNT(o.order_id) as order_count,
+                SUM(o.total_amount) as revenue
+            FROM orders o
+            WHERE o.accepted_by = ? 
+            AND o.status IN ('paid', 'preparing', 'ready for pickup', 'completed', 'ready_for_pickup')
+            AND o.accepted_at IS NOT NULL
+            GROUP BY DATE(o.accepted_at)
+            ORDER BY revenue DESC
+            LIMIT 1
+        `, [staffId]);
+        
+        // Get average order value
+        const [avgOrder] = await db.execute(`
+            SELECT AVG(o.total_amount) as avgOrderValue
+            FROM orders o
+            WHERE o.accepted_by = ? 
+            AND o.status IN ('paid', 'preparing', 'ready for pickup', 'completed', 'ready_for_pickup')
+        `, [staffId]);
+        
+        // Get completion rate (orders with revenue-generating status vs all accepted orders)
+        const [completionRate] = await db.execute(`
+            SELECT 
+                COUNT(CASE WHEN status IN ('paid', 'preparing', 'ready for pickup', 'completed', 'ready_for_pickup') THEN 1 END) as completed,
+                COUNT(*) as total
+            FROM orders o
+            WHERE o.accepted_by = ?
+        `, [staffId]);
+        
+        const completion = completionRate[0].total > 0 
+            ? (completionRate[0].completed / completionRate[0].total) * 100 
+            : 0;
+        
+        res.json({
+            mostSold: mostSoldProduct[0] || null,
+            bestDay: bestDay[0] || null,
+            avgOrderValue: avgOrder[0]?.avgOrderValue || 0,
+            completionRate: completion
+        });
+        
+    } catch (error) {
+        console.error('Error fetching sales insights:', error);
+        res.status(500).json({ message: 'Error fetching sales insights' });
+    }
+};

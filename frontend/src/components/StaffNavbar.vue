@@ -32,6 +32,13 @@
                     <span>Create Order</span>
                 </router-link>
 
+                <router-link to="/staff/analytics" class="menu-item" exact-active-class="active">
+                    <div class="icon-container analytics-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <span>Analytics</span>
+                </router-link>
+
                 <router-link to="/staff/profile" class="menu-item" exact-active-class="active">
                     <div class="icon-container profile-management-icon">
                         <i class="fas fa-user-cog"></i>
@@ -229,6 +236,11 @@ export default {
 
 .create-order-icon {
     background-color: #f39c12;
+    color: white;
+}
+
+.analytics-icon {
+    background-color: #9b59b6;
     color: white;
 }
 

@@ -10,5 +10,10 @@ router.put('/orders/:orderId/status', authenticate, staffController.updateOrderS
 router.post('/orders/:orderId/accept', authenticate, staffController.acceptOrder);
 router.post('/orders/create', authenticate, staffController.createPhysicalOrder);
 
+// Analytics routes
+router.get('/analytics/stats', authenticate, staffController.getStaffAnalyticsStats);
+router.get('/analytics/top-customers', authenticate, staffController.getTopCustomers);
+router.get('/analytics/insights', authenticate, staffController.getSalesInsights);
+
 
 module.exports = router;
