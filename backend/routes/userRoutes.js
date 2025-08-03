@@ -48,5 +48,6 @@ router.delete('/remove-profile-picture', userController.removeProfilePicture);
 
 // Logout route (requires authentication)
 router.post('/logout', userController.logout);
+router.get('/username/:userId', userController.getUsernameById);
 
 module.exports = router;

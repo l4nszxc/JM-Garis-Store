@@ -92,7 +92,7 @@ export default {
                                 this.$router.push('/staff');
                                 break;
                             default:
-                                this.$router.push('/home');
+                                this.$router.push('/user/home');
                         }
                     } else {
                         this.$router.push('/login');

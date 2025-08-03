@@ -357,7 +357,7 @@ export default {
     }
   },
   computed: {
-    profilePictureUrl() {
+    profileImageUrl() {
       if (!this.profileData.profile_picture) {
         return this.getDefaultAvatar(this.username);
       }

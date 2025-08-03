@@ -332,22 +332,27 @@ export default {
       this.error = null;
       
       try {
-        // Create permanent QR data (no timestamp - permanent identity)
+        // Create unique permanent QR data for this specific user
+        const timestamp = Date.now();
         const qrData = {
           type: 'user_identification',
           userId: this.userId,
           username: this.username,
+          accountId: `jmg-${this.userId}-${timestamp}`, // Unique account identifier
           storeId: 'jm-garis-store',
-          version: '1.0'
+          version: '1.0',
+          createdAt: new Date().toISOString(),
+          hash: this.generateUserHash(this.userId, this.username, timestamp) // Unique hash
         };
         
         this.qrData = JSON.stringify(qrData);
-        console.log('Generated QR data:', this.qrData);
+        console.log('Generated unique QR data for user:', this.qrData);
         
-        // Store permanently in localStorage
-        localStorage.setItem(`qr-${this.userId}`, this.qrData);
+        // Store permanently in localStorage with user-specific key
+        const userQRKey = `qr-user-${this.userId}-${this.username}`;
+        localStorage.setItem(userQRKey, this.qrData);
         const currentDate = this.formatDateTime(new Date());
-        localStorage.setItem(`qr-date-${this.userId}`, currentDate);
+        localStorage.setItem(`qr-date-user-${this.userId}`, currentDate);
         this.generatedDate = currentDate;
         
         // Ensure canvas is ready
@@ -366,7 +371,7 @@ export default {
           throw new Error('Canvas element not available after retries');
         }
         
-        console.log('Canvas prepared, generating QR code...');
+        console.log('Canvas prepared, generating unique QR code...');
         
         // Generate QR code directly to canvas
         await QRCode.toCanvas(canvas, this.qrData, {
@@ -379,7 +384,7 @@ export default {
           errorCorrectionLevel: 'M'
         });
         
-        console.log('QR code generated successfully on canvas');
+        console.log('Unique QR code generated successfully on canvas');
         
         // Create designed QR code for download
         await this.createDesignedQR();
@@ -401,33 +406,59 @@ export default {
 
     async loadOrGenerateQR() {
       try {
-        // Check if we have a stored QR for this user
-        const storedQR = localStorage.getItem(`qr-${this.userId}`);
-        const storedDate = localStorage.getItem(`qr-date-${this.userId}`);
+        // Check if we have a stored QR for this specific user
+        const userQRKey = `qr-user-${this.userId}-${this.username}`;
+        const storedQR = localStorage.getItem(userQRKey);
+        const storedDate = localStorage.getItem(`qr-date-user-${this.userId}`);
         
+        console.log('Stored QR key:', userQRKey);
         console.log('Stored QR:', storedQR);
         console.log('User ID:', this.userId);
+        console.log('Username:', this.username);
         
         if (storedQR && storedDate) {
-          // Load existing permanent QR
-          this.qrData = storedQR;
-          this.generatedDate = storedDate;
-          console.log('Loading existing QR data:', this.qrData);
-          
-          await this.$nextTick();
-          await this.waitForCanvasElement();
-          await this.renderStoredQR();
-        } else {
-          // Generate new permanent QR
-          console.log('No stored QR found, generating new one...');
-          await this.$nextTick();
-          await this.waitForCanvasElement();
-          await this.generatePermanentQR();
+          // Verify the stored QR is for the current user
+          try {
+            const parsedQR = JSON.parse(storedQR);
+            if (parsedQR.userId === this.userId && parsedQR.username === this.username) {
+              // Load existing permanent QR
+              this.qrData = storedQR;
+              this.generatedDate = storedDate;
+              console.log('Loading existing user-specific QR data:', this.qrData);
+              
+              await this.$nextTick();
+              await this.waitForCanvasElement();
+              await this.renderStoredQR();
+              return;
+            } else {
+              console.log('Stored QR does not match current user, generating new one...');
+            }
+          } catch (parseError) {
+            console.log('Invalid stored QR data, generating new one...');
+          }
         }
+        
+        // Generate new permanent QR for this user
+        console.log('No valid stored QR found, generating new unique QR...');
+        await this.$nextTick();
+        await this.waitForCanvasElement();
+        await this.generatePermanentQR();
       } catch (error) {
         console.error('Error in loadOrGenerateQR:', error);
         this.error = `Failed to load QR code: ${error.message}`;
       }
+    },
+
+    generateUserHash(userId, username, timestamp) {
+      // Simple hash function to create unique identifier
+      const str = `${userId}-${username}-${timestamp}-jmgaris`;
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+      return Math.abs(hash).toString(36);
     },
 
     async createDesignedQR() {

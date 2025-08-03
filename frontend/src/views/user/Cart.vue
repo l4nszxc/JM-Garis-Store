@@ -396,7 +396,7 @@ export default {
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/users/getUsernameById/${this.syncStatus.partnerId}`, {
+                const response = await fetch(`http://localhost:7904/api/users/username/${this.syncStatus.partnerId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
