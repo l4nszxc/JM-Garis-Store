@@ -83,6 +83,9 @@
           <router-link to="/profile" class="dropdown-item">
               <i class="fas fa-user"></i> Profile
           </router-link>
+          <router-link to="/qr-code" class="dropdown-item">
+            <i class="fas fa-qrcode"></i> Your QR Code
+          </router-link>
           <router-link to="/notifications" class="dropdown-item">
             <i class="fas fa-bell"></i> Notifications
             <span v-if="unreadNotificationsCount > 0" class="menu-badge">
@@ -103,6 +106,7 @@
 </template>
 
 <script>
+// ...existing script remains the same...
 export default {
   name: 'Navbar',
   props: {
@@ -458,6 +462,7 @@ export default {
 </script>
 
 <style scoped>
+/* ...existing styles remain the same... */
 .navbar {
   background-color: #ffffff;
   padding: 0.5rem 2rem;

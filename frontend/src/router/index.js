@@ -1,5 +1,3 @@
-import './assets/admin.css'
-import './assets/staff.css'
 import { createRouter, createWebHistory } from 'vue-router'
 import { checkTokenExpiration } from '../utils/auth.js';
 import Register from '../views/Register.vue'
@@ -28,6 +26,7 @@ import AdminReports from '../views/admin/AdminReports.vue'
 import DigitalReceipt from '../views/user/DigitalReceipt.vue'
 import PaymentSuccess from '../views/user/PaymentSuccess.vue'
 import PaymentFailed from '../views/user/PaymentFailed.vue'
+import QRCode from '../views/user/QRCode.vue'
 
 const routes = [
   {
@@ -74,6 +73,12 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: Profile,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/qr-code',
+    name: 'QRCode',
+    component: QRCode,
     meta: { requiresAuth: true }
   },
   {
@@ -147,9 +152,6 @@ const routes = [
     name: 'PaymentFailed',
     component: PaymentFailed
   },
-
-
-  
   // Admin Routes
   {
     path: '/admin',
@@ -241,9 +243,6 @@ const routes = [
     component: () => import('../views/admin/AdminSalesInventoryReports.vue'),
     meta: { requiresAuth: true, roles: ['admin'] }
   },
-
-
-
   // Staff Routes
   {
     path: '/staff',
