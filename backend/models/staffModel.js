@@ -28,7 +28,10 @@ class Staff {
             const [rows] = await db.execute(`
                 SELECT 
                     o.order_id,
-                    u.username as customer_name,
+                    CASE 
+                        WHEN o.is_physical_order = 1 THEN o.customer_name
+                        ELSE u.username
+                    END as customer_name,
                     o.status,
                     o.total_amount,
                     o.created_at,
@@ -36,9 +39,11 @@ class Staff {
                     o.accepted_by,
                     o.accepted_at,
                     o.payment_method,
+                    o.is_physical_order,
+                    u.email,
                     s.username as staff_name
                 FROM orders o
-                JOIN users u ON o.user_id = u.id
+                LEFT JOIN users u ON o.user_id = u.id
                 LEFT JOIN users s ON o.accepted_by = s.id
                 ORDER BY o.created_at DESC
             `);
@@ -52,10 +57,14 @@ class Staff {
         try {
             const [orderDetails] = await db.query(
                 `SELECT o.*, 
-                    u.username as customer_name,
+                    CASE 
+                        WHEN o.is_physical_order = 1 THEN o.customer_name
+                        ELSE u.username
+                    END as customer_name,
                     s.username as staff_name,
                     ad.amount as discount_amount,
                     o.payment_method,
+                    u.email,
                     (SELECT SUM(oi.price * oi.quantity) 
                      FROM order_items oi 
                      WHERE oi.order_id = o.order_id) as subtotal

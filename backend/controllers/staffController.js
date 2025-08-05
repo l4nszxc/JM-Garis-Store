@@ -35,13 +35,17 @@ exports.updateOrderStatus = async (req, res) => {
 
         // Get order details with user email and discount information
         const [orderResult] = await db.execute(
-            `SELECT o.*, u.email, u.username as customer_name,
+            `SELECT o.*, u.email, 
+                    CASE 
+                        WHEN o.is_physical_order = 1 THEN o.customer_name
+                        ELSE u.username
+                    END as customer_name,
                     ad.amount as discount_amount,
                     (SELECT SUM(oi.price * oi.quantity) 
                      FROM order_items oi 
                      WHERE oi.order_id = o.order_id) as subtotal
              FROM orders o 
-             JOIN users u ON o.user_id = u.id
+             LEFT JOIN users u ON o.user_id = u.id
              LEFT JOIN available_discounts ad ON o.order_id = ad.order_id AND ad.used = TRUE 
              WHERE o.order_id = ?`,
             [orderId]
@@ -111,13 +115,17 @@ exports.acceptOrder = async (req, res) => {
 
         // Get order details with user email and discount information
         const [orderResult] = await db.execute(
-            `SELECT o.*, u.email, u.username as customer_name,
+            `SELECT o.*, u.email, 
+                    CASE 
+                        WHEN o.is_physical_order = 1 THEN o.customer_name
+                        ELSE u.username
+                    END as customer_name,
                     ad.amount as discount_amount,
                     (SELECT SUM(oi.price * oi.quantity) 
                      FROM order_items oi 
                      WHERE oi.order_id = o.order_id) as subtotal
              FROM orders o 
-             JOIN users u ON o.user_id = u.id
+             LEFT JOIN users u ON o.user_id = u.id
              LEFT JOIN available_discounts ad ON o.order_id = ad.order_id AND ad.used = TRUE 
              WHERE o.order_id = ?`,
             [orderId]
