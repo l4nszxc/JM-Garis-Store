@@ -197,6 +197,8 @@
             :show="showOrdersModal"
             :selectedItems="selectedItems"
             :availableDiscounts="availableDiscounts"
+            :userAddress="userAddress"
+            :userProfile="userProfile"
             @close="showOrdersModal = false"
             @place-order="handlePlaceOrder"
             @payment-error="handlePaymentError"
@@ -256,6 +258,8 @@ export default {
     data() {
         return {
             username: '',
+            userAddress: '',
+            userProfile: {},
             showLogoutModal: false,
             showOrdersModal: false,
             cartItems: [],
@@ -622,19 +626,34 @@ export default {
                     return;
                 }
 
-                const response = await fetch('http://localhost:7904/api/users/getUsername', {
+                // Fetch username
+                const usernameResponse = await fetch('http://localhost:7904/api/users/getUsername', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     },
                     credentials: 'include'
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
+                if (usernameResponse.ok) {
+                    const data = await usernameResponse.json();
                     this.username = data.username;
                 }
+
+                // Fetch user profile for address
+                const profileResponse = await fetch('http://localhost:7904/api/users/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    credentials: 'include'
+                });
+
+                if (profileResponse.ok) {
+                    const profileData = await profileResponse.json();
+                    this.userAddress = profileData.address || '';
+                    this.userProfile = profileData;
+                }
             } catch (error) {
-                console.error('Error fetching username:', error);
+                console.error('Error fetching user data:', error);
             }
         },
         
@@ -736,7 +755,7 @@ export default {
 <style scoped>
 /* Main Container */
 .cart-container {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: Arial, sans-serif;
     min-height: 100vh;
     background-color: #f8fafb;
 }

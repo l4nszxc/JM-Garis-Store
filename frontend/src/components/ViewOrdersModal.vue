@@ -46,6 +46,53 @@
                             <small>Pay now with GCash</small>
                         </div>
                     </label>
+                    
+                    <label class="payment-option">
+                        <input 
+                            type="radio" 
+                            value="hatid" 
+                            v-model="selectedPaymentMethod"
+                            name="paymentMethod"
+                        >
+                        <div class="payment-card hatid-card">
+                            <i class="fas fa-motorcycle"></i>
+                            <span>Deliver with HATID</span>
+                            <small>Cash on delivery via HATID</small>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Delivery Address Section (only for HATID) -->
+            <div v-if="selectedPaymentMethod === 'hatid'" class="delivery-address-section">
+                <h4 class="section-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    Delivery Address
+                </h4>
+                <textarea 
+                    v-model="deliveryAddress"
+                    class="address-input"
+                    placeholder="Enter your complete delivery address..."
+                    rows="3"
+                    required
+                ></textarea>
+                <div class="address-note">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Please provide a complete address for HATID delivery</span>
+                </div>
+                
+                <div class="special-instructions-field">
+                    <label for="specialInstructions" class="section-title">
+                        <i class="fas fa-clipboard-list"></i>
+                        Special Instructions
+                    </label>
+                    <textarea 
+                        id="specialInstructions"
+                        v-model="specialInstructions"
+                        class="address-input"
+                        placeholder="Any special instructions for HATID delivery (optional)..."
+                        rows="2"
+                    ></textarea>
                 </div>
             </div>
 
@@ -185,7 +232,7 @@
                     <button 
                         @click="confirmOrder" 
                         class="confirm-btn"
-                        :disabled="localItems.length === 0 || !selectedPaymentMethod || processingPayment"
+                        :disabled="!isFormValid"
                     >
                         <i class="fas fa-spinner fa-spin" v-if="processingPayment"></i>
                         <i class="fas fa-check" v-else></i> 
@@ -196,6 +243,68 @@
                         Close
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HATID Message Modal -->
+    <div v-if="showHatidModal" class="modal-overlay" @click.self="closeHatidModal">
+        <div class="hatid-modal-content">
+            <div class="hatid-modal-header">
+                <h3>
+                    <i class="fas fa-motorcycle"></i>
+                    Message HATID for Delivery
+                </h3>
+                <button @click="closeHatidModal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="hatid-modal-body">
+                <div class="order-success-info">
+                    <i class="fas fa-check-circle"></i>
+                    <p>Your order #{{ currentOrderId }} has been created successfully!</p>
+                </div>
+                
+                <div class="message-section">
+                    <h4>Copy this message and send it to HATID:</h4>
+                    <div class="message-box">
+                        <textarea 
+                            ref="hatidMessage"
+                            :value="hatidMessage"
+                            readonly
+                            rows="6"
+                            class="message-textarea"
+                        ></textarea>
+                    </div>
+                    
+                    <div class="copy-actions">
+                        <button @click="copyMessage" class="copy-btn">
+                            <i :class="copySuccess ? 'fas fa-check' : 'fas fa-copy'"></i>
+                            {{ copySuccess ? 'Copied!' : 'Copy Message' }}
+                        </button>
+                        <a 
+                            :href="hatidMessengerLink" 
+                            target="_blank" 
+                            class="messenger-btn"
+                        >
+                            <i class="fab fa-facebook-messenger"></i>
+                            Open HATID Messenger
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="instruction-note">
+                    <i class="fas fa-info-circle"></i>
+                    <p>After copying the message, click "Open HATID Messenger" to go to their Facebook page and send the message directly.</p>
+                </div>
+            </div>
+            
+            <div class="hatid-modal-actions">
+                <button @click="closeHatidModal" class="done-btn">
+                    <i class="fas fa-check"></i>
+                    Done
+                </button>
             </div>
         </div>
     </div>
@@ -213,6 +322,14 @@ export default {
         availableDiscounts: {
             type: Array,
             default: () => []
+        },
+        userAddress: {
+            type: String,
+            default: ''
+        },
+        userProfile: {
+            type: Object,
+            default: () => ({})
         }
     },
     data() {
@@ -222,9 +339,14 @@ export default {
             packagingPreference: false,
             selectedPaymentMethod: 'cash',
             processingPayment: false,
-             showPaymentStatus: false,
+            showPaymentStatus: false,
             currentOrderId: null,
-            currentAmount: 0
+            currentAmount: 0,
+            deliveryAddress: '',
+            specialInstructions: '',
+            showHatidModal: false,
+            copySuccess: false,
+            hatidMessengerLink: 'https://www.facebook.com/hatidcpn?rdid=j0kvikC7TTWnwK9z&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1C4RDcdzKp%2F'
         }
     },
     watch: {
@@ -233,6 +355,10 @@ export default {
                 this.localItems = JSON.parse(JSON.stringify(this.selectedItems));
                 this.selectedPaymentMethod = 'cash'; // Reset to default
                 this.processingPayment = false;
+                this.deliveryAddress = this.userAddress || '';
+                this.specialInstructions = '';
+                this.showHatidModal = false;
+                this.copySuccess = false;
             }
         },
         selectedItems: {
@@ -259,6 +385,55 @@ export default {
         },
         calculateTotal() {
             return Math.max(0, this.subtotal - this.discountAmount);
+        },
+        hatidMessage() {
+            const address = this.deliveryAddress || 'Address not provided';
+            const currentDateTime = new Date().toLocaleString('en-PH', {
+                timeZone: 'Asia/Manila',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+            
+            // Get receiver information from user profile
+            const receiverName = this.userProfile?.firstname && this.userProfile?.lastname 
+                ? `${this.userProfile.firstname} ${this.userProfile.lastname}`.trim()
+                : '';
+            const receiverContact = this.userProfile?.phone_number || '';
+            
+            return `Hi, thank you for reaching us!
+
+To ensure quality service, this conversation will be recorded and your information will be used to process current and future transactions.
+
+Time and date: ${currentDateTime}
+
+Exact Drop off (DO): ${address}
+Nearest Landmark: 
+Exact Pick up(PU)/Store: JG Garis Store, Barcenaga, Naujan City, Oriental Mindoro
+(QTY) Food/Items: ${this.localItems.length} item(s) - Order ID: ${this.currentOrderId}
+
+Name of Sender: JG Garis Store
+Contact #: 
+Name of Receiver: ${receiverName}
+Contact #: ${receiverContact}
+Mode of Payment: Cash on Delivery - ${this.formatPrice(this.calculateTotal)}
+
+Special Instructions: ${this.specialInstructions || ''}`;
+        },
+        isFormValid() {
+            if (this.localItems.length === 0 || !this.selectedPaymentMethod || this.processingPayment) {
+                return false;
+            }
+            
+            // Additional validation for HATID delivery
+            if (this.selectedPaymentMethod === 'hatid' && !this.deliveryAddress.trim()) {
+                return false;
+            }
+            
+            return true;
         }
     },
     methods: {
@@ -288,10 +463,18 @@ export default {
         getConfirmButtonText() {
             if (this.selectedPaymentMethod === 'gcash') {
                 return 'Pay with GCash';
+            } else if (this.selectedPaymentMethod === 'hatid') {
+                return 'Order via HATID';
             }
             return 'Confirm Order';
         },
         async confirmOrder() {
+            // Validate HATID delivery address
+            if (this.selectedPaymentMethod === 'hatid' && !this.deliveryAddress.trim()) {
+                this.$emit('payment-error', 'Please provide a delivery address for HATID delivery');
+                return;
+            }
+            
             this.processingPayment = true;
             
             try {
@@ -307,13 +490,16 @@ export default {
                     items: formattedItems,
                     discountId: this.selectedDiscountId,
                     packagingPreference: this.packagingPreference ? 'plastic' : 'eco',
-                    paymentMethod: this.selectedPaymentMethod
+                    paymentMethod: this.selectedPaymentMethod,
+                    deliveryAddress: this.selectedPaymentMethod === 'hatid' ? this.deliveryAddress : null
                 };
                 
                 console.log('Order data being sent:', orderData);
                 
                 if (this.selectedPaymentMethod === 'gcash') {
                     await this.processGCashPayment(orderData);
+                } else if (this.selectedPaymentMethod === 'hatid') {
+                    await this.processHatidOrder(orderData);
                 } else {
                     this.$emit('place-order', orderData);
                 }
@@ -475,6 +661,84 @@ export default {
         handlePaymentFailure(orderId) {
             this.processingPayment = false;
             this.$emit('payment-error', `Payment failed for Order #${orderId}. Please try again or use a different payment method.`);
+        },
+        
+        async processHatidOrder(orderData) {
+            try {
+                // Create the order with HATID delivery
+                const token = localStorage.getItem('token');
+                const orderResponse = await fetch('http://localhost:7904/api/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        items: orderData.items,
+                        totalAmount: this.calculateTotal,
+                        discountId: orderData.discountId,
+                        packagingPreference: orderData.packagingPreference,
+                        paymentMethod: 'hatid',
+                        deliveryAddress: orderData.deliveryAddress,
+                        status: 'pending_delivery'
+                    })
+                });
+
+                if (!orderResponse.ok) {
+                    throw new Error('Failed to create HATID order');
+                }
+
+                const { orderId } = await orderResponse.json();
+                this.currentOrderId = orderId;
+                
+                // Close the main modal and show HATID modal
+                this.$emit('close');
+                this.showHatidModal = true;
+                this.processingPayment = false;
+                
+            } catch (error) {
+                console.error('HATID order error:', error);
+                throw error;
+            }
+        },
+        
+        copyMessage() {
+            const textarea = this.$refs.hatidMessage;
+            if (textarea) {
+                textarea.select();
+                textarea.setSelectionRange(0, 99999); // For mobile devices
+                
+                try {
+                    document.execCommand('copy');
+                    this.copySuccess = true;
+                    
+                    // Reset copy success after 2 seconds  
+                    setTimeout(() => {
+                        this.copySuccess = false;
+                    }, 2000);
+                } catch (err) {
+                    console.error('Could not copy text: ', err);
+                    // Fallback: try using the Clipboard API
+                    navigator.clipboard.writeText(this.hatidMessage).then(() => {
+                        this.copySuccess = true;
+                        setTimeout(() => {
+                            this.copySuccess = false;
+                        }, 2000);
+                    }).catch(() => {
+                        this.$emit('payment-error', 'Could not copy message to clipboard');
+                    });
+                }
+            }
+        },
+        
+        closeHatidModal() {
+            this.showHatidModal = false;
+            this.copySuccess = false;
+            // Show success message
+            this.$emit('payment-success', {
+                message: `HATID order #${this.currentOrderId} created successfully! Message HATID to complete your delivery.`,
+                orderId: this.currentOrderId
+            });
         }
     }
 }
@@ -576,7 +840,7 @@ export default {
 
 .payment-methods {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 1rem;
 }
 
@@ -642,9 +906,74 @@ export default {
     background-color: #f0f8ff;
 }
 
+.hatid-card i {
+    color: #FF6B35;
+}
+
+.payment-option input[type="radio"]:checked + .hatid-card i {
+    color: #FF6B35;
+}
+
+.payment-option input[type="radio"]:checked + .hatid-card {
+    border-color: #FF6B35;
+    background-color: #fff5f2;
+}
+
 .payment-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Delivery Address Section */
+.delivery-address-section {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f1f9f1;
+    background-color: #fff9f5;
+}
+
+.address-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #2a3f2a;
+    background-color: white;
+    transition: border-color 0.2s ease;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.address-input:focus {
+    outline: none;
+    border-color: #FF6B35;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+}
+
+.address-input::placeholder {
+    color: #94a3b8;
+}
+
+.address-note {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    color: #FF6B35;
+    font-size: 0.9rem;
+}
+
+.address-note i {
+    font-size: 1rem;
+}
+
+.special-instructions-field {
+    margin-top: 1.5rem;
+}
+
+.special-instructions-field .section-title {
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
 }
 
 /* Packaging Section */
@@ -1064,13 +1393,20 @@ input:checked + .slider:before {
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+    .payment-methods {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+}
+
 @media (max-width: 768px) {
     .modal-content {
         margin: 1rem;
         max-height: 95vh;
     }
     
-    .modal-header, .payment-method-section, .packaging-section, .discount-section, .scrollable-content, .fixed-bottom {
+    .modal-header, .payment-method-section, .delivery-address-section, .packaging-section, .discount-section, .scrollable-content, .fixed-bottom {
         padding-left: 1.5rem;
         padding-right: 1.5rem;
     }
@@ -1126,5 +1462,228 @@ input:checked + .slider:before {
 
 .scrollable-content::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
+}
+
+/* HATID Modal Styles */
+.hatid-modal-content {
+    background-color: white;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    border-left: 4px solid #FF6B35;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+.hatid-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem 1rem;
+    border-bottom: 1px solid #fff5f2;
+}
+
+.hatid-modal-header h3 {
+    margin: 0;
+    color: #2a3f2a;
+    font-size: 1.5rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.hatid-modal-header h3 i {
+    color: #FF6B35;
+}
+
+.hatid-modal-body {
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+}
+
+.order-success-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background-color: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.order-success-info i {
+    color: #0ea5e9;
+    font-size: 1.25rem;
+}
+
+.order-success-info p {
+    margin: 0;
+    color: #0c4a6e;
+    font-weight: 600;
+}
+
+.message-section h4 {
+    margin: 0 0 1rem 0;
+    color: #2a3f2a;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.message-box {
+    margin-bottom: 1.5rem;
+}
+
+.message-textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #2a3f2a;
+    background-color: #f8f9fa;
+    resize: none;
+    font-family: 'Courier New', monospace;
+    line-height: 1.5;
+}
+
+.message-textarea:focus {
+    outline: none;
+    border-color: #FF6B35;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+}
+
+.copy-actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.copy-btn, .messenger-btn {
+    flex: 1;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    border: 2px solid transparent;
+}
+
+.copy-btn {
+    background-color: #FF6B35;
+    color: white;
+    border-color: #FF6B35;
+}
+
+.copy-btn:hover {
+    background-color: #e55a2b;
+    border-color: #e55a2b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.copy-btn i.fa-check {
+    color: #10b981;
+}
+
+.messenger-btn {
+    background-color: #1877f2;
+    color: white;
+    border-color: #1877f2;
+}
+
+.messenger-btn:hover {
+    background-color: #166fe5;
+    border-color: #166fe5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
+    text-decoration: none;
+    color: white;
+}
+
+.instruction-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    background-color: #fff5f2;
+    border: 1px solid #fed7cc;
+    border-radius: 8px;
+    color: #9a3412;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.instruction-note i {
+    color: #ea580c;
+    font-size: 1rem;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+}
+
+.instruction-note p {
+    margin: 0;
+}
+
+.hatid-modal-actions {
+    padding: 1rem 2rem 1.5rem;
+    border-top: 1px solid #fff5f2;
+}
+
+.done-btn {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background-color: #4CAF50;
+    color: white;
+    border: 2px solid #4CAF50;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.done-btn:hover {
+    background-color: #45a049;
+    border-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+/* Responsive Design for HATID Modal */
+@media (max-width: 768px) {
+    .hatid-modal-content {
+        margin: 1rem;
+        max-height: 90vh;
+    }
+    
+    .copy-actions {
+        flex-direction: column;
+    }
+    
+    .hatid-modal-header, .hatid-modal-body, .hatid-modal-actions {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .hatid-modal-header h3 {
+        font-size: 1.25rem;
+    }
 }
 </style>
