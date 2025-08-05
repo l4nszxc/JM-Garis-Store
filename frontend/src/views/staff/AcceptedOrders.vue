@@ -132,6 +132,15 @@
                         </p>
                         <p><strong>Accepted On:</strong> {{ formatDate(selectedOrder.accepted_at) }}</p>
                         <p><strong>Estimated Ready By:</strong> {{ formatDate(selectedOrder.estimatedPickupTime) }}</p>
+                        <p><strong>Payment Method:</strong> 
+                            <span class="payment-method">
+                                <i v-if="selectedOrder.payment_method === 'cash'" class="fas fa-money-bill-wave"></i>
+                                <i v-else-if="selectedOrder.payment_method === 'gcash'" class="fas fa-mobile-alt"></i>
+                                <i v-else-if="selectedOrder.payment_method === 'hatid'" class="fas fa-truck"></i>
+                                <i v-else class="fas fa-credit-card"></i>
+                                {{ getPaymentMethodLabel(selectedOrder.payment_method) }}
+                            </span>
+                        </p>
                         
                         <!-- Add Packaging Preference Display -->
                         <div class="packaging-info">
@@ -429,6 +438,18 @@ export default {
                 hour: '2-digit',
                 minute: '2-digit'
             })
+        },
+        getPaymentMethodLabel(method) {
+            switch (method) {
+                case 'cash':
+                    return 'Cash on Pickup';
+                case 'gcash':
+                    return 'GCash';
+                case 'hatid':
+                    return 'Deliver with HATID';
+                default:
+                    return method || 'Not specified';
+            }
         },
         isPastDue(estimatedTime) {
             return new Date(estimatedTime) < new Date()
@@ -875,6 +896,24 @@ th {
     border-radius: 20px;
     font-size: 0.9rem;
     font-weight: 500;
+}
+
+.payment-method {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.payment-method i {
+    font-size: 1rem;
+    color: #6c757d;
 }
 
 .product-image {

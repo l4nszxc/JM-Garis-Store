@@ -140,6 +140,7 @@ class Staff {
                     o.created_at,
                     o.accepted_at,
                     o.accepted_by,
+                    o.payment_method,
                     JSON_ARRAYAGG(
                         JSON_OBJECT(
                             'product_id', oi.product_id,
@@ -154,7 +155,7 @@ class Staff {
                 JOIN order_items oi ON o.order_id = oi.order_id
                 JOIN products p ON oi.product_id = p.products_id
                 WHERE o.accepted_by = ?
-                GROUP BY o.order_id, o.status, o.total_amount, o.created_at, o.accepted_at, o.accepted_by, u.username
+                GROUP BY o.order_id, o.status, o.total_amount, o.created_at, o.accepted_at, o.accepted_by, o.payment_method, u.username
                 ORDER BY o.accepted_at DESC
             `, [staffId]);
     
