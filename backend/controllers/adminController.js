@@ -442,7 +442,7 @@ exports.deleteStaff = async (req, res) => {
 
 exports.getAllOrders = async (req, res) => {
     try {
-        const orders = await Admin.getAllOrders();
+        const orders = await Staff.getAllOrders();
         res.json(orders);
     } catch (error) {
         console.error('Error fetching orders:', error);
@@ -453,7 +453,7 @@ exports.getAllOrders = async (req, res) => {
 exports.getOrderDetails = async (req, res) => {
     try {
         const { orderId } = req.params;
-        const orderDetails = await Admin.getOrderDetails(orderId);
+        const orderDetails = await Staff.getOrderDetails(orderId);
         
         if (!orderDetails) {
             return res.status(404).json({ message: 'Order not found' });

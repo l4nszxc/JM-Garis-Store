@@ -137,6 +137,15 @@
                             </span>
                         </p>
                         <p><strong>Order Date:</strong> {{ formatDate(selectedOrder.created_at) }}</p>
+                        <p><strong>Payment Method:</strong> 
+                            <span class="payment-method">
+                                <i v-if="selectedOrder.payment_method === 'cash'" class="fas fa-money-bill-wave"></i>
+                                <i v-else-if="selectedOrder.payment_method === 'gcash'" class="fas fa-mobile-alt"></i>
+                                <i v-else-if="selectedOrder.payment_method === 'hatid'" class="fas fa-truck"></i>
+                                <i v-else class="fas fa-credit-card"></i>
+                                {{ getPaymentMethodLabel(selectedOrder.payment_method) }}
+                            </span>
+                        </p>
                         <p v-if="selectedOrder.staff_name">
                             <strong>Staff Assigned:</strong> 
                             <span class="staff-badge">
@@ -751,6 +760,18 @@ export default {
                 minute: '2-digit'
             });
         },
+        getPaymentMethodLabel(method) {
+            switch (method) {
+                case 'cash':
+                    return 'Cash on Pickup';
+                case 'gcash':
+                    return 'GCash';
+                case 'hatid':
+                    return 'Deliver with HATID';
+                default:
+                    return method || 'Not specified';
+            }
+        },
         handleImageError(e) {
             e.target.src = '/img/placeholder.jpg';
         },
@@ -1044,6 +1065,24 @@ th {
     border-radius: 20px;
     font-size: 0.9rem;
     font-weight: 500;
+}
+
+.payment-method {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.payment-method i {
+    font-size: 1rem;
+    color: #6c757d;
 }
 
 .pending {
