@@ -473,18 +473,14 @@ exports.processPayment = async (req, res) => {
         
         // Get order details with user email before updating status
         const [orderDetails] = await db.execute(
-            `SELECT o.*, u.email, 
-                    CASE 
-                        WHEN o.is_physical_order = 1 THEN o.customer_name
-                        ELSE u.username
-                    END as customer_name,
+            `SELECT o.*, u.email, u.username as customer_name,
                     s.username as staff_name,
                     ad.amount as discount_amount,
                     (SELECT SUM(oi.price * oi.quantity) 
                      FROM order_items oi 
                      WHERE oi.order_id = o.order_id) as subtotal
              FROM orders o
-             LEFT JOIN users u ON o.user_id = u.id
+             JOIN users u ON o.user_id = u.id
              LEFT JOIN users s ON o.accepted_by = s.id
              LEFT JOIN available_discounts ad ON o.order_id = ad.order_id AND ad.used = TRUE
              WHERE o.order_id = ?`,
@@ -2857,4 +2853,125 @@ exports.getStaffOrdersChart = async (req, res) => {
     console.error('Error getting staff orders chart data:', error);
     res.status(500).json({ message: 'Error getting staff orders chart data' });
   }
+};
+
+// Walk-in customer rewards endpoints
+exports.lookupUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Validate userId
+        if (!userId || isNaN(parseInt(userId))) {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
+        
+        // Look up user with points information
+        const [users] = await db.query(
+            `SELECT id, username, firstname, lastname, email, points 
+             FROM users 
+             WHERE id = ? AND role = 'user'`,
+            [parseInt(userId)]
+        );
+        
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        res.json(users[0]);
+    } catch (error) {
+        console.error('Error looking up user:', error);
+        res.status(500).json({ message: 'Error looking up user' });
+    }
+};
+
+exports.processWalkInRewards = async (req, res) => {
+    const connection = await db.getConnection();
+    
+    try {
+        await connection.beginTransaction();
+        
+        const { userId, orderId, totalAmount } = req.body;
+        
+        // Validate inputs
+        if (!userId || !orderId || !totalAmount) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+        
+        // Verify user exists
+        const [users] = await connection.query(
+            'SELECT id, firstname, lastname, email, points FROM users WHERE id = ? AND role = "user"',
+            [userId]
+        );
+        
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        const user = users[0];
+        
+        // Verify order exists and is a physical order
+        const [orders] = await connection.query(
+            'SELECT order_id, is_physical_order, status FROM orders WHERE order_id = ?',
+            [orderId]
+        );
+        
+        if (orders.length === 0) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+        
+        if (!orders[0].is_physical_order) {
+            return res.status(400).json({ message: 'Order is not a walk-in order' });
+        }
+        
+        if (orders[0].status !== 'paid') {
+            return res.status(400).json({ message: 'Order must be paid before applying rewards' });
+        }
+        
+        // Check if rewards have already been applied for this order
+        const [existingRewards] = await connection.query(
+            'SELECT id FROM user_rewards WHERE order_id = ? AND user_id = ?',
+            [orderId, userId]
+        );
+        
+        if (existingRewards.length > 0) {
+            return res.status(400).json({ message: 'Rewards have already been applied for this order' });
+        }
+        
+        // Add points using the Reward model
+        const pointsAwarded = await Reward.addPoints(userId, orderId, parseFloat(totalAmount));
+        
+        // Get updated user points
+        const newTotalPoints = await Reward.getUserPoints(userId);
+        
+        // Note: Notification system not implemented yet
+        // Future enhancement: Create notification for the user
+        // await connection.query(
+        //     `INSERT INTO notifications (user_id, type, title, message, created_at) 
+        //      VALUES (?, 'reward', 'Walk-in Purchase Rewards!', ?, NOW())`,
+        //     [
+        //         userId,
+        //         `You've received ${pointsAwarded} points from your walk-in purchase (Order #${orderId}). Thank you for shopping with us!`
+        //     ]
+        // );
+        
+        await connection.commit();
+        
+        res.json({
+            message: 'Rewards applied successfully',
+            pointsAwarded,
+            newTotalPoints,
+            user: {
+                id: user.id,
+                name: `${user.firstname} ${user.lastname}`,
+                email: user.email
+            }
+        });
+        
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error processing walk-in rewards:', error);
+        res.status(500).json({ message: 'Error processing walk-in rewards' });
+    } finally {
+        connection.release();
+    }
 };

@@ -66,4 +66,8 @@ router.get('/staff-analytics/performance', authenticate, isAdmin, adminControlle
 router.get('/staff-analytics/sales-chart', authenticate, isAdmin, adminController.getStaffSalesChart);
 router.get('/staff-analytics/orders-chart', authenticate, isAdmin, adminController.getStaffOrdersChart);
 
+// Walk-in customer rewards routes
+router.get('/walk-in/lookup-user/:userId', authenticate, isAdmin, adminController.lookupUser);
+router.post('/walk-in/process-rewards', authenticate, isAdmin, adminController.processWalkInRewards);
+
 module.exports = router;

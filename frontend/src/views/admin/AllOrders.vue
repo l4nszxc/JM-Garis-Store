@@ -323,6 +323,177 @@
             </div>
         </div>
 
+        <!-- Walk-in Customer Rewards Modal -->
+        <div v-if="showWalkInRewardsModal" class="modal-overlay">
+            <div class="modal-content walkin-rewards-modal">
+                <div class="modal-header">
+                    <h2>Customer Rewards</h2>
+                    <p>Apply rewards to customer account for this walk-in purchase</p>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="rewards-info">
+                        <div class="order-summary">
+                            <h3>Order Summary</h3>
+                            <p><strong>Order ID:</strong> {{ selectedOrder?.order_id }}</p>
+                            <p><strong>Total Amount:</strong> {{ formatPrice(selectedOrder?.total_amount) }}</p>
+                            <p><strong>Points to Award:</strong> {{ calculatePointsToAward(selectedOrder?.total_amount) }} points</p>
+                        </div>
+                        
+                        <div class="reward-method-selection">
+                            <h3>Select Customer Identification Method</h3>
+                            <div class="method-options">
+                                <label class="method-option">
+                                    <input 
+                                        type="radio" 
+                                        value="user_id" 
+                                        v-model="selectedRewardMethod"
+                                        name="rewardMethod"
+                                    >
+                                    <div class="method-card">
+                                        <i class="fas fa-id-card"></i>
+                                        <span>Enter User ID</span>
+                                        <small>Customer provides their user ID number</small>
+                                    </div>
+                                </label>
+                                
+                                <label class="method-option">
+                                    <input 
+                                        type="radio" 
+                                        value="qr_code" 
+                                        v-model="selectedRewardMethod"
+                                        name="rewardMethod"
+                                    >
+                                    <div class="method-card">
+                                        <i class="fas fa-qrcode"></i>
+                                        <span>Scan QR Code</span>
+                                        <small>Scan customer's QR code from their app</small>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- User ID Input Section -->
+                        <div v-if="selectedRewardMethod === 'user_id'" class="user-id-section">
+                            <div class="input-group">
+                                <label>Customer User ID</label>
+                                <input 
+                                    type="number" 
+                                    v-model="customerUserId"
+                                    placeholder="Enter customer's user ID"
+                                    class="user-id-input"
+                                    @input="validateUserId"
+                                >
+                                <button 
+                                    @click="lookupUser" 
+                                    class="lookup-btn"
+                                    :disabled="!customerUserId || lookingUpUser"
+                                >
+                                    <i class="fas fa-search" v-if="!lookingUpUser"></i>
+                                    <i class="fas fa-spinner fa-spin" v-else></i>
+                                    {{ lookingUpUser ? 'Looking up...' : 'Lookup User' }}
+                                </button>
+                            </div>
+                            
+                            <div v-if="foundUser" class="user-preview">
+                                <div class="user-info">
+                                    <i class="fas fa-user-check"></i>
+                                    <div class="user-details">
+                                        <h4>{{ foundUser.firstname }} {{ foundUser.lastname }}</h4>
+                                        <p>@{{ foundUser.username }}</p>
+                                        <p>{{ foundUser.email }}</p>
+                                        <p>Current Points: {{ foundUser.points || 0 }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div v-if="userLookupError" class="error-message">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                {{ userLookupError }}
+                            </div>
+                        </div>
+                        
+                        <!-- QR Code Section -->
+                        <div v-if="selectedRewardMethod === 'qr_code'" class="qr-code-section">
+                            <div class="qr-scanner-container">
+                                <h4>QR Code Scanner</h4>
+                                <p>Ask the customer to show their QR code from the rewards section in their app</p>
+                                
+                                <div class="scanner-placeholder">
+                                    <i class="fas fa-qrcode"></i>
+                                    <p>QR Scanner would be initialized here</p>
+                                    <p>For demo purposes, use the manual input below:</p>
+                                </div>
+                                
+                                <!-- Manual QR input for demo -->
+                                <div class="manual-qr-input">
+                                    <label>Manual QR Code Input (Demo)</label>
+                                    <input 
+                                        type="text" 
+                                        v-model="qrCodeData"
+                                        placeholder="Enter QR code data or user ID"
+                                        class="qr-input"
+                                        @input="processQRCode"
+                                    >
+                                </div>
+                            </div>
+                            
+                            <div v-if="qrFoundUser" class="user-preview">
+                                <div class="user-info">
+                                    <i class="fas fa-qrcode"></i>
+                                    <div class="user-details">
+                                        <h4>{{ qrFoundUser.firstname }} {{ qrFoundUser.lastname }}</h4>
+                                        <p>@{{ qrFoundUser.username }}</p>
+                                        <p>{{ qrFoundUser.email }}</p>
+                                        <p>Current Points: {{ qrFoundUser.points || 0 }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div v-if="qrLookupError" class="error-message">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                {{ qrLookupError }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button 
+                        @click="processWalkInRewards" 
+                        class="apply-rewards-btn"
+                        :disabled="!canApplyRewards || processingRewards"
+                    >
+                        <i class="fas fa-gift" v-if="!processingRewards"></i>
+                        <i class="fas fa-spinner fa-spin" v-else></i>
+                        {{ processingRewards ? 'Processing...' : 'Apply Rewards' }}
+                    </button>
+                    <button @click="skipWalkInRewards" class="skip-btn">
+                        <i class="fas fa-times"></i> Skip Rewards
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Walk-in Rewards Success Modal -->
+        <div v-if="showWalkInRewardsSuccess" class="modal-overlay">
+            <div class="modal-content rewards-success-modal">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2>Rewards Applied Successfully!</h2>
+                <div class="success-details">
+                    <p><strong>Customer:</strong> {{ successRewardData?.customerName }}</p>
+                    <p><strong>Points Awarded:</strong> {{ successRewardData?.pointsAwarded }}</p>
+                    <p><strong>New Total Points:</strong> {{ successRewardData?.newTotalPoints }}</p>
+                </div>
+                <p class="success-message">The customer has been notified about their new points!</p>
+                <button @click="closeWalkInRewardsSuccess" class="close-btn">
+                    <i class="fas fa-check"></i> Done
+                </button>
+            </div>
+        </div>
+
         <!-- Logout Modal -->
         <LogoutModal 
             :show="showLogoutModal"
@@ -367,6 +538,24 @@ export default {
             changeAmount: 0,
             sortOption: '',
             defaultSortOption: '',
+            // Walk-in rewards modal data
+            showWalkInRewardsModal: false,
+            showWalkInRewardsSuccess: false,
+            selectedRewardMethod: '',
+            customerUserId: '',
+            qrCodeData: '',
+            foundUser: null,
+            qrFoundUser: null,
+            userLookupError: '',
+            qrLookupError: '',
+            lookingUpUser: false,
+            processingRewards: false,
+            successRewardData: null,
+            rewardsSettings: {
+                points_per_amount: 1,
+                amount_threshold: 100,
+                point_value: 0.50
+            }
         }
     },
     computed: {
@@ -422,6 +611,10 @@ export default {
             }
             
             return filtered;
+        },
+        canApplyRewards() {
+            return (this.selectedRewardMethod === 'user_id' && this.foundUser) ||
+                   (this.selectedRewardMethod === 'qr_code' && this.qrFoundUser);
         }
     },
     methods: {
@@ -465,9 +658,24 @@ export default {
                     
                     await this.fetchOrders();
                     this.showPaymentConfirmation = false;
-                    // Note: Don't set selectedOrder to null yet if showing email success
-                    if (!this.showEmailSuccess) {
-                        this.selectedOrder = null;
+                    
+                    // Check if this is a walk-in order (physical order) to show rewards modal
+                    if (this.selectedOrder.is_physical_order) {
+                        this.showWalkInRewardsModal = true;
+                        // Reset rewards modal data
+                        this.selectedRewardMethod = '';
+                        this.customerUserId = '';
+                        this.qrCodeData = '';
+                        this.foundUser = null;
+                        this.qrFoundUser = null;
+                        this.userLookupError = '';
+                        this.qrLookupError = '';
+                        await this.fetchRewardsSettings();
+                    } else {
+                        // Note: Don't set selectedOrder to null yet if showing email success
+                        if (!this.showEmailSuccess) {
+                            this.selectedOrder = null;
+                        }
                     }
                 } else {
                     throw new Error('Failed to process payment');
@@ -839,6 +1047,155 @@ export default {
                 console.error('Error fetching order details:', error);
             }
         },
+        
+        // Walk-in rewards methods
+        calculatePointsToAward(totalAmount) {
+            if (!totalAmount || !this.rewardsSettings) return 0;
+            return Math.floor(totalAmount / this.rewardsSettings.amount_threshold) * this.rewardsSettings.points_per_amount;
+        },
+        
+        async fetchRewardsSettings() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:7904/api/admin/rewards/settings', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    this.rewardsSettings = await response.json();
+                }
+            } catch (error) {
+                console.error('Error fetching rewards settings:', error);
+            }
+        },
+        
+        validateUserId() {
+            this.userLookupError = '';
+            this.foundUser = null;
+        },
+        
+        async lookupUser() {
+            if (!this.customerUserId) return;
+            
+            this.lookingUpUser = true;
+            this.userLookupError = '';
+            this.foundUser = null;
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`http://localhost:7904/api/admin/walk-in/lookup-user/${this.customerUserId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    this.foundUser = await response.json();
+                } else {
+                    const error = await response.json();
+                    this.userLookupError = error.message || 'User not found';
+                }
+            } catch (error) {
+                console.error('Error looking up user:', error);
+                this.userLookupError = 'Error looking up user. Please try again.';
+            } finally {
+                this.lookingUpUser = false;
+            }
+        },
+        
+        async processQRCode() {
+            if (!this.qrCodeData) {
+                this.qrFoundUser = null;
+                this.qrLookupError = '';
+                return;
+            }
+            
+            this.qrLookupError = '';
+            this.qrFoundUser = null;
+            
+            try {
+                // For demo purposes, treat QR code data as user ID
+                // In real implementation, this would decode the QR data
+                const userId = parseInt(this.qrCodeData);
+                if (isNaN(userId)) {
+                    this.qrLookupError = 'Invalid QR code data';
+                    return;
+                }
+                
+                const token = localStorage.getItem('token');
+                const response = await fetch(`http://localhost:7904/api/admin/walk-in/lookup-user/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    this.qrFoundUser = await response.json();
+                } else {
+                    const error = await response.json();
+                    this.qrLookupError = error.message || 'User not found';
+                }
+            } catch (error) {
+                console.error('Error processing QR code:', error);
+                this.qrLookupError = 'Error processing QR code. Please try again.';
+            }
+        },
+        
+        async processWalkInRewards() {
+            const targetUser = this.selectedRewardMethod === 'user_id' ? this.foundUser : this.qrFoundUser;
+            if (!targetUser || !this.selectedOrder) return;
+            
+            this.processingRewards = true;
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:7904/api/admin/walk-in/process-rewards', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: targetUser.id,
+                        orderId: this.selectedOrder.order_id,
+                        totalAmount: this.selectedOrder.total_amount
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    this.successRewardData = {
+                        customerName: `${targetUser.firstname} ${targetUser.lastname}`,
+                        pointsAwarded: result.pointsAwarded,
+                        newTotalPoints: result.newTotalPoints
+                    };
+                    
+                    this.showWalkInRewardsModal = false;
+                    this.showWalkInRewardsSuccess = true;
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Failed to process rewards');
+                }
+            } catch (error) {
+                console.error('Error processing walk-in rewards:', error);
+                alert('Error processing rewards. Please try again.');
+            } finally {
+                this.processingRewards = false;
+            }
+        },
+        
+        skipWalkInRewards() {
+            this.showWalkInRewardsModal = false;
+            this.selectedOrder = null;
+        },
+        
+        closeWalkInRewardsSuccess() {
+            this.showWalkInRewardsSuccess = false;
+            this.selectedOrder = null;
+            this.successRewardData = null;
+        }
     },
     mounted() {
         const token = localStorage.getItem('token');
@@ -1682,6 +2039,384 @@ tfoot tr td {
     .modal-content {
         width: 95%;
         padding: 1rem;
+    }
+}
+
+/* Walk-in Rewards Modal Styles */
+.walkin-rewards-modal {
+    max-width: 600px;
+    width: 95%;
+}
+
+.walkin-rewards-modal .modal-header {
+    text-align: center;
+    padding: 2rem 2rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.walkin-rewards-modal .modal-header h2 {
+    margin: 0 0 0.5rem 0;
+    color: #1e293b;
+    font-size: 1.5rem;
+}
+
+.walkin-rewards-modal .modal-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.rewards-info {
+    padding: 2rem;
+}
+
+.order-summary {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 1px solid #e2e8f0;
+}
+
+.order-summary h3 {
+    margin: 0 0 1rem 0;
+    color: #1e293b;
+    font-size: 1.1rem;
+}
+
+.order-summary p {
+    margin: 0.5rem 0;
+    color: #475569;
+}
+
+.reward-method-selection h3 {
+    margin: 0 0 1.5rem 0;
+    color: #1e293b;
+    font-size: 1.1rem;
+}
+
+.method-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.method-option {
+    cursor: pointer;
+}
+
+.method-option input[type="radio"] {
+    display: none;
+}
+
+.method-card {
+    padding: 1.5rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.method-card:hover {
+    border-color: #3b82f6;
+    background: #f8fafc;
+}
+
+.method-option input[type="radio"]:checked + .method-card {
+    border-color: #10b981;
+    background: #f0fdf4;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+.method-card i {
+    font-size: 2rem;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+    transition: color 0.3s ease;
+}
+
+.method-option input[type="radio"]:checked + .method-card i {
+    color: #10b981;
+}
+
+.method-card span {
+    display: block;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.method-card small {
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.user-id-section,
+.qr-code-section {
+    margin-top: 1.5rem;
+}
+
+.input-group {
+    display: flex;
+    gap: 1rem;
+    align-items: end;
+    margin-bottom: 1rem;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #374151;
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.user-id-input,
+.qr-input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.user-id-input:focus,
+.qr-input:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.lookup-btn {
+    padding: 0.75rem 1.5rem;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.lookup-btn:hover:not(:disabled) {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.lookup-btn:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.user-preview {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-info i {
+    font-size: 2rem;
+    color: #10b981;
+}
+
+.user-details h4 {
+    margin: 0 0 0.25rem 0;
+    color: #1e293b;
+    font-size: 1.1rem;
+}
+
+.user-details p {
+    margin: 0.125rem 0;
+    color: #475569;
+    font-size: 0.875rem;
+}
+
+.error-message {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #dc2626;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.qr-scanner-container {
+    text-align: center;
+}
+
+.qr-scanner-container h4 {
+    margin: 0 0 0.5rem 0;
+    color: #1e293b;
+}
+
+.qr-scanner-container p {
+    margin: 0 0 1rem 0;
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.scanner-placeholder {
+    padding: 2rem;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    background: #f9fafb;
+}
+
+.scanner-placeholder i {
+    font-size: 3rem;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+}
+
+.scanner-placeholder p {
+    margin: 0.5rem 0;
+    color: #6b7280;
+}
+
+.manual-qr-input {
+    text-align: left;
+}
+
+.manual-qr-input label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #374151;
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.walkin-rewards-modal .modal-actions {
+    padding: 1.5rem 2rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.apply-rewards-btn {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.apply-rewards-btn:hover:not(:disabled) {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.apply-rewards-btn:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.skip-btn {
+    background: #6b7280;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.skip-btn:hover {
+    background: #4b5563;
+    transform: translateY(-1px);
+}
+
+/* Rewards Success Modal */
+.rewards-success-modal {
+    max-width: 450px;
+    text-align: center;
+    padding: 2rem;
+}
+
+.success-icon {
+    font-size: 4rem;
+    color: #10b981;
+    margin-bottom: 1rem;
+}
+
+.rewards-success-modal h2 {
+    margin: 0 0 1.5rem 0;
+    color: #1e293b;
+    font-size: 1.5rem;
+}
+
+.success-details {
+    background: #f0fdf4;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #bbf7d0;
+}
+
+.success-details p {
+    margin: 0.5rem 0;
+    color: #166534;
+    font-size: 0.95rem;
+}
+
+.success-message {
+    color: #64748b;
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+    .method-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .walkin-rewards-modal .modal-actions {
+        flex-direction: column;
+    }
+    
+    .apply-rewards-btn,
+    .skip-btn {
+        width: 100%;
+        justify-content: center;
     }
 }
 </style>
