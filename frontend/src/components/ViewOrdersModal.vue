@@ -346,7 +346,12 @@ export default {
             specialInstructions: '',
             showHatidModal: false,
             copySuccess: false,
-            hatidMessengerLink: 'https://www.facebook.com/hatidcpn?rdid=j0kvikC7TTWnwK9z&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1C4RDcdzKp%2F'
+            hatidMessengerLink: 'https://www.facebook.com/hatidcpn?rdid=j0kvikC7TTWnwK9z&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1C4RDcdzKp%2F',
+            storeSettings: {
+                storeName: 'JM Garis Store',
+                storeAddress: 'Barcenaga, Naujan City, Oriental Mindoro',
+                contactNumber: ''
+            }
         }
     },
     watch: {
@@ -359,6 +364,8 @@ export default {
                 this.specialInstructions = '';
                 this.showHatidModal = false;
                 this.copySuccess = false;
+                // Fetch store settings when modal is shown
+                this.fetchStoreSettings();
             }
         },
         selectedItems: {
@@ -404,6 +411,11 @@ export default {
                 : '';
             const receiverContact = this.userProfile?.phone_number || '';
             
+            // Use dynamic store settings
+            const storeName = this.storeSettings.storeName || 'JM Garis Store';
+            const storeAddress = this.storeSettings.storeAddress || 'Barcenaga, Naujan City, Oriental Mindoro';
+            const storeContact = this.storeSettings.contactNumber || '';
+            
             return `Hi, thank you for reaching us!
 
 To ensure quality service, this conversation will be recorded and your information will be used to process current and future transactions.
@@ -412,11 +424,11 @@ Time and date: ${currentDateTime}
 
 Exact Drop off (DO): ${address}
 Nearest Landmark: 
-Exact Pick up(PU)/Store: JG Garis Store, Barcenaga, Naujan City, Oriental Mindoro
+Exact Pick up(PU)/Store: ${storeName}, ${storeAddress}
 (QTY) Food/Items: ${this.localItems.length} item(s) - Order ID: ${this.currentOrderId}
 
-Name of Sender: JG Garis Store
-Contact #: 
+Name of Sender: ${storeName}
+Contact #: ${storeContact}
 Name of Receiver: ${receiverName}
 Contact #: ${receiverContact}
 Mode of Payment: Cash on Delivery - ${this.formatPrice(this.calculateTotal)}
@@ -437,6 +449,28 @@ Special Instructions: ${this.specialInstructions || ''}`;
         }
     },
     methods: {
+        async fetchStoreSettings() {
+            try {
+                // Use the public receipt settings endpoint that doesn't require authentication
+                const response = await fetch('http://localhost:7904/api/admin/receipt-settings/public');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && Object.keys(data).length > 0) {
+                        this.storeSettings = {
+                            storeName: data.storeName || 'JM Garis Store',
+                            storeAddress: data.storeAddress || 'Barcenaga, Naujan City, Oriental Mindoro',
+                            contactNumber: data.contactNumber || ''
+                        };
+                    }
+                } else {
+                    console.log('Failed to fetch store settings, using defaults');
+                }
+            } catch (error) {
+                console.error('Error fetching store settings:', error);
+                // Keep default values if fetch fails
+            }
+        },
         formatPrice(price) {
             return new Intl.NumberFormat('en-PH', {
                 style: 'currency',
@@ -740,6 +774,10 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 orderId: this.currentOrderId
             });
         }
+    },
+    mounted() {
+        // Fetch store settings when component is mounted
+        this.fetchStoreSettings();
     }
 }
 </script>
