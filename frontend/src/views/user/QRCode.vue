@@ -38,21 +38,23 @@
 
         <!-- QR Code Display Section -->
         <div class="qr-display-section">
-          <div class="qr-card">
-            <div class="qr-header">
-              <h2><i class="fas fa-id-card"></i> Personal Identity QR Code</h2>
-              <div class="qr-actions">
-                <button @click="toggleQRVisibility" class="visibility-btn" :class="{ 'hidden': !qrVisible }">
-                  <i :class="qrVisible ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                  {{ qrVisible ? 'Hide QR' : 'Show QR' }}
-                </button>
-                <!-- Removed refresh button since QR is permanent -->
-                <button @click="downloadQR" class="download-btn" :disabled="!qrDataUrl || !qrVisible">
-                  <i class="fas fa-download"></i>
-                  Download
-                </button>
-              </div>
+          <div class="qr-header">
+            <h2><i class="fas fa-id-card"></i> Personal Identity QR Code</h2>
+            <div class="qr-actions">
+              <button @click="toggleQRVisibility" class="visibility-btn" :class="{ 'hidden': !qrVisible }">
+                <i :class="qrVisible ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                {{ qrVisible ? 'Hide QR' : 'Show QR' }}
+              </button>
+              <button @click="clearAndRegenerate" class="refresh-btn">
+                <i class="fas fa-refresh"></i>
+                Regenerate
+              </button>
+              <button @click="downloadQR" class="download-btn" :disabled="!qrDataUrl || !qrVisible">
+                <i class="fas fa-download"></i>
+                Download
+              </button>
             </div>
+          </div>
             
             <div class="qr-container">
               <div v-if="loading" class="qr-loading">
@@ -71,7 +73,7 @@
               
               <div v-else class="qr-display">
                 <div class="qr-wrapper" :class="{ 'qr-hidden': !qrVisible }">
-                  <canvas ref="qrCanvas" class="qr-canvas"></canvas>
+                  <canvas ref="qrCanvas" class="qr-canvas" width="300" height="300"></canvas>
                   <div v-if="!qrVisible" class="qr-hidden-overlay">
                     <div class="hidden-content">
                       <i class="fas fa-eye-slash"></i>
@@ -85,11 +87,6 @@
                 </div>
                 
                 <div class="qr-info" :class="{ 'info-blurred': !qrVisible }">
-                  <div class="qr-data">
-                    <strong>Identity QR Code Data:</strong>
-                    <code v-if="qrVisible">{{ qrData }}</code>
-                    <code v-else>••••••••••••••••••••••••••••••••••••••••••••••••••••••••</code>
-                  </div>
                   <div class="qr-timestamp">
                     <div class="qr-status">
                       <i class="fas fa-shield-alt"></i> 
@@ -100,7 +97,6 @@
                 </div>
               </div>
             </div>
-          </div>
         </div>
 
         <!-- QR Code Features Section -->
@@ -217,8 +213,11 @@ export default {
     };
   },
   async mounted() {
+    console.log('QRCode component mounted');
     if (this.initializeUser()) {
       await this.fetchUserData();
+      // Use nextTick to ensure DOM is ready
+      await this.$nextTick();
       // Check if QR was already generated for this user
       await this.loadOrGenerateQR();
     }
@@ -232,8 +231,15 @@ export default {
       }
       try {
         const decoded = JSON.parse(atob(token.split('.')[1]));
+        console.log('Decoded token:', decoded);
         this.username = decoded.username;
-        this.userId = decoded.id;
+        this.userId = decoded.userId;
+        console.log('Initialized - Username:', this.username, 'UserId:', this.userId);
+        
+        if (!this.userId || !this.username) {
+          throw new Error('User information incomplete in token');
+        }
+        
         return true;
       } catch (error) {
         console.error('Token validation error:', error);
@@ -266,12 +272,57 @@ export default {
       this.qrVisible = !this.qrVisible;
     },
 
+    async clearAndRegenerate() {
+      try {
+        console.log('Clearing stored QR data and regenerating...');
+        
+        // Clear all stored QR data for this user
+        const userQRKey = `qr-user-${this.userId}-${this.username}`;
+        localStorage.removeItem(userQRKey);
+        localStorage.removeItem(`qr-date-user-${this.userId}`);
+        
+        // Reset component state
+        this.qrData = '';
+        this.qrDataUrl = '';
+        this.generatedDate = '';
+        this.error = null;
+        this.canvasReady = false;
+        
+        // Clear canvas
+        const canvas = this.$refs.qrCanvas;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        // Generate new QR
+        await this.$nextTick();
+        await this.waitForCanvasElement();
+        await this.generatePermanentQR();
+        
+        this.showNotification('QR code regenerated successfully!', 'success');
+      } catch (error) {
+        console.error('Error regenerating QR:', error);
+        this.error = `Failed to regenerate QR code: ${error.message}`;
+      }
+    },
+
     async waitForCanvasElement() {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 100; // Wait max 5 seconds
+        
         const checkCanvas = () => {
+          attempts++;
+          console.log(`Checking for canvas element, attempt ${attempts}`);
+          
           if (this.$refs.qrCanvas) {
+            console.log('Canvas element found!');
             this.canvasReady = true;
             resolve();
+          } else if (attempts >= maxAttempts) {
+            console.error('Canvas element not found after maximum attempts');
+            reject(new Error('Canvas element not available'));
           } else {
             setTimeout(checkCanvas, 50);
           }
@@ -300,6 +351,10 @@ export default {
         }
         
         console.log('Rendering QR with data:', this.qrData);
+        
+        // Set canvas size before generating QR
+        canvas.width = 300;
+        canvas.height = 300;
         
         // Generate QR code directly to canvas with proper options
         await QRCode.toCanvas(canvas, this.qrData, {
@@ -338,11 +393,11 @@ export default {
           type: 'user_identification',
           userId: this.userId,
           username: this.username,
-          accountId: `jmg-${this.userId}-${timestamp}`, // Unique account identifier
+          accountId: `jmg-${this.userId}-${timestamp}`,
           storeId: 'jm-garis-store',
           version: '1.0',
           createdAt: new Date().toISOString(),
-          hash: this.generateUserHash(this.userId, this.username, timestamp) // Unique hash
+          hash: this.generateUserHash(this.userId, this.username, timestamp)
         };
         
         this.qrData = JSON.stringify(qrData);
@@ -372,6 +427,10 @@ export default {
         }
         
         console.log('Canvas prepared, generating unique QR code...');
+        
+        // Set canvas size before generating QR
+        canvas.width = 300;
+        canvas.height = 300;
         
         // Generate QR code directly to canvas
         await QRCode.toCanvas(canvas, this.qrData, {
@@ -406,6 +465,9 @@ export default {
 
     async loadOrGenerateQR() {
       try {
+        console.log('Starting loadOrGenerateQR...');
+        console.log('User ID:', this.userId, 'Username:', this.username);
+        
         // Check if we have a stored QR for this specific user
         const userQRKey = `qr-user-${this.userId}-${this.username}`;
         const storedQR = localStorage.getItem(userQRKey);
@@ -413,14 +475,12 @@ export default {
         
         console.log('Stored QR key:', userQRKey);
         console.log('Stored QR:', storedQR);
-        console.log('User ID:', this.userId);
-        console.log('Username:', this.username);
         
         if (storedQR && storedDate) {
-          // Verify the stored QR is for the current user
+          // Verify the stored QR is for the current user and valid
           try {
             const parsedQR = JSON.parse(storedQR);
-            if (parsedQR.userId === this.userId && parsedQR.username === this.username) {
+            if (parsedQR.userId === this.userId && parsedQR.username === this.username && parsedQR.userId !== undefined) {
               // Load existing permanent QR
               this.qrData = storedQR;
               this.generatedDate = storedDate;
@@ -431,10 +491,15 @@ export default {
               await this.renderStoredQR();
               return;
             } else {
-              console.log('Stored QR does not match current user, generating new one...');
+              console.log('Stored QR is invalid or does not match current user, clearing and generating new one...');
+              // Clear invalid stored data
+              localStorage.removeItem(userQRKey);
+              localStorage.removeItem(`qr-date-user-${this.userId}`);
             }
           } catch (parseError) {
-            console.log('Invalid stored QR data, generating new one...');
+            console.log('Invalid stored QR data, clearing and generating new one...');
+            localStorage.removeItem(userQRKey);
+            localStorage.removeItem(`qr-date-user-${this.userId}`);
           }
         }
         
@@ -446,6 +511,7 @@ export default {
       } catch (error) {
         console.error('Error in loadOrGenerateQR:', error);
         this.error = `Failed to load QR code: ${error.message}`;
+        this.loading = false;
       }
     },
 
@@ -912,6 +978,8 @@ export default {
   margin: 0 auto;
   max-width: 100%;
   height: auto;
+  width: 300px;
+  min-height: 300px;
 }
 
 /* QR Hidden State */
