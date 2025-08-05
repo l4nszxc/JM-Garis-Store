@@ -419,22 +419,99 @@
                                 <h4>QR Code Scanner</h4>
                                 <p>Ask the customer to show their QR code from the rewards section in their app</p>
                                 
-                                <div class="scanner-placeholder">
-                                    <i class="fas fa-qrcode"></i>
-                                    <p>QR Scanner would be initialized here</p>
-                                    <p>For demo purposes, use the manual input below:</p>
+                                <!-- QR Scan Method Selection -->
+                                <div class="qr-method-selection">
+                                    <div class="qr-method-tabs">
+                                        <button 
+                                            @click="qrScanMethod = 'camera'"
+                                            :class="['qr-tab', { active: qrScanMethod === 'camera' }]"
+                                        >
+                                            <i class="fas fa-camera"></i>
+                                            Open Camera
+                                        </button>
+                                        <button 
+                                            @click="qrScanMethod = 'upload'"
+                                            :class="['qr-tab', { active: qrScanMethod === 'upload' }]"
+                                        >
+                                            <i class="fas fa-upload"></i>
+                                            Upload QR
+                                        </button>
+                                        <button 
+                                            @click="qrScanMethod = 'manual'"
+                                            :class="['qr-tab', { active: qrScanMethod === 'manual' }]"
+                                        >
+                                            <i class="fas fa-keyboard"></i>
+                                            Manual Input
+                                        </button>
+                                    </div>
                                 </div>
                                 
-                                <!-- Manual QR input for demo -->
-                                <div class="manual-qr-input">
-                                    <label>Manual QR Code Input (Demo)</label>
+                                <!-- Camera Scanner -->
+                                <div v-if="qrScanMethod === 'camera'" class="camera-scanner">
+                                    <div v-if="!scanningQR" class="camera-placeholder">
+                                        <i class="fas fa-camera"></i>
+                                        <p>Click to start camera scanning</p>
+                                        <button @click="startCameraScanning" class="start-camera-btn">
+                                            <i class="fas fa-camera"></i>
+                                            Start Camera
+                                        </button>
+                                    </div>
+                                    <div v-else class="camera-view">
+                                        <video ref="qrVideo" autoplay playsinline class="qr-video"></video>
+                                        <div class="camera-overlay">
+                                            <div class="scan-area"></div>
+                                            <p>Position QR code within the frame</p>
+                                        </div>
+                                        <div class="camera-controls">
+                                            <button @click="stopCameraScanning" class="stop-camera-btn">
+                                                <i class="fas fa-stop"></i>
+                                                Stop Camera
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Upload QR -->
+                                <div v-if="qrScanMethod === 'upload'" class="upload-scanner">
+                                    <div class="upload-area" @click="$refs.qrFileInput.click()" @dragover.prevent @drop.prevent="handleQRDrop">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <p>Click to upload or drag & drop QR code image</p>
+                                        <p class="upload-hint">Supports: PNG, JPG, JPEG</p>
+                                    </div>
                                     <input 
-                                        type="text" 
-                                        v-model="qrCodeData"
-                                        placeholder="Enter QR code data or user ID"
-                                        class="qr-input"
-                                        @input="processQRCode"
+                                        ref="qrFileInput"
+                                        type="file" 
+                                        accept="image/*" 
+                                        @change="handleQRUpload"
+                                        style="display: none"
                                     >
+                                    <div v-if="qrUploadFile" class="upload-preview">
+                                        <div class="uploaded-image">
+                                            <img :src="qrUploadFile.preview" alt="Uploaded QR Code">
+                                            <div class="upload-info">
+                                                <p>{{ qrUploadFile.name }}</p>
+                                                <button @click="processUploadedQR" class="process-qr-btn">
+                                                    <i class="fas fa-search"></i>
+                                                    Scan QR Code
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Manual Input -->
+                                <div v-if="qrScanMethod === 'manual'" class="manual-scanner">
+                                    <div class="manual-qr-input">
+                                        <label>Manual QR Code Input</label>
+                                        <input 
+                                            type="text" 
+                                            v-model="qrCodeData"
+                                            placeholder="Paste QR JSON data or enter user ID"
+                                            class="qr-input"
+                                            @input="processQRCode"
+                                        >
+                                        <small>Paste the complete JSON from your QR scanner, or enter just a user ID (e.g., 58)</small>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -453,6 +530,28 @@
                             <div v-if="qrLookupError" class="error-message">
                                 <i class="fas fa-exclamation-triangle"></i>
                                 {{ qrLookupError }}
+                            </div>
+                            
+                            <!-- QR Code Generator for Testing -->
+                            <div class="qr-generator-section">
+                                <h4>QR Code Generator (For Testing)</h4>
+                                <div class="generator-controls">
+                                    <input 
+                                        type="number" 
+                                        v-model="testUserId" 
+                                        placeholder="Enter User ID (default: 58)"
+                                        min="1"
+                                        class="test-user-input"
+                                    >
+                                    <button @click="generateTestQR" class="generate-qr-btn">
+                                        <i class="fas fa-qrcode"></i> Generate QR
+                                    </button>
+                                </div>
+                                <div v-if="generatedQR" class="generated-qr">
+                                    <canvas ref="qrCanvas"></canvas>
+                                    <p>QR Code for User ID: {{ testUserId }}</p>
+                                    <small>Contains JSON: {"type":"user_identification","userId":{{ testUserId }},...}</small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -551,6 +650,18 @@ export default {
             lookingUpUser: false,
             processingRewards: false,
             successRewardData: null,
+            
+            // QR Scanner options
+            qrScanMethod: 'manual', // 'camera', 'upload', 'manual'
+            cameraStream: null,
+            scanningQR: false,
+            qrUploadFile: null,
+            qrDetectionInterval: null,
+            
+            // QR Generator for testing
+            testUserId: 58,
+            generatedQR: false,
+            
             rewardsSettings: {
                 points_per_amount: 1,
                 amount_threshold: 100,
@@ -1116,13 +1227,38 @@ export default {
             this.qrFoundUser = null;
             
             try {
-                // For demo purposes, treat QR code data as user ID
-                // In real implementation, this would decode the QR data
-                const userId = parseInt(this.qrCodeData);
-                if (isNaN(userId)) {
-                    this.qrLookupError = 'Invalid QR code data';
+                let userId;
+                const qrData = this.qrCodeData.trim();
+                
+                // Try to parse as JSON first (for the actual QR format)
+                try {
+                    const qrJson = JSON.parse(qrData);
+                    if (qrJson.type === 'user_identification' && qrJson.userId) {
+                        userId = parseInt(qrJson.userId);
+                        console.log('Parsed QR JSON:', qrJson);
+                    } else {
+                        throw new Error('Invalid QR JSON format');
+                    }
+                } catch (jsonError) {
+                    // If JSON parsing fails, try other formats
+                    if (qrData.startsWith('JMG-USER-')) {
+                        // Extract user ID from simple format
+                        userId = parseInt(qrData.replace('JMG-USER-', ''));
+                    } else if (!isNaN(parseInt(qrData))) {
+                        // Accept plain user ID for backward compatibility
+                        userId = parseInt(qrData);
+                    } else {
+                        this.qrLookupError = 'Invalid QR code format. Expected JSON with user identification or JMG-USER-{ID} format.';
+                        return;
+                    }
+                }
+                
+                if (isNaN(userId) || userId <= 0) {
+                    this.qrLookupError = 'Invalid user ID in QR code';
                     return;
                 }
+                
+                console.log('Processing user ID:', userId);
                 
                 const token = localStorage.getItem('token');
                 const response = await fetch(`http://localhost:7904/api/admin/walk-in/lookup-user/${userId}`, {
@@ -1133,13 +1269,175 @@ export default {
                 
                 if (response.ok) {
                     this.qrFoundUser = await response.json();
+                    console.log('User found:', this.qrFoundUser);
                 } else {
                     const error = await response.json();
                     this.qrLookupError = error.message || 'User not found';
+                    console.error('User lookup error:', error);
                 }
             } catch (error) {
                 console.error('Error processing QR code:', error);
                 this.qrLookupError = 'Error processing QR code. Please try again.';
+            }
+        },
+        
+        // Camera scanning methods
+        async startCameraScanning() {
+            try {
+                this.scanningQR = true;
+                this.qrLookupError = '';
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment', // Use back camera if available
+                        width: { ideal: 300 },
+                        height: { ideal: 300 }
+                    } 
+                });
+                
+                this.cameraStream = stream;
+                this.$nextTick(() => {
+                    if (this.$refs.qrVideo) {
+                        this.$refs.qrVideo.srcObject = stream;
+                        this.$refs.qrVideo.play();
+                        // Start QR code detection
+                        this.startQRDetection();
+                    }
+                });
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                this.qrLookupError = 'Could not access camera. Please check permissions and try again.';
+                this.scanningQR = false;
+            }
+        },
+        
+        stopCameraScanning() {
+            if (this.cameraStream) {
+                this.cameraStream.getTracks().forEach(track => track.stop());
+                this.cameraStream = null;
+            }
+            if (this.qrDetectionInterval) {
+                clearInterval(this.qrDetectionInterval);
+                this.qrDetectionInterval = null;
+            }
+            this.scanningQR = false;
+        },
+        
+        startQRDetection() {
+            // Import jsQR dynamically
+            import('jsqr').then((jsQRModule) => {
+                const jsQR = jsQRModule.default;
+                
+                const detectQR = () => {
+                    if (!this.scanningQR || !this.$refs.qrVideo) return;
+                    
+                    const video = this.$refs.qrVideo;
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const code = jsQR(imageData.data, imageData.width, imageData.height);
+                        
+                        if (code) {
+                            console.log('QR Code detected:', code.data);
+                            this.qrCodeData = code.data;
+                            this.stopCameraScanning();
+                            this.processQRCode();
+                            return;
+                        }
+                    }
+                };
+                
+                // Check for QR codes every 200ms
+                this.qrDetectionInterval = setInterval(detectQR, 200);
+            }).catch((error) => {
+                console.error('Error loading jsQR:', error);
+                this.qrLookupError = 'Error loading QR scanner library. Please try manual input or upload.';
+                this.stopCameraScanning();
+            });
+        },
+        
+        // File upload methods
+        handleQRUpload(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                this.qrUploadFile = {
+                    file: file,
+                    name: file.name,
+                    preview: URL.createObjectURL(file)
+                };
+            } else {
+                this.qrLookupError = 'Please select a valid image file (PNG, JPG, JPEG)';
+            }
+        },
+        
+        handleQRDrop(event) {
+            event.preventDefault();
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.startsWith('image/')) {
+                    this.qrUploadFile = {
+                        file: file,
+                        name: file.name,
+                        preview: URL.createObjectURL(file)
+                    };
+                } else {
+                    this.qrLookupError = 'Please select a valid image file (PNG, JPG, JPEG)';
+                }
+            }
+        },
+        
+        async processUploadedQR() {
+            if (!this.qrUploadFile) return;
+            
+            try {
+                this.qrLookupError = '';
+                
+                // Import jsQR dynamically
+                const jsQRModule = await import('jsqr');
+                const jsQR = jsQRModule.default;
+                
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = () => {
+                    try {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const code = jsQR(imageData.data, imageData.width, imageData.height);
+                        
+                        if (code) {
+                            console.log('QR Code found in uploaded image:', code.data);
+                            this.qrCodeData = code.data;
+                            this.processQRCode();
+                        } else {
+                            this.qrLookupError = 'No QR code found in the uploaded image. Please upload a clear image with a visible QR code.';
+                        }
+                    } catch (error) {
+                        console.error('Error processing QR image:', error);
+                        this.qrLookupError = 'Error processing the uploaded image. Please try again.';
+                    }
+                };
+                
+                img.onerror = () => {
+                    this.qrLookupError = 'Error loading the uploaded image. Please try a different image.';
+                };
+                
+                img.src = this.qrUploadFile.preview;
+                
+            } catch (error) {
+                console.error('Error processing uploaded QR:', error);
+                this.qrLookupError = 'Error loading QR scanner library. Please try manual input.';
             }
         },
         
@@ -1187,6 +1485,21 @@ export default {
         },
         
         skipWalkInRewards() {
+            // Cleanup camera if active
+            this.stopCameraScanning();
+            
+            // Clear upload file and preview
+            if (this.qrUploadFile && this.qrUploadFile.preview) {
+                URL.revokeObjectURL(this.qrUploadFile.preview);
+            }
+            this.qrUploadFile = null;
+            
+            // Reset QR scan method
+            this.qrScanMethod = 'manual';
+            this.qrCodeData = '';
+            this.qrFoundUser = null;
+            this.qrLookupError = '';
+            
             this.showWalkInRewardsModal = false;
             this.selectedOrder = null;
         },
@@ -1195,6 +1508,46 @@ export default {
             this.showWalkInRewardsSuccess = false;
             this.selectedOrder = null;
             this.successRewardData = null;
+        },
+        
+        async generateTestQR() {
+            if (!this.testUserId) return;
+            
+            try {
+                // Import QRCode dynamically
+                const QRCodeModule = await import('qrcode');
+                const QRCode = QRCodeModule.default;
+                
+                // Create QR data that matches the actual format
+                const qrData = JSON.stringify({
+                    type: "user_identification",
+                    userId: parseInt(this.testUserId),
+                    username: `TestUser${this.testUserId}`,
+                    accountId: `jmg-${this.testUserId}-${Date.now()}`,
+                    storeId: "jm-garis-store",
+                    version: "1.0",
+                    createdAt: new Date().toISOString(),
+                    hash: Math.random().toString(36).substring(2, 8)
+                });
+                
+                console.log('Generating QR with data:', qrData);
+                
+                await this.$nextTick();
+                if (this.$refs.qrCanvas) {
+                    await QRCode.toCanvas(this.$refs.qrCanvas, qrData, {
+                        width: 200,
+                        margin: 2,
+                        color: {
+                            dark: '#000000',
+                            light: '#FFFFFF'
+                        }
+                    });
+                    this.generatedQR = true;
+                }
+            } catch (error) {
+                console.error('Error generating QR code:', error);
+                alert('Error generating QR code: ' + error.message);
+            }
         }
     },
     mounted() {
@@ -1204,6 +1557,16 @@ export default {
             this.username = decoded.username;
         }
         this.fetchOrders();
+    },
+    
+    beforeUnmount() {
+        // Cleanup camera stream when component is destroyed
+        this.stopCameraScanning();
+        
+        // Clean up any upload file URLs
+        if (this.qrUploadFile && this.qrUploadFile.preview) {
+            URL.revokeObjectURL(this.qrUploadFile.preview);
+        }
     }
 }
 </script>
@@ -2304,6 +2667,317 @@ tfoot tr td {
     margin-bottom: 0.5rem;
     color: #374151;
     font-weight: 500;
+    font-size: 0.875rem;
+}
+
+/* QR Method Selection */
+.qr-method-selection {
+    margin-bottom: 1.5rem;
+}
+
+.qr-method-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    justify-content: center;
+}
+
+.qr-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    background: #f9fafb;
+    color: #6b7280;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.qr-tab:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    color: #3b82f6;
+}
+
+.qr-tab.active {
+    border-color: #3b82f6;
+    background: #3b82f6;
+    color: white;
+}
+
+/* Camera Scanner */
+.camera-scanner {
+    margin-bottom: 1rem;
+}
+
+.camera-placeholder {
+    padding: 2rem;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    background: #f9fafb;
+    text-align: center;
+}
+
+.camera-placeholder i {
+    font-size: 3rem;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+}
+
+.start-camera-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 1rem auto 0;
+    transition: all 0.2s ease;
+}
+
+.start-camera-btn:hover {
+    background: #2563eb;
+}
+
+.camera-view {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.qr-video {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #000;
+}
+
+.camera-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.scan-area {
+    width: 200px;
+    height: 200px;
+    border: 3px solid #3b82f6;
+    border-radius: 12px;
+    background: rgba(59, 130, 246, 0.1);
+    margin-bottom: 1rem;
+}
+
+.camera-overlay p {
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    margin: 0;
+}
+
+.camera-controls {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.stop-camera-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 0 auto;
+    transition: all 0.2s ease;
+}
+
+.stop-camera-btn:hover {
+    background: #dc2626;
+}
+
+/* Upload Scanner */
+.upload-scanner {
+    margin-bottom: 1rem;
+}
+
+.upload-area {
+    padding: 2rem;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    background: #f9fafb;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.upload-area:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.upload-area i {
+    font-size: 3rem;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+}
+
+.upload-hint {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin: 0.5rem 0 0 0;
+}
+
+.upload-preview {
+    margin-top: 1rem;
+}
+
+.uploaded-image {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+}
+
+.uploaded-image img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.upload-info {
+    flex: 1;
+    text-align: left;
+}
+
+.upload-info p {
+    margin: 0 0 0.5rem 0;
+    font-weight: 500;
+    color: #374151;
+}
+
+.process-qr-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.process-qr-btn:hover {
+    background: #059669;
+}
+
+/* Manual Scanner */
+.manual-scanner {
+    margin-bottom: 1rem;
+}
+
+.manual-qr-input small {
+    display: block;
+    margin-top: 0.5rem;
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+/* QR Generator Section */
+.qr-generator-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.qr-generator-section h4 {
+    margin: 0 0 1rem 0;
+    color: #374151;
+    font-size: 1rem;
+}
+
+.generator-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.test-user-input {
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    width: 150px;
+    font-size: 0.875rem;
+}
+
+.test-user-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.generate-qr-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.2s;
+}
+
+.generate-qr-btn:hover {
+    background: #2563eb;
+}
+
+.generated-qr {
+    text-align: center;
+    padding: 1rem;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.generated-qr canvas {
+    display: block;
+    margin: 0 auto 1rem;
+}
+
+.generated-qr p {
+    margin: 0;
+    color: #6b7280;
     font-size: 0.875rem;
 }
 
