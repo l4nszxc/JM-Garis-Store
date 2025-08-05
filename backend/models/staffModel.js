@@ -35,6 +35,7 @@ class Staff {
                     o.cancel_reason,
                     o.accepted_by,
                     o.accepted_at,
+                    o.payment_method,
                     s.username as staff_name
                 FROM orders o
                 JOIN users u ON o.user_id = u.id
@@ -54,6 +55,7 @@ class Staff {
                     u.username as customer_name,
                     s.username as staff_name,
                     ad.amount as discount_amount,
+                    o.payment_method,
                     (SELECT SUM(oi.price * oi.quantity) 
                      FROM order_items oi 
                      WHERE oi.order_id = o.order_id) as subtotal

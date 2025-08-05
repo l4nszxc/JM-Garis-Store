@@ -5,7 +5,7 @@ class Order {
         return Math.random().toString().slice(2, 9);
     }
 
-    static async create(userId, items, totalAmount, packagingPreference = 'eco') {
+    static async create(userId, items, totalAmount, packagingPreference = 'eco', paymentMethod = 'cash') {
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
@@ -17,10 +17,15 @@ class Order {
             console.log('- userId:', userId);
             console.log('- totalAmount:', totalAmount);
             console.log('- packagingPreference:', packagingPreference);
+            console.log('- paymentMethod:', paymentMethod);
 
             // Validate packaging preference
             const validPackaging = ['eco', 'plastic'].includes(packagingPreference) ? packagingPreference : 'eco';
             console.log('- validatedPackaging:', validPackaging);
+
+            // Validate payment method
+            const validPaymentMethod = ['cash', 'gcash', 'hatid'].includes(paymentMethod) ? paymentMethod : 'cash';
+            console.log('- validatedPaymentMethod:', validPaymentMethod);
 
             // First verify if there's enough stock for all items
             for (const item of items) {
@@ -47,19 +52,20 @@ class Order {
                 }
             }
             
-            // Create order with packaging preference - IMPORTANT: Include packaging_preference in INSERT
-            console.log('Inserting order with packaging preference:', validPackaging);
+            // Create order with packaging preference and payment method
+            console.log('Inserting order with packaging preference:', validPackaging, 'and payment method:', validPaymentMethod);
             await connection.execute(
-                'INSERT INTO orders (order_id, user_id, total_amount, packaging_preference, created_at) VALUES (?, ?, ?, ?, NOW())',
-                [orderId, userId, totalAmount, validPackaging]
+                'INSERT INTO orders (order_id, user_id, total_amount, packaging_preference, payment_method, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+                [orderId, userId, totalAmount, validPackaging, validPaymentMethod]
             );
 
             // Verify the insertion worked
             const [verifyResult] = await connection.execute(
-                'SELECT packaging_preference FROM orders WHERE order_id = ?',
+                'SELECT packaging_preference, payment_method FROM orders WHERE order_id = ?',
                 [orderId]
             );
             console.log('Verified packaging preference in database:', verifyResult[0]?.packaging_preference);
+            console.log('Verified payment method in database:', verifyResult[0]?.payment_method);
 
             // Process each item
             for (const item of items) {

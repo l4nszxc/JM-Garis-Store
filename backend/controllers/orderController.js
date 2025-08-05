@@ -9,13 +9,14 @@ exports.createOrder = async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        const { items, totalAmount, discountId, packagingPreference } = req.body;
+        const { items, totalAmount, discountId, packagingPreference, paymentMethod } = req.body;
         const userId = req.user.id;
 
         // Debug logs
         console.log('=== ORDER CREATION DEBUG ===');
         console.log('Request body:', req.body);
         console.log('Packaging preference from request:', packagingPreference);
+        console.log('Payment method from request:', paymentMethod);
         console.log('Type of packagingPreference:', typeof packagingPreference);
 
         // Validate inputs
@@ -32,11 +33,16 @@ exports.createOrder = async (req, res) => {
         // Validate packaging preference (default to 'eco' if not provided)
         const validPackagingPreference = ['eco', 'plastic'].includes(packagingPreference) ? packagingPreference : 'eco';
 
+        // Validate payment method (default to 'cash' if not provided)
+        const validPaymentMethod = ['cash', 'gcash', 'hatid'].includes(paymentMethod) ? paymentMethod : 'cash';
+
         // Debug log
         console.log('Creating order with validated total amount:', validatedTotalAmount);
         console.log('Creating order with items:', items);
         console.log('Packaging preference received:', packagingPreference);
         console.log('Validated packaging preference:', validPackagingPreference);
+        console.log('Payment method received:', paymentMethod);
+        console.log('Validated payment method:', validPaymentMethod);
 
         let finalAmount = validatedTotalAmount;
         let appliedDiscount = 0;
@@ -52,20 +58,20 @@ exports.createOrder = async (req, res) => {
             }
         }
         
-        // IMPORTANT: Pass packaging preference as the 4th parameter
-        console.log('Calling Order.create with packaging preference:', validPackagingPreference);
-        const orderId = await Order.create(userId, items, finalAmount, validPackagingPreference);
+        // IMPORTANT: Pass packaging preference and payment method as parameters
+        console.log('Calling Order.create with packaging preference:', validPackagingPreference, 'and payment method:', validPaymentMethod);
+        const orderId = await Order.create(userId, items, finalAmount, validPackagingPreference, validPaymentMethod);
 
-        // Double-check: Update the order to ensure packaging preference is set correctly
-        console.log('Double-checking packaging preference update for order:', orderId);
+        // Double-check: Update the order to ensure packaging preference and payment method are set correctly
+        console.log('Double-checking packaging preference and payment method update for order:', orderId);
         await connection.execute(
-            'UPDATE orders SET packaging_preference = ? WHERE order_id = ?',
-            [validPackagingPreference, orderId]
+            'UPDATE orders SET packaging_preference = ?, payment_method = ? WHERE order_id = ?',
+            [validPackagingPreference, validPaymentMethod, orderId]
         );
 
         // Verify the final state
         const [finalVerification] = await connection.execute(
-            'SELECT order_id, packaging_preference, total_amount FROM orders WHERE order_id = ?',
+            'SELECT order_id, packaging_preference, payment_method, total_amount FROM orders WHERE order_id = ?',
             [orderId]
         );
         console.log('=== FINAL VERIFICATION ===');
@@ -106,6 +112,7 @@ exports.createOrder = async (req, res) => {
             appliedDiscount,
             finalAmount,
             packagingPreference: validPackagingPreference,
+            paymentMethod: validPaymentMethod,
             message: 'Order created successfully'
         });
 
