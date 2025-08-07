@@ -6,6 +6,7 @@ const { authenticate } = require('../middleware/auth');
 router.use(authenticate);
 router.get('/user', orderController.getUserOrders);
 router.post('/', orderController.createOrder);
+router.post('/cash-with-downpayment', orderController.createCashOrderWithDownpayment);
 router.get('/history', orderController.getUserOrders);
 router.post('/:orderId/cancel', orderController.cancelOrder);
 

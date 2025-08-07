@@ -29,7 +29,7 @@
                         <div class="payment-card">
                             <i class="fas fa-money-bill-wave"></i>
                             <span>Cash on Pickup</span>
-                            <small>Pay when you collect your order</small>
+                            <small>Downpayment required via GCash (min. ₱100)</small>
                         </div>
                     </label>
                     
@@ -60,6 +60,39 @@
                             <small>Cash on delivery via HATID</small>
                         </div>
                     </label>
+                </div>
+            </div>
+
+            <!-- Cash on Pickup Downpayment Info -->
+            <div v-if="selectedPaymentMethod === 'cash'" class="downpayment-info-section">
+                <div class="downpayment-info">
+                    <i class="fas fa-info-circle"></i>
+                    <div class="downpayment-details">
+                        <h5>Downpayment Required</h5>
+                        <p>To prevent order cancellations, a downpayment is required for cash on pickup orders.</p>
+                        <p><small>* Minimum downpayment: ₱100 (25% of order total or ₱100, whichever is higher)</small></p>
+                        <div class="payment-breakdown">
+                            <div class="breakdown-row">
+                                <span>Downpayment ({{ downpaymentPercentage }}%):</span>
+                                <span class="amount">{{ formatPrice(downpaymentAmount) }}</span>
+                            </div>
+                            <div class="breakdown-row">
+                                <span>Remaining (Pay on pickup):</span>
+                                <span class="amount">{{ formatPrice(remainingAmount) }}</span>
+                            </div>
+                            <div class="breakdown-divider"></div>
+                            <div class="breakdown-row total">
+                                <span>Total Order:</span>
+                                <span class="amount">{{ formatPrice(calculateTotal) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cash Order Warning -->
+                <div v-if="cashOrderWarning" class="cash-order-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>{{ cashOrderWarning }}</span>
                 </div>
             </div>
 
@@ -469,6 +502,26 @@ export default {
         calculateTotal() {
             return Math.max(0, this.subtotal - this.discountAmount);
         },
+        downpaymentAmount() {
+            if (this.selectedPaymentMethod === 'cash') {
+                const calculatedDownpayment = this.calculateTotal * 0.25;
+                // Ensure minimum downpayment of ₱100 for PayMongo
+                return Math.max(100, Math.round(calculatedDownpayment * 100) / 100);
+            }
+            return 0;
+        },
+        remainingAmount() {
+            if (this.selectedPaymentMethod === 'cash') {
+                return this.calculateTotal - this.downpaymentAmount;
+            }
+            return 0;
+        },
+        downpaymentPercentage() {
+            if (this.selectedPaymentMethod === 'cash' && this.calculateTotal > 0) {
+                return Math.round((this.downpaymentAmount / this.calculateTotal) * 100);
+            }
+            return 25;
+        },
         hatidMessage() {
             const address = this.deliveryAddress || 'Address not provided';
             const currentDateTime = new Date().toLocaleString('en-PH', {
@@ -521,7 +574,18 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 return false;
             }
             
+            // Validation for cash orders - warn if downpayment is more than 50% of total
+            if (this.selectedPaymentMethod === 'cash' && this.calculateTotal < 200 && this.downpaymentAmount >= this.calculateTotal * 0.5) {
+                return false;
+            }
+            
             return true;
+        },
+        cashOrderWarning() {
+            if (this.selectedPaymentMethod === 'cash' && this.calculateTotal < 200 && this.downpaymentAmount >= this.calculateTotal * 0.5) {
+                return `Note: Downpayment (₱${this.downpaymentAmount.toFixed(2)}) is ${this.downpaymentPercentage}% of your order total. Consider adding more items or choose a different payment method.`;
+            }
+            return null;
         }
     },
     methods: {
@@ -575,6 +639,8 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 return 'Pay with GCash';
             } else if (this.selectedPaymentMethod === 'hatid') {
                 return 'Order via HATID';
+            } else if (this.selectedPaymentMethod === 'cash') {
+                return `Pay Downpayment (${this.formatPrice(this.downpaymentAmount)})`;
             }
             return 'Confirm Order';
         },
@@ -619,6 +685,8 @@ Special Instructions: ${this.specialInstructions || ''}`;
                     await this.processGCashPayment(orderData);
                 } else if (this.selectedPaymentMethod === 'hatid') {
                     await this.processHatidOrder(orderData);
+                } else if (this.selectedPaymentMethod === 'cash') {
+                    await this.processCashWithDownpayment(orderData);
                 } else {
                     this.$emit('place-order', orderData);
                 }
@@ -863,6 +931,232 @@ Special Instructions: ${this.specialInstructions || ''}`;
             this.$emit('payment-error', this.paymentFailedMessage);
         },
         
+        async processCashWithDownpayment(orderData) {
+            try {
+                // Create GCash payment for downpayment only
+                const token = localStorage.getItem('token');
+                const paymentResponse = await fetch('http://localhost:7904/api/payment/gcash/create-downpayment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        downpaymentAmount: this.downpaymentAmount,
+                        totalAmount: this.calculateTotal,
+                        remainingAmount: this.remainingAmount,
+                        items: orderData.items,
+                        discountId: orderData.discountId,
+                        packagingPreference: orderData.packagingPreference,
+                        paymentMethod: 'cash'
+                    })
+                });
+
+                if (!paymentResponse.ok) {
+                    throw new Error('Failed to create downpayment');
+                }
+
+                const paymentData = await paymentResponse.json();
+                
+                // Open payment in new window for downpayment
+                const paymentWindow = window.open(
+                    paymentData.checkoutUrl,
+                    'gcash-downpayment',
+                    'width=800,height=600,scrollbars=yes,resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no'
+                );
+
+                if (!paymentWindow) {
+                    throw new Error('Payment window blocked. Please allow popups and try again.');
+                }
+
+                // Monitor the downpayment window
+                this.monitorDownpaymentWindow(paymentWindow, paymentData.paymentId, orderData);
+                
+            } catch (error) {
+                console.error('Cash with downpayment error:', error);
+                throw error;
+            }
+        },
+
+        monitorDownpaymentWindow(paymentWindow, paymentId, orderData) {
+            let windowClosedTime = null;
+            let finalCheckDone = false;
+            
+            const checkWindow = setInterval(() => {
+                try {
+                    // Check if window is closed
+                    if (paymentWindow.closed) {
+                        if (!windowClosedTime) {
+                            // Window just closed, record the time
+                            windowClosedTime = Date.now();
+                            console.log('Downpayment window closed, waiting for payment processing...');
+                            return;
+                        }
+                        
+                        // Window has been closed, wait for processing time
+                        const timeSinceClosed = Date.now() - windowClosedTime;
+                        if (timeSinceClosed >= 3000 && !finalCheckDone) { // Wait 3 seconds
+                            clearInterval(checkWindow);
+                            finalCheckDone = true;
+                            this.verifyingPayment = true;
+                            console.log('Performing final downpayment status check...');
+                            this.checkDownpaymentStatusByPaymentId(paymentId, orderData);
+                        }
+                        return;
+                    }
+
+                    // Reset closed time if window is reopened somehow
+                    windowClosedTime = null;
+
+                    // Try to detect success/failure URLs
+                    try {
+                        const currentUrl = paymentWindow.location.href;
+                        
+                        if (currentUrl.includes('payment-success')) {
+                            clearInterval(checkWindow);
+                            paymentWindow.close();
+                            this.handleDownpaymentSuccess(paymentId, orderData);
+                        } else if (currentUrl.includes('payment-failed')) {
+                            clearInterval(checkWindow);
+                            paymentWindow.close();
+                            this.handlePaymentFailure(paymentId, 'Downpayment was declined or failed.');
+                        }
+                    } catch (e) {
+                        // Cross-origin restrictions prevent URL access
+                        // This is expected behavior
+                    }
+                } catch (error) {
+                    console.error('Error monitoring downpayment window:', error);
+                }
+            }, 1000);
+
+            // Set a timeout for the payment window (10 minutes)
+            setTimeout(() => {
+                if (!paymentWindow.closed && !finalCheckDone) {
+                    clearInterval(checkWindow);
+                    paymentWindow.close();
+                    this.processingPayment = false;
+                    this.handlePaymentFailure(paymentId, 'Downpayment session expired. Please try again.');
+                }
+            }, 600000); // 10 minutes
+        },
+
+        async checkDownpaymentStatusByPaymentId(paymentId, orderData, retryCount = 0) {
+            const maxRetries = 3;
+            const retryDelay = 2000; // 2 seconds between retries
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`http://localhost:7904/api/payment/downpayment-status/${paymentId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const paymentStatus = await response.json();
+                    console.log(`Downpayment status check (attempt ${retryCount + 1}):`, paymentStatus.status);
+                    
+                    if (paymentStatus.status === 'paid' || paymentStatus.status === 'succeeded') {
+                        this.processingPayment = false;
+                        this.verifyingPayment = false;
+                        this.handleDownpaymentSuccess(paymentId, orderData);
+                    } else if (paymentStatus.status === 'failed' || paymentStatus.status === 'expired') {
+                        this.processingPayment = false;
+                        this.verifyingPayment = false;
+                        this.handlePaymentFailure(paymentId, 'Downpayment failed or expired. Please try again.');
+                    } else {
+                        // Payment still pending - retry if we haven't exceeded max retries
+                        if (retryCount < maxRetries) {
+                            console.log(`Downpayment still processing, retrying in ${retryDelay/1000}s... (${retryCount + 1}/${maxRetries})`);
+                            setTimeout(() => {
+                                this.checkDownpaymentStatusByPaymentId(paymentId, orderData, retryCount + 1);
+                            }, retryDelay);
+                        } else {
+                            // Final retry exceeded, show pending message
+                            this.processingPayment = false;
+                            this.verifyingPayment = false;
+                            this.handlePaymentFailure(paymentId, 'Downpayment is still processing. Please check your GCash transaction history.');
+                        }
+                    }
+                } else {
+                    if (retryCount < maxRetries) {
+                        console.log(`API error, retrying in ${retryDelay/1000}s... (${retryCount + 1}/${maxRetries})`);
+                        setTimeout(() => {
+                            this.checkDownpaymentStatusByPaymentId(paymentId, orderData, retryCount + 1);
+                        }, retryDelay);
+                    } else {
+                        this.processingPayment = false;
+                        this.verifyingPayment = false;
+                        this.handlePaymentFailure(paymentId, 'Unable to verify downpayment status. Please contact support.');
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking downpayment status:', error);
+                if (retryCount < maxRetries) {
+                    console.log(`Network error, retrying in ${retryDelay/1000}s... (${retryCount + 1}/${maxRetries})`);
+                    setTimeout(() => {
+                        this.checkDownpaymentStatusByPaymentId(paymentId, orderData, retryCount + 1);
+                    }, retryDelay);
+                } else {
+                    this.processingPayment = false;
+                    this.verifyingPayment = false;
+                    this.handlePaymentFailure(paymentId, 'Unable to verify downpayment status due to network error.');
+                }
+            }
+        },
+
+        async handleDownpaymentSuccess(paymentId, orderData) {
+            try {
+                // Create order with downpayment status
+                const token = localStorage.getItem('token');
+                const orderResponse = await fetch('http://localhost:7904/api/orders/cash-with-downpayment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        items: orderData.items,
+                        totalAmount: this.calculateTotal,
+                        downpaymentAmount: this.downpaymentAmount,
+                        remainingAmount: this.remainingAmount,
+                        discountId: orderData.discountId,
+                        packagingPreference: orderData.packagingPreference,
+                        paymentMethod: 'cash',
+                        downpaymentPaymentId: paymentId,
+                        status: 'pending_pickup'
+                    })
+                });
+
+                if (!orderResponse.ok) {
+                    throw new Error('Failed to create order after downpayment');
+                }
+
+                const { orderId } = await orderResponse.json();
+                
+                this.processingPayment = false;
+                this.successOrderId = orderId;
+                
+                // Close main modal and show success modal
+                this.$emit('close');
+                this.showPaymentSuccessModal = true;
+                
+                // Emit success event for cart handling
+                this.$emit('payment-success', {
+                    message: `Downpayment successful! Order #${orderId} is ready for pickup. Remaining: ${this.formatPrice(this.remainingAmount)}`,
+                    orderId: orderId
+                });
+                
+            } catch (error) {
+                console.error('Error creating order after downpayment:', error);
+                this.processingPayment = false;
+                this.paymentFailedMessage = 'Downpayment was successful but order creation failed. Please contact support.';
+                this.$emit('close');
+                this.showPaymentFailedModal = true;
+            }
+        },
+
         async processHatidOrder(orderData) {
             try {
                 // Create the order with HATID delivery
@@ -2146,6 +2440,115 @@ input:checked + .slider:before {
 .hatid-modal-actions {
     padding: 1rem 2rem 1.5rem;
     border-top: 1px solid #fff5f2;
+}
+
+/* Downpayment Info Styles */
+.downpayment-info-section {
+    margin-bottom: 1.5rem;
+}
+
+.downpayment-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #fff8f0 0%, #fff5f2 100%);
+    border: 2px solid #fed7cc;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.1);
+}
+
+.downpayment-info i {
+    color: #ea580c;
+    font-size: 1.25rem;
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+}
+
+.downpayment-details h5 {
+    margin: 0 0 0.5rem 0;
+    color: #9a3412;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.downpayment-details p {
+    margin: 0 0 1rem 0;
+    color: #7c2d12;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.payment-breakdown {
+    background-color: white;
+    border: 1px solid #fed7cc;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    font-size: 0.95rem;
+}
+
+.breakdown-row span:first-child {
+    color: #7c2d12;
+    font-weight: 500;
+}
+
+.breakdown-row .amount {
+    color: #ea580c;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.breakdown-divider {
+    height: 1px;
+    background-color: #fed7cc;
+    margin: 0.5rem 0;
+}
+
+.breakdown-row.total {
+    border-top: 2px solid #fed7cc;
+    padding-top: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.breakdown-row.total span:first-child {
+    color: #9a3412;
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.breakdown-row.total .amount {
+    color: #dc2626;
+    font-weight: 800;
+    font-size: 1.1rem;
+}
+
+/* Cash Order Warning */
+.cash-order-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    margin-top: 1rem;
+    background-color: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    color: #c2410c;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.cash-order-warning i {
+    color: #ea580c;
+    font-size: 1rem;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
 }
 
 .done-btn {

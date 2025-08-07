@@ -3,6 +3,127 @@ const Order = require('../models/orderModel.js');
 const Reward = require('../models/rewardModel.js');
 const SharedCart = require('../models/sharedCartModel'); 
 
+exports.createCashOrderWithDownpayment = async (req, res) => {
+    const connection = await db.getConnection();
+    
+    try {
+        await connection.beginTransaction();
+
+        const { items, totalAmount, downpaymentAmount, remainingAmount, discountId, packagingPreference, paymentMethod, downpaymentPaymentId, status } = req.body;
+        const userId = req.user.id;
+
+        console.log('=== CASH ORDER WITH DOWNPAYMENT CREATION ===');
+        console.log('Request body:', req.body);
+
+        // Validate inputs
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ message: 'No items provided' });
+        }
+
+        // Validate amounts
+        const validatedTotalAmount = parseFloat(totalAmount);
+        const validatedDownpaymentAmount = parseFloat(downpaymentAmount);
+        const validatedRemainingAmount = parseFloat(remainingAmount);
+
+        if (isNaN(validatedTotalAmount) || validatedTotalAmount <= 0) {
+            return res.status(400).json({ message: 'Invalid total amount' });
+        }
+
+        if (isNaN(validatedDownpaymentAmount) || validatedDownpaymentAmount <= 0) {
+            return res.status(400).json({ message: 'Invalid downpayment amount' });
+        }
+
+        // Validate packaging preference and payment method
+        const validPackagingPreference = ['eco', 'plastic'].includes(packagingPreference) ? packagingPreference : 'eco';
+        const validPaymentMethod = paymentMethod === 'cash' ? 'cash' : 'cash';
+        const orderStatus = status || 'pending_pickup';
+
+        console.log('Creating cash order with downpayment - Total:', validatedTotalAmount, 'Downpayment:', validatedDownpaymentAmount, 'Remaining:', validatedRemainingAmount);
+
+        let finalAmount = validatedTotalAmount;
+        let appliedDiscount = 0;
+
+        // Apply discount if provided
+        if (discountId) {
+            try {
+                appliedDiscount = await Reward.applyDiscount(userId, null, discountId);
+                finalAmount = Math.max(0, validatedTotalAmount - appliedDiscount);
+                console.log(`Applied discount: ₱${appliedDiscount}, Final amount: ₱${finalAmount}`);
+            } catch (error) {
+                console.error('Error applying discount:', error);
+            }
+        }
+        
+        // Create the order
+        const orderId = await Order.create(userId, items, finalAmount, validPackagingPreference, validPaymentMethod, orderStatus);
+
+        // Link the downpayment to the order
+        if (downpaymentPaymentId) {
+            await connection.execute(
+                'UPDATE payment_intents SET order_id = ? WHERE payment_link_id = ?',
+                [orderId, downpaymentPaymentId]
+            );
+        }
+
+        // Store downpayment information in the cancel_reason field (temporary solution)
+        // This will help staff know about the downpayment status
+        const downpaymentInfo = `Downpayment of ₱${validatedDownpaymentAmount.toFixed(2)} paid via GCash. Remaining: ₱${validatedRemainingAmount.toFixed(2)}`;
+        await connection.execute(
+            'UPDATE orders SET cancel_reason = ?, status = ? WHERE order_id = ?',
+            [downpaymentInfo, orderStatus, orderId]
+        );
+
+        // If discount was applied, update the order_id in available_discounts
+        if (discountId && appliedDiscount > 0) {
+            await connection.execute(
+                'UPDATE available_discounts SET order_id = ?, used = TRUE WHERE id = ?',
+                [orderId, discountId]
+            );
+        }
+
+        // Check if user has an active shared cart and terminate it
+        const activeShare = await SharedCart.getActiveSharedCart(userId);
+        if (activeShare && activeShare.shareId) {
+            await db.execute(
+                'UPDATE shared_carts SET status = "expired" WHERE share_id = ? AND status = "active"',
+                [activeShare.shareId]
+            );
+        }
+
+        await connection.commit();
+
+        // Add reward points for the final amount paid
+        let pointsEarned = 0;
+        try {
+            console.log(`Adding reward points for cash order ${orderId} with final amount: ₱${finalAmount}`);
+            pointsEarned = await Reward.addPoints(userId, orderId, finalAmount);
+            console.log(`Points earned for cash order ${orderId}: ${pointsEarned} points`);
+        } catch (error) {
+            console.error('Error adding reward points:', error);
+        }
+
+        res.status(201).json({ 
+            orderId,
+            pointsEarned,
+            appliedDiscount,
+            finalAmount,
+            downpaymentAmount: validatedDownpaymentAmount,
+            remainingAmount: validatedRemainingAmount,
+            packagingPreference: validPackagingPreference,
+            paymentMethod: validPaymentMethod,
+            status: orderStatus,
+            message: 'Cash order with downpayment created successfully'
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error creating cash order with downpayment:', error);
+        res.status(500).json({ message: 'Error creating cash order with downpayment: ' + error.message });
+    } finally {
+        connection.release();
+    }
+};
+
 exports.createOrder = async (req, res) => {
     const connection = await db.getConnection();
     

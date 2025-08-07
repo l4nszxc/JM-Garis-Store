@@ -1,6 +1,124 @@
 const paymongoService = require('../services/paymongoService');
 const db = require('../config/db');
 
+exports.createGCashDownpayment = async (req, res) => {
+    try {
+        const { downpaymentAmount, totalAmount, remainingAmount, items, discountId, packagingPreference, paymentMethod } = req.body;
+        const userId = req.user.id;
+        
+        // Generate a temporary payment reference for downpayment
+        const tempReference = `downpay_${Date.now()}_${userId}`;
+        
+        // Create PayMongo payment link for downpayment
+        const paymentLink = await paymongoService.createPaymentLink(
+            downpaymentAmount,
+            tempReference,
+            'JM Garis Store - Downpayment (25%)'
+        );
+        
+        console.log('Downpayment Link Created:', paymentLink);
+        
+        // Store payment info in database with order data for later use
+        const downpaymentData = {
+            items, 
+            discountId, 
+            packagingPreference, 
+            paymentMethod, 
+            totalAmount, 
+            remainingAmount, 
+            downpaymentAmount,
+            type: 'downpayment'
+        };
+        
+        await db.execute(
+            `INSERT INTO payment_intents (
+                payment_link_id, 
+                paymongo_link_id,
+                reference_number,
+                amount, 
+                status,
+                order_data,
+                user_id,
+                payment_type,
+                total_amount,
+                remaining_amount,
+                created_at
+            ) VALUES (?, ?, ?, ?, 'pending', ?, ?, 'downpayment', ?, ?, NOW())`,
+            [
+                paymentLink.id, 
+                paymentLink.id,
+                paymentLink.attributes.reference_number,
+                downpaymentAmount,
+                JSON.stringify(downpaymentData),
+                userId,
+                totalAmount,
+                remainingAmount
+            ]
+        );
+        
+        res.json({
+            paymentId: paymentLink.id,
+            linkId: paymentLink.id,
+            checkoutUrl: paymentLink.attributes.checkout_url,
+            referenceNumber: paymentLink.attributes.reference_number,
+            amount: paymentLink.attributes.amount / 100,
+            downpaymentAmount,
+            remainingAmount
+        });
+        
+    } catch (error) {
+        console.error('Error creating downpayment:', error);
+        res.status(500).json({ message: 'Failed to create downpayment' });
+    }
+};
+
+exports.checkDownpaymentStatus = async (req, res) => {
+    try {
+        const { paymentId } = req.params;
+        
+        const [payments] = await db.execute(
+            'SELECT * FROM payment_intents WHERE payment_link_id = ? AND payment_type = "downpayment" ORDER BY created_at DESC LIMIT 1',
+            [paymentId]
+        );
+        
+        if (payments.length === 0) {
+            return res.status(404).json({ message: 'Downpayment not found' });
+        }
+
+        // Get the latest status from PayMongo
+        try {
+            const paymentLink = await paymongoService.getPaymentLink(payments[0].payment_link_id);
+            
+            // Update local status based on PayMongo status
+            let localStatus = 'pending';
+            if (paymentLink.attributes.status === 'paid') {
+                localStatus = 'succeeded';
+            } else if (paymentLink.attributes.status === 'unpaid') {
+                localStatus = 'pending';
+            } else if (paymentLink.attributes.status === 'expired') {
+                localStatus = 'failed';
+            }
+            
+            if (localStatus !== payments[0].status) {
+                await db.execute(
+                    'UPDATE payment_intents SET status = ? WHERE id = ?',
+                    [localStatus, payments[0].id]
+                );
+                payments[0].status = localStatus;
+            }
+            
+        } catch (error) {
+            console.error('Error checking PayMongo status:', error);
+        }
+        
+        res.json(payments[0]);
+        
+    } catch (error) {
+        console.error('Error checking downpayment status:', error);
+        res.status(500).json({ message: 'Failed to check downpayment status' });
+    }
+};
+
 exports.createGCashPaymentOnly = async (req, res) => {
     try {
         const { amount, items, discountId, packagingPreference, paymentMethod } = req.body;
