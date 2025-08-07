@@ -2386,6 +2386,10 @@ exports.downloadLowStockReport = async (req, res) => {
     try {
         const { filter, search } = req.query;
         
+        // Format current date for filename
+        const now = new Date();
+        const formattedDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+        
         const ExcelJS = require('exceljs');
         const workbook = new ExcelJS.Workbook();
         
