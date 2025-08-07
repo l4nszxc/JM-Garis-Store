@@ -16,6 +16,7 @@
                             :key="status.value"
                             @click="statusFilter = status.value"
                             :class="['filter-btn', statusFilter === status.value ? 'active' : '', status.value]"
+                            :title="status.value === 'pending' ? 'Shows all orders awaiting acceptance: Pending, Pending Pickup, Pending Delivery, and Paid via GCash' : ''"
                         >
                             {{ status.label }}
                         </button>
@@ -72,6 +73,7 @@
                                 <th>Order ID</th>
                                 <th>Customer</th>
                                 <th>Status</th>
+                                <th>Payment Method</th>
                                 <th>Total Amount</th>
                                 <th>Date</th>
                                 <th>Actions</th>
@@ -83,7 +85,16 @@
                                 <td>{{ order.customer_name }}</td>
                                 <td>
                                     <span :class="['status-badge', order.status.replace(/ /g, '-')]">
-                                        {{ order.status }}
+                                        <i v-if="order.status === 'pending'" class="fas fa-clock"></i>
+                                        <i v-else-if="order.status === 'pending_pickup'" class="fas fa-hand-holding"></i>
+                                        <i v-else-if="order.status === 'pending_delivery'" class="fas fa-truck"></i>
+                                        <i v-else-if="order.status === 'paid using gcash'" class="fas fa-mobile-alt"></i>
+                                        <i v-else-if="order.status === 'preparing'" class="fas fa-utensils"></i>
+                                        <i v-else-if="order.status === 'ready for pickup'" class="fas fa-check-circle"></i>
+                                        <i v-else-if="order.status === 'paid'" class="fas fa-check-double"></i>
+                                        <i v-else-if="order.status === 'cancelled'" class="fas fa-times-circle"></i>
+                                        <i v-else class="fas fa-info-circle"></i>
+                                        {{ getStatusDisplay(order.status) }}
                                     </span>
                                     <div v-if="order.staff_name" class="staff-info">
                                         <small>Accepted by: {{ order.staff_name }}</small>
@@ -92,6 +103,15 @@
                                         <i v-if="isPastDue(order.estimatedPickupTime)" class="fas fa-exclamation-triangle"></i>
                                         {{ formatRemainingTime(order.estimatedPickupTime) }}
                                     </div>
+                                </td>
+                                <td>
+                                    <span class="payment-method">
+                                        <i v-if="order.payment_method === 'cash'" class="fas fa-money-bill-wave"></i>
+                                        <i v-else-if="order.payment_method === 'gcash'" class="fas fa-mobile-alt"></i>
+                                        <i v-else-if="order.payment_method === 'hatid'" class="fas fa-truck"></i>
+                                        <i v-else class="fas fa-credit-card"></i>
+                                        {{ getPaymentMethodLabel(order.payment_method) }}
+                                    </span>
                                 </td>
                                 <td>{{ formatPrice(order.total_amount) }}</td>
                                 <td>{{ formatDate(order.created_at) }}</td>
@@ -105,12 +125,48 @@
                                 </td>
                             </tr>
                             <tr v-if="filteredOrders.length === 0">
-                                <td colspan="6" class="no-data">
+                                <td colspan="7" class="no-data">
                                     No orders found for the selected filters
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination-container" v-if="totalPages > 1">
+                    <div class="pagination-info">
+                        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, totalFilteredOrders.length) }} of {{ totalFilteredOrders.length }} orders
+                    </div>
+                    <div class="pagination">
+                        <button 
+                            @click="prevPage" 
+                            :disabled="currentPage === 1"
+                            class="pagination-btn"
+                        >
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        
+                        <button 
+                            v-for="page in totalPages" 
+                            :key="page"
+                            @click="goToPage(page)"
+                            :class="['pagination-btn', 'page-btn', { 'active': currentPage === page }]"
+                            v-show="page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2"
+                        >
+                            {{ page }}
+                        </button>
+                        
+                        <span v-if="totalPages > 5 && currentPage < totalPages - 2" class="pagination-ellipsis">...</span>
+                        
+                        <button 
+                            @click="nextPage" 
+                            :disabled="currentPage === totalPages"
+                            class="pagination-btn"
+                        >
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -124,8 +180,17 @@
                         <p><strong>Order ID:</strong> {{ selectedOrder.order_id }}</p>
                         <p><strong>Customer:</strong> {{ selectedOrder.customer_name }}</p>
                         <p><strong>Status:</strong> 
-                            <span :class="['status-badge', selectedOrder.status]">
-                                {{ selectedOrder.status }}
+                            <span :class="['status-badge', selectedOrder.status.replace(/ /g, '-')]">
+                                <i v-if="selectedOrder.status === 'pending'" class="fas fa-clock"></i>
+                                <i v-else-if="selectedOrder.status === 'pending_pickup'" class="fas fa-hand-holding"></i>
+                                <i v-else-if="selectedOrder.status === 'pending_delivery'" class="fas fa-truck"></i>
+                                <i v-else-if="selectedOrder.status === 'paid using gcash'" class="fas fa-mobile-alt"></i>
+                                <i v-else-if="selectedOrder.status === 'preparing'" class="fas fa-utensils"></i>
+                                <i v-else-if="selectedOrder.status === 'ready for pickup'" class="fas fa-check-circle"></i>
+                                <i v-else-if="selectedOrder.status === 'paid'" class="fas fa-check-double"></i>
+                                <i v-else-if="selectedOrder.status === 'cancelled'" class="fas fa-times-circle"></i>
+                                <i v-else class="fas fa-info-circle"></i>
+                                {{ getStatusDisplay(selectedOrder.status) }}
                             </span>
                         </p>
                         <p><strong>Order Date:</strong> {{ formatDate(selectedOrder.created_at) }}</p>
@@ -208,7 +273,7 @@
                 </div>
                 <div class="modal-actions">
                     <button 
-                        v-if="selectedOrder.status === 'pending'"
+                        v-if="['pending', 'pending_pickup', 'pending_delivery', 'paid using gcash'].includes(selectedOrder.status)"
                         @click="acceptOrder(selectedOrder.order_id)" 
                         class="accept-btn"
                     >
@@ -254,14 +319,20 @@ export default {
             defaultStatusFilter: 'pending',
             statusFilters: [
                 { label: 'All Status', value: '' },
-                { label: 'Pending', value: 'pending' },
+                { label: 'Pending (All)', value: 'pending' },
+                { label: 'Pending Pickup', value: 'pending_pickup' },
+                { label: 'Pending Delivery', value: 'pending_delivery' },
+                { label: 'Paid via GCash', value: 'paid using gcash' },
                 { label: 'Preparing', value: 'preparing' },
                 { label: 'Ready for Pickup', value: 'ready for pickup' },
                 { label: 'Paid', value: 'paid' },
                 { label: 'Cancelled', value: 'cancelled' }
             ],
             selectedOrder: null,
-            isLoading: false
+            isLoading: false,
+            // Pagination
+            currentPage: 1,
+            itemsPerPage: 20
         }
     },
     computed: {
@@ -278,7 +349,19 @@ export default {
                     order.order_id.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
                     order.customer_name.toLowerCase().includes(this.searchQuery.toLowerCase());
                 
-                const statusMatch = !this.statusFilter || order.status === this.statusFilter;
+                // Status filter logic - if "pending" is selected, show all pending statuses that need acceptance
+                let statusMatch = true;
+                if (this.statusFilter) {
+                    if (this.statusFilter === 'pending') {
+                        // Show all statuses that need to be accepted
+                        const pendingStatuses = ['pending', 'pending_pickup', 'pending_delivery', 'paid using gcash'];
+                        statusMatch = pendingStatuses.includes(order.status);
+                    } else {
+                        statusMatch = order.status === this.statusFilter;
+                    }
+                } else {
+                    statusMatch = true;
+                }
                 
                 // Date filter
                 let dateMatch = true;
@@ -314,6 +397,84 @@ export default {
             }
             
             return filtered;
+        },
+        totalFilteredOrders() {
+            // First filter the orders based on existing criteria
+            return this.orders.filter(order => {
+                const searchMatch = !this.searchQuery || 
+                    order.order_id.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    order.customer_name.toLowerCase().includes(this.searchQuery.toLowerCase());
+                
+                // Status filter logic - if "pending" is selected, show all pending statuses that need acceptance
+                let statusMatch = true;
+                if (this.statusFilter) {
+                    if (this.statusFilter === 'pending') {
+                        // Show all statuses that need to be accepted
+                        const pendingStatuses = ['pending', 'pending_pickup', 'pending_delivery', 'paid using gcash'];
+                        statusMatch = pendingStatuses.includes(order.status);
+                    } else {
+                        statusMatch = order.status === this.statusFilter;
+                    }
+                }
+                
+                // Date filter
+                let dateMatch = true;
+                if (this.dateFilter) {
+                    const orderDate = new Date(order.created_at);
+                    const filterDate = new Date(this.dateFilter);
+                    
+                    dateMatch = orderDate.getFullYear() === filterDate.getFullYear() && 
+                               orderDate.getMonth() === filterDate.getMonth() && 
+                               orderDate.getDate() === filterDate.getDate();
+                }
+                
+                return searchMatch && statusMatch && dateMatch;
+            });
+        },
+        totalPages() {
+            return Math.ceil(this.totalFilteredOrders.length / this.itemsPerPage);
+        },
+        filteredOrders() {
+            // Get all filtered orders
+            let filtered = this.totalFilteredOrders;
+            
+            // Then sort the filtered results
+            if (this.sortOption) {
+                filtered = [...filtered].sort((a, b) => {
+                    if (this.sortOption === 'amount_asc') {
+                        return a.total_amount - b.total_amount;
+                    } 
+                    else if (this.sortOption === 'amount_desc') {
+                        return b.total_amount - a.total_amount;
+                    }
+                    else if (this.sortOption === 'date_desc') {
+                        return new Date(b.created_at) - new Date(a.created_at);
+                    }
+                    else if (this.sortOption === 'date_asc') {
+                        return new Date(a.created_at) - new Date(b.created_at);
+                    }
+                    return 0;
+                });
+            }
+            
+            // Apply pagination
+            const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+            const endIndex = startIndex + this.itemsPerPage;
+            return filtered.slice(startIndex, endIndex);
+        }
+    },
+    watch: {
+        searchQuery() {
+            this.currentPage = 1;
+        },
+        statusFilter() {
+            this.currentPage = 1;
+        },
+        dateFilter() {
+            this.currentPage = 1;
+        },
+        sortOption() {
+            this.currentPage = 1;
         }
     },
     methods: {
@@ -322,6 +483,23 @@ export default {
             this.dateFilter = '';
             this.statusFilter = this.defaultStatusFilter;
             this.sortOption = this.defaultSortOption;
+            this.currentPage = 1; // Reset to first page
+        },
+        // Pagination methods
+        goToPage(page) {
+            if (page >= 1 && page <= this.totalPages) {
+                this.currentPage = page;
+            }
+        },
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+            }
+        },
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+            }
         },
         clearDateFilter() {
             this.dateFilter = '';
@@ -411,6 +589,20 @@ export default {
                 default:
                     return method || 'Not specified';
             }
+        },
+        getStatusDisplay(status) {
+            const displayMap = {
+                'pending': 'Pending',
+                'pending_pickup': 'Pending Pickup (Downpayment)',
+                'pending_delivery': 'Pending Delivery',
+                'paid using gcash': 'Paid via GCash',
+                'preparing': 'Preparing',
+                'ready for pickup': 'Ready for Pickup',
+                'paid': 'Paid',
+                'cancelled': 'Cancelled',
+                'completed': 'Completed'
+            };
+            return displayMap[status.toLowerCase()] || status;
         },
         async acceptOrder(orderId) {
             try {
@@ -674,6 +866,36 @@ export default {
     color: white;
 }
 
+.filter-btn.pending_pickup {
+    background-color: #e0f2fe;
+    color: #0277bd;
+}
+
+.filter-btn.pending_pickup.active {
+    background-color: #0277bd;
+    color: white;
+}
+
+.filter-btn.pending_delivery {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.filter-btn.pending_delivery.active {
+    background-color: #2e7d32;
+    color: white;
+}
+
+.filter-btn.paid-using-gcash {
+    background-color: #cff4fc;
+    color: #055160;
+}
+
+.filter-btn.paid-using-gcash.active {
+    background-color: #007bff;
+    color: white;
+}
+
 .filter-btn.preparing {
     background-color: #cce5ff;
     color: #004085;
@@ -737,7 +959,9 @@ th {
 }
 
 .status-badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     padding: 0.5rem 1rem;
     border-radius: 20px;
     font-size: 0.9rem;
@@ -747,6 +971,21 @@ th {
 .pending {
     background-color: #fef3c7;
     color: #92400e;
+}
+
+.pending_pickup {
+    background-color: #e0f2fe;
+    color: #0277bd;
+}
+
+.pending_delivery {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.paid-using-gcash {
+    background-color: #cff4fc;
+    color: #055160;
 }
 
 .preparing {
@@ -1129,6 +1368,76 @@ tfoot tr td {
 .packaging-display.plastic i {
     color: #FFA500;
 }
+
+/* Pagination Styles */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.pagination-info {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.pagination {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.pagination-btn {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    background-color: white;
+    color: #374151;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    min-width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.pagination-btn:disabled {
+    background-color: #f9fafb;
+    color: #9ca3af;
+    cursor: not-allowed;
+    border-color: #f3f4f6;
+}
+
+.pagination-btn.page-btn {
+    min-width: 40px;
+}
+
+.pagination-btn.active {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+
+.pagination-btn.active:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.pagination-ellipsis {
+    padding: 0.5rem;
+    color: #9ca3af;
+}
+
 @media (max-width: 768px) {
     .sort-filter {
         width: 100%;
@@ -1178,6 +1487,23 @@ tfoot tr td {
     .modal-content {
         width: 95%;
         padding: 1rem;
+    }
+    
+    .pagination-container {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .pagination-btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+        min-width: 35px;
     }
 }
 </style>

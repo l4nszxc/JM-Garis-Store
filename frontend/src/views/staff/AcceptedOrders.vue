@@ -68,6 +68,7 @@
                                 <th>Order ID</th>
                                 <th>Customer</th>
                                 <th>Status</th>
+                                <th>Payment Method</th>
                                 <th>Total Amount</th>
                                 <th>Accepted On</th>
                                 <th>Estimated Ready By</th>
@@ -91,6 +92,15 @@
                                         <option value="paid" disabled>Paid</option>
                                     </select>
                                 </td>
+                                <td>
+                                    <span class="payment-method">
+                                        <i v-if="order.payment_method === 'cash'" class="fas fa-money-bill-wave"></i>
+                                        <i v-else-if="order.payment_method === 'gcash'" class="fas fa-mobile-alt"></i>
+                                        <i v-else-if="order.payment_method === 'hatid'" class="fas fa-truck"></i>
+                                        <i v-else class="fas fa-credit-card"></i>
+                                        {{ getPaymentMethodLabel(order.payment_method) }}
+                                    </span>
+                                </td>
                                 <td>{{ formatPrice(order.total_amount) }}</td>
                                 <td>{{ formatDate(order.accepted_at) }}</td>
                                 <td class="estimated-time">
@@ -107,12 +117,48 @@
                                 </td>
                             </tr>
                             <tr v-if="filteredOrders.length === 0">
-                                <td colspan="7" class="no-data">
+                                <td colspan="8" class="no-data">
                                     No orders found for the selected filters
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination-container" v-if="totalPages > 1">
+                    <div class="pagination-info">
+                        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, totalFilteredOrders.length) }} of {{ totalFilteredOrders.length }} orders
+                    </div>
+                    <div class="pagination">
+                        <button 
+                            @click="prevPage" 
+                            :disabled="currentPage === 1"
+                            class="pagination-btn"
+                        >
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        
+                        <button 
+                            v-for="page in totalPages" 
+                            :key="page"
+                            @click="goToPage(page)"
+                            :class="['pagination-btn', 'page-btn', { 'active': currentPage === page }]"
+                            v-show="page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2"
+                        >
+                            {{ page }}
+                        </button>
+                        
+                        <span v-if="totalPages > 5 && currentPage < totalPages - 2" class="pagination-ellipsis">...</span>
+                        
+                        <button 
+                            @click="nextPage" 
+                            :disabled="currentPage === totalPages"
+                            class="pagination-btn"
+                        >
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -127,7 +173,16 @@
                         <p><strong>Customer:</strong> {{ selectedOrder.customer_name }}</p>
                         <p><strong>Status:</strong> 
                             <span :class="['status-badge', selectedOrder.status.replace(/ /g, '-')]">
-                                {{ selectedOrder.status }}
+                                <i v-if="selectedOrder.status === 'pending'" class="fas fa-clock"></i>
+                                <i v-else-if="selectedOrder.status === 'pending_pickup'" class="fas fa-hand-holding"></i>
+                                <i v-else-if="selectedOrder.status === 'pending_delivery'" class="fas fa-truck"></i>
+                                <i v-else-if="selectedOrder.status === 'paid using gcash'" class="fas fa-mobile-alt"></i>
+                                <i v-else-if="selectedOrder.status === 'preparing'" class="fas fa-utensils"></i>
+                                <i v-else-if="selectedOrder.status === 'ready for pickup'" class="fas fa-check-circle"></i>
+                                <i v-else-if="selectedOrder.status === 'paid'" class="fas fa-check-double"></i>
+                                <i v-else-if="selectedOrder.status === 'cancelled'" class="fas fa-times-circle"></i>
+                                <i v-else class="fas fa-info-circle"></i>
+                                {{ getStatusDisplay(selectedOrder.status) }}
                             </span>
                         </p>
                         <p><strong>Accepted On:</strong> {{ formatDate(selectedOrder.accepted_at) }}</p>
@@ -274,7 +329,10 @@ export default {
                 { label: 'Ready for Pickup', value: 'ready for pickup' },
                 { label: 'Complete', value: 'paid' },
                 { label: 'Past Due', value: 'past-due' }
-            ]
+            ],
+            // Pagination
+            currentPage: 1,
+            itemsPerPage: 20
         }
     },
     computed: {
@@ -297,9 +355,9 @@ export default {
                   this.selectedStatus !== this.defaultStatusFilter ||
                   this.sortOption !== this.defaultSortOption;
         },
-        filteredOrders() {
+        totalFilteredOrders() {
             // First apply all the filters
-            let filtered = this.acceptedOrders.filter(order => {
+            return this.acceptedOrders.filter(order => {
                 // Search filter
                 const searchMatch = !this.searchQuery || 
                     order.order_id.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -332,6 +390,13 @@ export default {
                 
                 return searchMatch && dateMatch && statusMatch;
             });
+        },
+        totalPages() {
+            return Math.ceil(this.totalFilteredOrders.length / this.itemsPerPage);
+        },
+        filteredOrders() {
+            // Get all filtered orders
+            let filtered = this.totalFilteredOrders;
             
             // Then sort the filtered results
             if (this.sortOption) {
@@ -352,7 +417,24 @@ export default {
                 });
             }
             
-            return filtered;
+            // Apply pagination
+            const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+            const endIndex = startIndex + this.itemsPerPage;
+            return filtered.slice(startIndex, endIndex);
+        }
+    },
+    watch: {
+        searchQuery() {
+            this.currentPage = 1;
+        },
+        selectedStatus() {
+            this.currentPage = 1;
+        },
+        dateFilter() {
+            this.currentPage = 1;
+        },
+        sortOption() {
+            this.currentPage = 1;
         }
     },
     methods: {
@@ -361,6 +443,23 @@ export default {
             this.dateFilter = '';
             this.selectedStatus = this.defaultStatusFilter;
             this.sortOption = this.defaultSortOption;
+            this.currentPage = 1; // Reset to first page
+        },
+        // Pagination methods
+        goToPage(page) {
+            if (page >= 1 && page <= this.totalPages) {
+                this.currentPage = page;
+            }
+        },
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+            }
+        },
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+            }
         },
         handleDateFilterChange() {
             // Additional handling if needed
@@ -450,6 +549,20 @@ export default {
                 default:
                     return method || 'Not specified';
             }
+        },
+        getStatusDisplay(status) {
+            const displayMap = {
+                'pending': 'Pending',
+                'pending_pickup': 'Pending Pickup (Downpayment)',
+                'pending_delivery': 'Pending Delivery',
+                'paid using gcash': 'Paid via GCash',
+                'preparing': 'Preparing',
+                'ready for pickup': 'Ready for Pickup',
+                'paid': 'Paid',
+                'cancelled': 'Cancelled',
+                'completed': 'Completed'
+            };
+            return displayMap[status.toLowerCase()] || status;
         },
         isPastDue(estimatedTime) {
             return new Date(estimatedTime) < new Date()
@@ -786,6 +899,26 @@ th {
     width: 150px;
 }
 
+.pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.pending_pickup {
+    background-color: #e0f2fe;
+    color: #0277bd;
+}
+
+.pending_delivery {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.paid-using-gcash {
+    background-color: #cff4fc;
+    color: #055160;
+}
+
 .preparing {
     background-color: #cce5ff;
     color: #004085;
@@ -799,6 +932,11 @@ th {
 .paid {
     background-color: #d1e7dd;
     color: #0f5132;
+}
+
+.cancelled {
+    background-color: #fee2e2;
+    color: #b91c1c;
 }
 
 .view-btn {
@@ -891,7 +1029,9 @@ th {
 }
 
 .status-badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     padding: 0.5rem 1rem;
     border-radius: 20px;
     font-size: 0.9rem;
@@ -1222,6 +1362,75 @@ input[type="checkbox"] {
     }
 }
 
+/* Pagination Styles */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.pagination-info {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.pagination {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.pagination-btn {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    background-color: white;
+    color: #374151;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    min-width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.pagination-btn:disabled {
+    background-color: #f9fafb;
+    color: #9ca3af;
+    cursor: not-allowed;
+    border-color: #f3f4f6;
+}
+
+.pagination-btn.page-btn {
+    min-width: 40px;
+}
+
+.pagination-btn.active {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+
+.pagination-btn.active:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.pagination-ellipsis {
+    padding: 0.5rem;
+    color: #9ca3af;
+}
+
 @media (max-width: 768px) {
      .sort-filter {
         width: 100%;
@@ -1278,6 +1487,23 @@ input[type="checkbox"] {
         width: 100%;
         justify-content: center;
         margin-top: 0.5rem;
+    }
+    
+    .pagination-container {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .pagination-btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+        min-width: 35px;
     }
 }
 </style>
