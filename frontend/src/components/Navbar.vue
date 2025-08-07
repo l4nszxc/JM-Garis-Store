@@ -143,7 +143,8 @@ export default {
       return `https://ui-avatars.com/api/?name=${this.username}&background=random`;
     },
     unreadNotificationsCount() {
-      return this.notifications.filter(notification => !notification.read).length;
+      const count = this.notifications.filter(notification => !notification.read).length;
+      return count > 99 ? 99 : count;
     }
   },
   methods: {
@@ -186,6 +187,75 @@ export default {
       } catch (error) {
         console.error('Error fetching active orders:', error);
         this.activeOrders = [];
+      }
+    },
+    async fetchActiveOrdersOnly() {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:7904/api/orders/user', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const orders = await response.json();
+          this.activeOrders = orders;
+          // Don't call updateOrderNotifications to preserve user's read status
+        }
+      } catch (error) {
+        console.error('Error fetching active orders:', error);
+        this.activeOrders = [];
+      }
+    },
+    async checkForNewNotifications() {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:7904/api/orders/user', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const orders = await response.json();
+          this.activeOrders = orders;
+          
+          // Only add truly new notifications (never seen before)
+          const savedNotifications = this.getSavedNotifications();
+          const savedNotificationIds = new Set(savedNotifications.map(n => n.id));
+          
+          let hasNewNotifications = false;
+          
+          orders.forEach(order => {
+            const notificationId = `order-${order.order_id}-${order.status}`;
+            
+            // Skip if deleted or already exists
+            if (this.deletedNotificationIds.has(notificationId) || savedNotificationIds.has(notificationId)) {
+              return;
+            }
+            
+            // This is a truly new notification
+            const newNotification = {
+              id: notificationId,
+              type: 'order',
+              orderId: order.order_id,
+              status: order.status,
+              read: false,
+              timestamp: new Date().toISOString(),
+              message: this.getOrderStatusMessage(order)
+            };
+            
+            this.notifications.unshift(newNotification);
+            hasNewNotifications = true;
+          });
+          
+          if (hasNewNotifications) {
+            // Keep only the 20 most recent notifications
+            this.notifications = this.notifications.slice(0, 20);
+            this.saveNotifications();
+          }
+        }
+      } catch (error) {
+        console.error('Error checking for new notifications:', error);
       }
     },
     async fetchCart() {
@@ -250,6 +320,10 @@ export default {
       // Load deleted notification IDs from localStorage
       this.loadDeletedNotificationIds();
       
+      // Get saved notifications to preserve read status and avoid recreation
+      const savedNotifications = this.getSavedNotifications();
+      const savedNotificationMap = new Map(savedNotifications.map(n => [n.id, n]));
+      
       // Process orders to create/update notifications
       orders.forEach(order => {
         const notificationId = `order-${order.order_id}-${order.status}`;
@@ -259,29 +333,43 @@ export default {
           return;
         }
         
-        // Check if notification already exists for this order status
+        // Check if notification already exists in current notifications
         const existingNotificationIndex = currentNotifications.findIndex(
-          n => n.type === 'order' && n.orderId === order.order_id && n.status === order.status
+          n => n.id === notificationId
         );
         
-        // If notification doesn't exist for this order status, create it
+        // If notification doesn't exist in current notifications, check if we should add it
         if (existingNotificationIndex === -1) {
-          const newNotification = {
-            id: notificationId,
-            type: 'order',
-            orderId: order.order_id,
-            status: order.status,
-            read: false,
-            timestamp: new Date().toISOString(),
-            message: this.getOrderStatusMessage(order)
-          };
+          // If we had this notification before (check saved), preserve its state
+          const savedNotification = savedNotificationMap.get(notificationId);
           
-          currentNotifications.unshift(newNotification); // Add to beginning of array
+          if (savedNotification) {
+            // Use the saved notification to preserve read status and timestamp
+            currentNotifications.unshift(savedNotification);
+          } else {
+            // Create new notification only if it's truly new
+            const newNotification = {
+              id: notificationId,
+              type: 'order',
+              orderId: order.order_id,
+              status: order.status,
+              read: false,
+              timestamp: new Date().toISOString(),
+              message: this.getOrderStatusMessage(order)
+            };
+            
+            currentNotifications.unshift(newNotification);
+          }
         }
       });
       
+      // Remove duplicates based on ID
+      const uniqueNotifications = currentNotifications.filter((notification, index, self) =>
+        index === self.findIndex(n => n.id === notification.id)
+      );
+      
       // Keep only the 20 most recent notifications
-      this.notifications = currentNotifications.slice(0, 20);
+      this.notifications = uniqueNotifications.slice(0, 20);
       
       // Save to localStorage
       this.saveNotifications();
@@ -373,6 +461,15 @@ export default {
         console.error('Error saving notifications:', error);
       }
     },
+    getSavedNotifications() {
+      try {
+        const saved = localStorage.getItem('userNotifications');
+        return saved ? JSON.parse(saved) : [];
+      } catch (error) {
+        console.error('Error getting saved notifications:', error);
+        return [];
+      }
+    },
     loadNotifications() {
       try {
         const saved = localStorage.getItem('userNotifications');
@@ -380,28 +477,8 @@ export default {
           // Parse the saved notifications
           const parsedNotifications = JSON.parse(saved);
           
-          // If we have existing notifications, we need to merge them with the new ones
-          // while preserving the read status
-          if (this.notifications.length > 0) {
-            // Create a map of notification IDs to their read status
-            const readStatusMap = {};
-            parsedNotifications.forEach(notification => {
-              readStatusMap[notification.id] = notification.read;
-            });
-            
-            // Update current notifications with the saved read status
-            this.notifications.forEach(notification => {
-              if (readStatusMap[notification.id] !== undefined) {
-                notification.read = readStatusMap[notification.id];
-              }
-            });
-          } else {
-            // No existing notifications, just use the saved ones
-            this.notifications = parsedNotifications;
-          }
-          
-          // Save the updated notifications
-          this.saveNotifications();
+          // Simply use the saved notifications to preserve all states (read/unread)
+          this.notifications = parsedNotifications;
         }
       } catch (error) {
         console.error('Error loading notifications:', error);
@@ -411,6 +488,9 @@ export default {
   mounted() {
     document.addEventListener('click', this.closeDropdown);
     document.addEventListener('click', this.closeNotifications);
+    
+    // Load deleted notification IDs first
+    this.loadDeletedNotificationIds();
     
     this.fetchProfilePicture();
     this.fetchCart();
@@ -444,7 +524,10 @@ export default {
     });
     
     // Check for new order status changes periodically
-    this.notificationCheckInterval = setInterval(this.fetchActiveOrders, 60000); // Every minute
+    this.notificationCheckInterval = setInterval(() => {
+      // Check for truly new notifications without overriding existing read status
+      this.checkForNewNotifications();
+    }, 60000); // Every minute
   },
   beforeUnmount() {
     document.removeEventListener('click', this.closeDropdown);

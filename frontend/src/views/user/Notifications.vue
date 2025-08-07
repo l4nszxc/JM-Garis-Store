@@ -33,7 +33,7 @@
           >
             Unread 
             <span v-if="unreadNotificationsCount > 0" class="filter-badge">
-              {{ unreadNotificationsCount }}
+              {{ unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount }}
             </span>
           </button>
         </div>
@@ -180,7 +180,8 @@ export default {
   },
   computed: {
     unreadNotificationsCount() {
-      return this.notifications.filter(notification => !notification.read).length;
+      const count = this.notifications.filter(notification => !notification.read).length;
+      return count > 99 ? 99 : count;
     },
     allSelected() {
       return this.filteredNotifications.length > 0 && 
