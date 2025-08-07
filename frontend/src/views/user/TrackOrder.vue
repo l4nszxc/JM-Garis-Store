@@ -8,87 +8,106 @@
             <div class="active-orders">
                 <div v-if="activeOrders.length > 0">
                     <div v-for="order in activeOrders" :key="order.order_id" class="order-card">
+                        <!-- Order Header -->
                         <div class="order-header">
-                            <div class="order-info">
+                            <div class="order-main-info">
                                 <h3>Order #{{ order.order_id }}</h3>
-                                <div class="status-container">
-                                    <span :class="['status-badge', getStatusClass(order.status)]">
-                                        <i :class="getStatusIcon(order.status)"></i>
-                                        {{ getStatusDisplay(order.status) }}
-                                    </span>
-                                    <span :class="['payment-badge', getPaymentClass(order.payment_method)]">
-                                        <i :class="getPaymentIcon(order.payment_method)"></i>
-                                        {{ getPaymentDisplay(order.payment_method) }}
-                                    </span>
-                                    <span v-if="order.cancel_reason" class="cancel-reason-badge">
-                                        <i class="fas fa-info-circle"></i>
-                                        {{ order.cancel_reason }}
-                                    </span>
-                                </div>
-                                <div v-if="order.status === 'preparing'" class="estimated-time" :class="{'delayed': isPastDue(order.estimatedPickupTime)}">
-                                    <i :class="['fas', isPastDue(order.estimatedPickupTime) ? 'fa-exclamation-circle' : 'fa-clock']"></i>
-                                    <div class="time-details">
-                                        <span v-if="isPastDue(order.estimatedPickupTime)">
-                                            There's been a delay in your order, please wait
-                                        </span>
-                                        <span v-else>Estimated ready by:</span>
-                                        <strong v-if="!isPastDue(order.estimatedPickupTime)">{{ formatDate(order.estimatedPickupTime) }}</strong>
-                                    </div>
-                                </div>
-                                <!-- Add staff info display -->
-                                <div v-if="order.status === 'preparing' && order.staff_name" class="staff-info">
-                                    <i class="fas fa-user"></i>
-                                    <div class="staff-details">
-                                        <span>Being prepared by: {{ order.staff_name }}</span>
-                                        <small>{{ formatDate(order.accepted_at) }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="order-secondary-info">
                                 <p class="order-date">{{ formatDate(order.created_at) }}</p>
-                                <div class="price-breakdown">
-                                    <p class="subtotal">
-                                        <i class="fas fa-receipt"></i> Subtotal: {{ formatPrice(order.subtotal) }}
-                                    </p>
-                                    <p v-if="order.discount_amount > 0" class="discount-amount">
-                                        <i class="fas fa-tag"></i> Discount: -{{ formatPrice(order.discount_amount) }}
-                                    </p>
-                                    <p class="total-amount">
-                                        <i class="fas fa-peso-sign"></i> Total: {{ formatPrice(order.total_amount) }}
-                                    </p>
-                                </div>
-                                <div class="button-group">
-                                    <button class="toggle-btn" @click="toggleOrderDetails(order.order_id)">
-                                        <i :class="['fas', expandedOrders.has(order.order_id) ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
-                                        {{ expandedOrders.has(order.order_id) ? 'Hide Details' : 'Show Details' }}
-                                    </button>
-                                    <button 
-                                        v-if="order.status.toLowerCase() === 'pending'" 
-                                        @click="showCancelModal(order)" 
-                                        class="cancel-btn"
-                                    >
-                                        <i class="fas fa-times-circle"></i> Cancel Order
-                                    </button>
-                                </div>
+                            </div>
+                            <div class="order-total">
+                                <span class="total-label">Total</span>
+                                <span class="total-amount">{{ formatPrice(order.total_amount) }}</span>
                             </div>
                         </div>
 
-                        <div v-show="expandedOrders.has(order.order_id)" class="order-items">
-                            <div v-for="item in order.items" :key="item.product_id" class="order-item">
-                                <img 
-                                    :src="item.image || '/img/placeholder.jpg'"
-                                    :alt="item.name"
-                                    class="item-image"
-                                    @error="handleImageError"
-                                >
-                                <div class="item-details">
-                                    <h4>{{ item.name }}</h4>
-                                    <!-- Display choice information if available -->
-                                    <p v-if="item.choice_name" class="choice-info">
-                                        <i class="fas fa-tag"></i> Option: {{ item.choice_name }}
-                                    </p>
-                                    <p class="item-price">{{ formatPrice(item.price) }} x {{ item.quantity }}</p>
-                                    <p class="item-subtotal">Subtotal: {{ formatPrice(item.price * item.quantity) }}</p>
+                        <!-- Status and Payment Info -->
+                        <div class="order-status-section">
+                            <div class="badges-container">
+                                <span :class="['status-badge', getStatusClass(order.status)]">
+                                    <i :class="getStatusIcon(order.status)"></i>
+                                    {{ getStatusDisplay(order.status) }}
+                                </span>
+                                <span :class="['payment-badge', getPaymentClass(order.payment_method)]">
+                                    <i :class="getPaymentIcon(order.payment_method)"></i>
+                                    {{ getPaymentDisplay(order.payment_method) }}
+                                </span>
+                            </div>
+                            
+                            <!-- Cancel reason if applicable -->
+                            <div v-if="order.cancel_reason" class="cancel-info">
+                                <i class="fas fa-info-circle"></i>
+                                <span>{{ order.cancel_reason }}</span>
+                            </div>
+
+                            <!-- Estimated time for preparing orders -->
+                            <div v-if="order.status === 'preparing'" class="estimated-time" :class="{'delayed': isPastDue(order.estimatedPickupTime)}">
+                                <i :class="['fas', isPastDue(order.estimatedPickupTime) ? 'fa-exclamation-triangle' : 'fa-clock']"></i>
+                                <span v-if="isPastDue(order.estimatedPickupTime)" class="delay-text">
+                                    Order delayed - Please wait
+                                </span>
+                                <span v-else class="eta-text">
+                                    Ready by {{ formatDate(order.estimatedPickupTime) }}
+                                </span>
+                            </div>
+
+                            <!-- Staff info for preparing orders -->
+                            <div v-if="order.status === 'preparing' && order.staff_name" class="staff-info">
+                                <i class="fas fa-utensils"></i>
+                                <span>Prepared by {{ order.staff_name }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="order-actions">
+                            <button class="toggle-btn" @click="toggleOrderDetails(order.order_id)">
+                                <i :class="['fas', expandedOrders.has(order.order_id) ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
+                                {{ expandedOrders.has(order.order_id) ? 'Hide' : 'Details' }}
+                            </button>
+                            <button 
+                                v-if="order.status.toLowerCase() === 'pending'" 
+                                @click="showCancelModal(order)" 
+                                class="cancel-btn"
+                            >
+                                <i class="fas fa-times"></i>
+                                Cancel
+                            </button>
+                        </div>
+
+                        <!-- Order Items (Expandable) -->
+                        <div v-show="expandedOrders.has(order.order_id)" class="order-details">
+                            <div class="items-list">
+                                <div v-for="item in order.items" :key="item.product_id" class="order-item">
+                                    <img 
+                                        :src="item.image || '/img/placeholder.jpg'"
+                                        :alt="item.name"
+                                        class="item-image"
+                                        @error="handleImageError"
+                                    >
+                                    <div class="item-info">
+                                        <h4>{{ item.name }}</h4>
+                                        <p v-if="item.choice_name" class="item-choice">{{ item.choice_name }}</p>
+                                        <div class="item-pricing">
+                                            <span class="quantity">{{ item.quantity }}x</span>
+                                            <span class="price">{{ formatPrice(item.price) }}</span>
+                                            <span class="subtotal">{{ formatPrice(item.price * item.quantity) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Order Summary -->
+                            <div class="order-summary">
+                                <div class="summary-row">
+                                    <span>Subtotal</span>
+                                    <span>{{ formatPrice(order.subtotal) }}</span>
+                                </div>
+                                <div v-if="order.discount_amount > 0" class="summary-row discount">
+                                    <span>Discount</span>
+                                    <span>-{{ formatPrice(order.discount_amount) }}</span>
+                                </div>
+                                <div class="summary-row total">
+                                    <span>Total</span>
+                                    <span>{{ formatPrice(order.total_amount) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -412,92 +431,145 @@ export default {
 
 <style scoped>
 .view-order-container {
-    font-family: Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     min-height: 100vh;
-    background-color: #f5f5f5;
+    background-color: #f8f9fa;
 }
 
 .view-order-content {
-    max-width: 1400px;
+    max-width: 800px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 1rem;
 }
 
 .view-order-content h1 {
     color: #2c3e50;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    font-size: 1.5rem;
 }
 
 .order-card {
     background: white;
     border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow: hidden;
+    border: 1px solid #e9ecef;
 }
 
+/* Order Header */
 .order-header {
+    padding: 1rem;
+    border-bottom: 1px solid #f0f0f0;
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    align-items: flex-start;
 }
 
-.order-info {
+.order-main-info h3 {
+    margin: 0 0 0.25rem 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.order-date {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.order-total {
+    text-align: right;
+}
+
+.total-label {
+    display: block;
+    color: #6c757d;
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.total-amount {
+    color: #2c3e50;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* Status Section */
+.order-status-section {
+    padding: 0 1rem 1rem 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
 }
 
-.status-container {
+.badges-container {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    align-items: center;
 }
 
-.status-badge {
-    padding: 0.5rem 1rem;
+.status-badge, .payment-badge {
+    padding: 0.375rem 0.75rem;
     border-radius: 20px;
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 0.75rem;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
-.payment-badge {
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.875rem;
-    font-weight: 500;
+.cancel-info {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-}
-
-.cancel-reason-badge {
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 500;
+    gap: 0.5rem;
+    color: #dc3545;
+    font-size: 0.875rem;
+    padding: 0.5rem;
     background-color: #f8d7da;
-    color: #721c24;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    max-width: 300px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    border-radius: 6px;
+    border: 1px solid #f5c6cb;
 }
 
-/* Status badge variants */
+.estimated-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border: 1px solid #bbdefb;
+}
+
+.estimated-time.delayed {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.staff-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #28a745;
+    padding: 0.5rem;
+    background-color: #d4edda;
+    border-radius: 6px;
+    border: 1px solid #c3e6cb;
+}
+
+/* Status Colors */
 .pending {
     background-color: #fff3cd;
     color: #856404;
@@ -519,8 +591,8 @@ export default {
 }
 
 .preparing {
-    background-color: #cce5ff;
-    color: #004085;
+    background-color: #e3f2fd;
+    color: #1976d2;
 }
 
 .ready {
@@ -548,7 +620,6 @@ export default {
     color: #0c5460;
 }
 
-/* Payment badge variants */
 .payment-cash {
     background-color: #fff2cc;
     color: #664d03;
@@ -564,112 +635,179 @@ export default {
     color: white;
 }
 
-.order-date {
-    color: #666;
-    margin: 0;
-}
-
-.order-item {
-    display: flex;
-    gap: 1.5rem;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 8px;
-    align-items: center;
-}
-
-.item-image {
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.item-details {
-    flex-grow: 1;
-}
-
-.item-details h4 {
-    margin: 0 0 0.5rem 0;
-    color: #2c3e50;
-}
-
-.order-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 1.5rem;
-}
-
-.price-breakdown {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.25rem;
-    margin: 0.5rem 0;
-}
-
-.subtotal {
-    color: #666;
-    margin: 0;
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.discount-amount {
-    color: #4CAF50;
-    margin: 0;
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.total-amount {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #2c3e50;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.button-group {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-}
+/* Action Buttons */
 .order-actions {
+    padding: 0 1rem 1rem 1rem;
     display: flex;
-    justify-content: flex-end;
-    margin-top: 1rem;
-    width: 100%;
+    gap: 0.5rem;
+}
+
+.toggle-btn, .cancel-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.toggle-btn:hover {
+    background-color: #f8f9fa;
+    border-color: #4CAF50;
+    color: #4CAF50;
 }
 
 .cancel-btn {
-    height: 42px;
-    padding: 0 1.5rem;
     background-color: #dc3545;
     color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-    font-size: 0.95rem;
+    border-color: #dc3545;
 }
 
 .cancel-btn:hover {
     background-color: #c82333;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+    border-color: #c82333;
 }
 
+/* Order Details */
+.order-details {
+    border-top: 1px solid #f0f0f0;
+    background-color: #fafafa;
+}
+
+.items-list {
+    padding: 1rem;
+}
+
+.order-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    border: 1px solid #e9ecef;
+}
+
+.item-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.item-info h4 {
+    margin: 0 0 0.25rem 0;
+    color: #2c3e50;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.item-choice {
+    margin: 0 0 0.5rem 0;
+    color: #6c757d;
+    font-size: 0.75rem;
+    font-style: italic;
+}
+
+.item-pricing {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.quantity {
+    color: #6c757d;
+}
+
+.price {
+    color: #2c3e50;
+}
+
+.subtotal {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-left: auto;
+}
+
+/* Order Summary */
+.order-summary {
+    padding: 1rem;
+    border-top: 1px solid #e9ecef;
+    background: white;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    font-size: 0.875rem;
+}
+
+.summary-row.discount {
+    color: #28a745;
+}
+
+.summary-row.total {
+    border-top: 1px solid #e9ecef;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #2c3e50;
+}
+
+/* No Orders */
+.no-orders {
+    text-align: center;
+    padding: 3rem 1rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.no-orders i {
+    font-size: 3rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.no-orders p {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+}
+
+.shop-now-btn {
+    background-color: #4CAF50;
+    color: white;
+    text-decoration: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.shop-now-btn:hover {
+    background-color: #45a049;
+    transform: translateY(-1px);
+}
+
+/* Modal */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -681,65 +819,65 @@ export default {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    padding: 1rem;
 }
 
 .modal-content {
     background: white;
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: 12px;
-    width: 90%;
-    max-width: 500px;
+    width: 100%;
+    max-width: 400px;
 }
+
 .modal-content h3 {
     color: #2c3e50;
     margin-bottom: 1rem;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
 }
+
 .cancel-reason {
-    margin: 1.5rem 0;
+    margin: 1rem 0;
 }
 
 .cancel-reason label {
     display: block;
     margin-bottom: 0.5rem;
     color: #2c3e50;
+    font-weight: 500;
 }
 
-.cancel-reason select {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    margin-bottom: 1rem;
-    font-size: 0.95rem;
-    color: #2c3e50;
-}
-
+.cancel-reason select,
 .cancel-reason textarea {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid #ddd;
+    border: 1px solid #dee2e6;
     border-radius: 6px;
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+}
+
+.cancel-reason textarea {
     resize: vertical;
-    font-size: 0.95rem;
-    min-height: 100px;
-    color: #2c3e50;
+    min-height: 80px;
 }
 
 .modal-buttons {
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
     justify-content: flex-end;
-    margin-top: 1.5rem;
 }
 
 .confirm-btn, .close-btn {
-    padding: 0.75rem 1.5rem;
+    padding: 0.5rem 1rem;
     border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.95rem;
     border: none;
-    transition: all 0.3s ease;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
 }
 
 .confirm-btn {
@@ -748,11 +886,8 @@ export default {
 }
 
 .confirm-btn:disabled {
-    background-color: #e9ecef;
+    background-color: #6c757d;
     cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-    color: #6c757d;
 }
 
 .close-btn {
@@ -760,190 +895,65 @@ export default {
     color: white;
 }
 
-.no-orders {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.no-orders i {
-    font-size: 4rem;
-    color: #cbd5e0;
-    margin-bottom: 1rem;
-}
-
-.no-orders p {
-    color: #2c3e50;
-    font-size: 1.25rem;
-    margin-bottom: 2rem;
-}
-
-.shop-now-btn {
-    background-color: #4CAF50;
-    color: white;
-    text-decoration: none;
-    padding: 1rem 2rem;
-    border-radius: 25px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-weight: 600;
-    font-size: 1.1rem;
-    box-shadow: 0 4px 6px rgba(76, 175, 80, 0.2);
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-}
-.staff-info {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: #e8f5e9;
-    color: #2e7d32;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    margin-left: 1rem;
-    border: 1px solid #c8e6c9;
-}
-
-.staff-details {
-    display: flex;
-    flex-direction: column;
-}
-
-.staff-details small {
-    font-size: 0.8rem;
-    color: #4caf50;
-    margin-top: 0.2rem;
-}
-
-.staff-info i {
-    font-size: 1rem;
-    color: #2e7d32;
-}
-.shop-now-btn:hover {
-    background-color: white;
-    color: #4CAF50;
-    border: 2px solid #4CAF50;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(76, 175, 80, 0.3);
-}
-.shop-now-btn i {
-    font-size: 1.5em; /* Changed from 1.5em to 0.9em to make it smaller */
-    position: relative;
-    top: 1px; /* Small adjustment to align with text */
-}
-.order-secondary-info {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-}
-
-.toggle-btn {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    padding: 0.75rem 1.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #495057;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
-    font-weight: 500;
-    height: 42px;
-}
-
-.estimated-time {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: #e3f2fd;
-    color: #1976d2;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    margin-left: 1rem;
-    border: 1px solid #bbdefb;
-}
-
-.estimated-time i {
-    font-size: 1rem;
-}
-
-.time-details {
-    display: flex;
-    flex-direction: column;
-    font-size: 0.85rem;
-}
-
-.time-details strong {
-    font-size: 0.9rem;
-    color: #1565c0;
-}
-.toggle-btn:hover {
-    background-color: #e9ecef;
-    border-color: #4CAF50;
-    color: #4CAF50;
-}
-.choice-info {
-    font-size: 0.95rem;
-    color: #3498db;
-    margin: 0.5rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: #eef6fd;
-    padding: 0.5rem;
-    border-radius: 4px;
-    width: fit-content;
-}
-.estimated-time.delayed {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeeba;
-}
-
-.estimated-time.delayed i {
-    color: #e65100;
-}
+/* Mobile Responsive */
 @media (max-width: 768px) {
+    .view-order-content {
+        padding: 0.75rem;
+    }
+
+    .view-order-content h1 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
     .order-header {
         flex-direction: column;
-        align-items: flex-start;
+        gap: 0.75rem;
     }
 
-    .order-secondary-info {
-        width: 100%;
-        justify-content: space-between;
+    .order-total {
+        text-align: left;
     }
 
-    .toggle-btn {
-        width: 100%;
-        justify-content: center;
+    .total-amount {
+        font-size: 1.1rem;
     }
-    .estimated-time {
-        margin: 0.5rem 0;
-        width: 100%;
-        justify-content: center;
+
+    .badges-container {
+        gap: 0.375rem;
     }
-    .price-breakdown {
-        width: 100%;
-        align-items: flex-start;
-        margin: 0.5rem 0;
+
+    .status-badge, .payment-badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
     }
+
     .order-actions {
-        margin-top: 1rem;
-        width: 100%;
+        flex-direction: column;
     }
 
-    .cancel-btn {
-        width: 100%;
+    .toggle-btn, .cancel-btn {
         justify-content: center;
+        padding: 0.75rem;
+    }
+
+    .order-item {
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+
+    .item-image {
+        width: 50px;
+        height: 50px;
+    }
+
+    .item-info h4 {
+        font-size: 0.8rem;
+    }
+
+    .item-pricing {
+        font-size: 0.8rem;
+        gap: 0.375rem;
     }
 
     .modal-buttons {
@@ -952,17 +962,37 @@ export default {
 
     .modal-buttons button {
         width: 100%;
+        justify-content: center;
     }
-    .button-group {
-        width: 100%;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    .order-secondary-info {
-        width: 100%;
-        flex-direction: column;
-        align-items: stretch;
+}
+
+@media (max-width: 480px) {
+    .view-order-content {
+        padding: 0.5rem;
     }
 
+    .order-card {
+        margin-bottom: 0.75rem;
+    }
+
+    .order-header,
+    .order-status-section,
+    .order-actions {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .order-status-section {
+        padding-bottom: 0.75rem;
+    }
+
+    .order-actions {
+        padding-bottom: 0.75rem;
+    }
+
+    .items-list,
+    .order-summary {
+        padding: 0.75rem;
+    }
 }
 </style>
