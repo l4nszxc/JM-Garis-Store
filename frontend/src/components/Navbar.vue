@@ -21,7 +21,7 @@
         <span v-if="cartItemCount > 0" class="cart-count">{{ cartItemCount }}</span>
       </router-link>
 
-      <router-link to="/view-orders" class="orders-button">
+      <router-link to="/track-orders" class="orders-button">
         <i class="fas fa-truck"></i> 
         <span v-if="activeOrdersCount > 0" class="count-badge">{{ activeOrdersCount }}</span>
       </router-link>

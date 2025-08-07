@@ -558,7 +558,7 @@ export default {
                 }
 
                 this.showOrdersModal = false;
-                this.$router.push('/view-orders');
+                this.$router.push('/track-orders');
 
             } catch (error) {
                 console.error('Error placing order:', error);

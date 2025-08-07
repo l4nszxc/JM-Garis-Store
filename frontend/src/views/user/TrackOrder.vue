@@ -11,9 +11,20 @@
                         <div class="order-header">
                             <div class="order-info">
                                 <h3>Order #{{ order.order_id }}</h3>
-                                <span :class="['status-badge', order.status.toLowerCase()]">
-                                    {{ order.status }}
-                                </span>
+                                <div class="status-container">
+                                    <span :class="['status-badge', getStatusClass(order.status)]">
+                                        <i :class="getStatusIcon(order.status)"></i>
+                                        {{ getStatusDisplay(order.status) }}
+                                    </span>
+                                    <span :class="['payment-badge', getPaymentClass(order.payment_method)]">
+                                        <i :class="getPaymentIcon(order.payment_method)"></i>
+                                        {{ getPaymentDisplay(order.payment_method) }}
+                                    </span>
+                                    <span v-if="order.cancel_reason" class="cancel-reason-badge">
+                                        <i class="fas fa-info-circle"></i>
+                                        {{ order.cancel_reason }}
+                                    </span>
+                                </div>
                                 <div v-if="order.status === 'preparing'" class="estimated-time" :class="{'delayed': isPastDue(order.estimatedPickupTime)}">
                                     <i :class="['fas', isPastDue(order.estimatedPickupTime) ? 'fa-exclamation-circle' : 'fa-clock']"></i>
                                     <div class="time-details">
@@ -144,7 +155,7 @@ import Navbar from '../../components/Navbar.vue';
 import LogoutModal from '../../components/LogoutModal.vue';
 
 export default {
-    name: 'ViewOrder',
+    name: 'TrackOrder',
     components: {
         Navbar,
         LogoutModal
@@ -169,11 +180,80 @@ export default {
                 discount_amount: order.discount_amount || 0,
                 total_amount: order.total_amount
             })).filter(order => 
-                ['pending', 'preparing', 'ready for pickup'].includes(order.status.toLowerCase())
+                ['pending', 'pending_payment', 'pending_pickup', 'pending_delivery', 'preparing', 'ready for pickup'].includes(order.status.toLowerCase())
             );
         }
     },
     methods: {
+        getStatusClass(status) {
+            const statusMap = {
+                'pending': 'pending',
+                'pending_payment': 'pending-payment',
+                'pending_pickup': 'pending-pickup',
+                'pending_delivery': 'pending-delivery',
+                'preparing': 'preparing',
+                'ready for pickup': 'ready',
+                'paid': 'paid',
+                'paid using gcash': 'paid-gcash',
+                'cancelled': 'cancelled',
+                'completed': 'completed'
+            };
+            return statusMap[status.toLowerCase()] || 'pending';
+        },
+        getStatusIcon(status) {
+            const iconMap = {
+                'pending': 'fas fa-clock',
+                'pending_payment': 'fas fa-credit-card',
+                'pending_pickup': 'fas fa-hand-holding',
+                'pending_delivery': 'fas fa-truck',
+                'preparing': 'fas fa-utensils',
+                'ready for pickup': 'fas fa-check-circle',
+                'paid': 'fas fa-check-double',
+                'paid using gcash': 'fas fa-mobile-alt',
+                'cancelled': 'fas fa-times-circle',
+                'completed': 'fas fa-flag-checkered'
+            };
+            return iconMap[status.toLowerCase()] || 'fas fa-clock';
+        },
+        getStatusDisplay(status) {
+            const displayMap = {
+                'pending': 'Pending',
+                'pending_payment': 'Pending Payment',
+                'pending_pickup': 'Pending Pickup',
+                'pending_delivery': 'Pending Delivery',
+                'preparing': 'Preparing',
+                'ready for pickup': 'Ready for Pickup',
+                'paid': 'Paid',
+                'paid using gcash': 'Paid via GCash',
+                'cancelled': 'Cancelled',
+                'completed': 'Completed'
+            };
+            return displayMap[status.toLowerCase()] || status;
+        },
+        getPaymentClass(paymentMethod) {
+            const methodMap = {
+                'cash': 'payment-cash',
+                'gcash': 'payment-gcash',
+                'hatid': 'payment-hatid'
+            };
+            return methodMap[paymentMethod] || 'payment-cash';
+        },
+        getPaymentIcon(paymentMethod) {
+            const iconMap = {
+                'cash': 'fas fa-money-bill-wave',
+                'gcash': 'fas fa-mobile-alt',
+                'hatid': 'fas fa-truck'
+            };
+            return iconMap[paymentMethod] || 'fas fa-money-bill-wave';
+        },
+        getPaymentDisplay(paymentMethod) {
+            const displayMap = {
+                'cash': 'Cash on Pickup',
+                'gcash': 'GCash',
+                'hatid': 'Cash on Delivery'
+            };
+            return displayMap[paymentMethod] || paymentMethod;
+        },
         isPastDue(estimatedTime) {
             if (!estimatedTime) return false;
             return new Date(estimatedTime) < new Date();
@@ -370,13 +450,15 @@ export default {
 
 .order-info {
     display: flex;
-    align-items: center;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
-.order-info h3 {
-    margin: 0;
-    color: #2c3e50;
+.status-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .status-badge {
@@ -384,11 +466,56 @@ export default {
     border-radius: 20px;
     font-size: 0.875rem;
     font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
 }
 
+.payment-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.cancel-reason-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    background-color: #f8d7da;
+    color: #721c24;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Status badge variants */
 .pending {
     background-color: #fff3cd;
     color: #856404;
+}
+
+.pending-payment {
+    background-color: #fef7e0;
+    color: #92400e;
+}
+
+.pending-pickup {
+    background-color: #e0f2fe;
+    color: #0277bd;
+}
+
+.pending-delivery {
+    background-color: #e8f5e9;
+    color: #2e7d32;
 }
 
 .preparing {
@@ -399,6 +526,42 @@ export default {
 .ready {
     background-color: #d4edda;
     color: #155724;
+}
+
+.paid {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.paid-gcash {
+    background-color: #cff4fc;
+    color: #055160;
+}
+
+.cancelled {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+.completed {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Payment badge variants */
+.payment-cash {
+    background-color: #fff2cc;
+    color: #664d03;
+}
+
+.payment-gcash {
+    background-color: #007bff;
+    color: white;
+}
+
+.payment-hatid {
+    background-color: #28a745;
+    color: white;
 }
 
 .order-date {

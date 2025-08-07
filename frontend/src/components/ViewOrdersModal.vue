@@ -69,7 +69,7 @@
                     <i class="fas fa-info-circle"></i>
                     <div class="downpayment-details">
                         <h5>Downpayment Required</h5>
-                        <p>To prevent order cancellations, a downpayment is required for cash on pickup orders.</p>
+                        <p>To prevent un-claimed order, a downpayment is required for cash on pickup orders.</p>
                         <p><small>* Minimum downpayment: ₱100 (25% of order total or ₱100, whichever is higher)</small></p>
                         <div class="payment-breakdown">
                             <div class="breakdown-row">
@@ -1247,7 +1247,7 @@ Special Instructions: ${this.specialInstructions || ''}`;
 
         goToOrders() {
             this.closePaymentSuccessModal();
-            this.$router.push('/view-orders');
+            this.$router.push('/track-orders');
         },
 
         retryPayment() {

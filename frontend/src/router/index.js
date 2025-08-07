@@ -13,7 +13,7 @@ import Products from '../views/user/Products.vue'
 import InsertProducts from '../views/admin/InsertProducts.vue'
 import Cart from '../views/user/Cart.vue'
 import OrderHistory from '../views/user/OrderHistory.vue'
-import ViewOrder from '../views/user/ViewOrder.vue'
+import TrackOrder from '../views/user/TrackOrder.vue'
 import Rewards from '../views/user/Rewards.vue'
 import SharedCart from '../views/user/SharedCart.vue'
 import RewardsManagement from '../views/admin/RewardsManagement.vue'
@@ -94,9 +94,9 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/view-orders',
-    name: 'ViewOrder',
-    component: ViewOrder,
+    path: '/track-orders',
+    name: 'TrackOrder',
+    component: TrackOrder,
     meta: { requiresAuth: true }
   },
   {

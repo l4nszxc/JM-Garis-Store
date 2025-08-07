@@ -515,7 +515,7 @@ export default {
     },
     
     goBack() {
-      this.$router.push('/view-orders');
+      this.$router.push('/track-orders');
     },
     
     confirmCancelOrder() {

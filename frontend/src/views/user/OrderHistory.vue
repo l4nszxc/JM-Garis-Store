@@ -17,10 +17,15 @@
                     <select v-model="selectedStatus">
                         <option value="">All Status</option>
                         <option value="pending">Pending</option>
+                        <option value="pending_payment">Pending Payment</option>
+                        <option value="pending_pickup">Pending Pickup</option>
+                        <option value="pending_delivery">Pending Delivery</option>
                         <option value="preparing">Preparing</option>
                         <option value="ready for pickup">Ready for Pickup</option>
                         <option value="paid">Paid</option>
+                        <option value="paid using gcash">Paid via GCash</option>
                         <option value="cancelled">Cancelled</option>
+                        <option value="completed">Completed</option>
                     </select>
                 </div>
             </div>
@@ -32,15 +37,21 @@
                             <div class="order-primary-info">
                                 <h3>Order #{{ order.order_id }}</h3>
                                 <div class="status-container">
-                                    <span :class="['status-badge', order.status.toLowerCase()]">
-                                        <template v-if="order.status === 'paid'">
-                                            <i class="fas fa-check-circle"></i>
-                                        </template>
-                                        {{ order.status }}
+                                    <span :class="['status-badge', getStatusClass(order.status)]">
+                                        <i :class="getStatusIcon(order.status)"></i>
+                                        {{ getStatusDisplay(order.status) }}
+                                    </span>
+                                    <span :class="['payment-badge', getPaymentClass(order.payment_method)]">
+                                        <i :class="getPaymentIcon(order.payment_method)"></i>
+                                        {{ getPaymentDisplay(order.payment_method) }}
+                                    </span>
+                                    <span v-if="order.cancel_reason" class="cancel-reason-badge">
+                                        <i class="fas fa-info-circle"></i>
+                                        {{ order.cancel_reason }}
                                     </span>
                                     <!-- Add View Receipt button for paid orders -->
                                     <button 
-                                        v-if="order.status === 'paid'" 
+                                        v-if="order.status === 'paid' || order.status === 'paid using gcash'" 
                                         @click="viewReceipt(order.order_id)"
                                         class="receipt-btn"
                                         title="View Receipt"
@@ -49,7 +60,7 @@
                                     </button>
                                     <!-- Add Repeat Order button for paid orders -->
                                     <button 
-                                        v-if="order.status === 'paid'" 
+                                        v-if="order.status === 'paid' || order.status === 'paid using gcash'" 
                                         @click="showRepeatOrderModal(order)"
                                         class="repeat-btn"
                                         title="Repeat Order"
@@ -179,6 +190,75 @@ export default {
         }
     },
     methods: {
+        getStatusClass(status) {
+            const statusMap = {
+                'pending': 'pending',
+                'pending_payment': 'pending-payment',
+                'pending_pickup': 'pending-pickup',
+                'pending_delivery': 'pending-delivery',
+                'preparing': 'preparing',
+                'ready for pickup': 'ready',
+                'paid': 'paid',
+                'paid using gcash': 'paid-gcash',
+                'cancelled': 'cancelled',
+                'completed': 'completed'
+            };
+            return statusMap[status.toLowerCase()] || 'pending';
+        },
+        getStatusIcon(status) {
+            const iconMap = {
+                'pending': 'fas fa-clock',
+                'pending_payment': 'fas fa-credit-card',
+                'pending_pickup': 'fas fa-hand-holding',
+                'pending_delivery': 'fas fa-truck',
+                'preparing': 'fas fa-utensils',
+                'ready for pickup': 'fas fa-check-circle',
+                'paid': 'fas fa-check-double',
+                'paid using gcash': 'fas fa-mobile-alt',
+                'cancelled': 'fas fa-times-circle',
+                'completed': 'fas fa-flag-checkered'
+            };
+            return iconMap[status.toLowerCase()] || 'fas fa-clock';
+        },
+        getStatusDisplay(status) {
+            const displayMap = {
+                'pending': 'Pending',
+                'pending_payment': 'Pending Payment',
+                'pending_pickup': 'Pending Pickup',
+                'pending_delivery': 'Pending Delivery',
+                'preparing': 'Preparing',
+                'ready for pickup': 'Ready for Pickup',
+                'paid': 'Paid',
+                'paid using gcash': 'Paid via GCash',
+                'cancelled': 'Cancelled',
+                'completed': 'Completed'
+            };
+            return displayMap[status.toLowerCase()] || status;
+        },
+        getPaymentClass(paymentMethod) {
+            const methodMap = {
+                'cash': 'payment-cash',
+                'gcash': 'payment-gcash',
+                'hatid': 'payment-hatid'
+            };
+            return methodMap[paymentMethod] || 'payment-cash';
+        },
+        getPaymentIcon(paymentMethod) {
+            const iconMap = {
+                'cash': 'fas fa-money-bill-wave',
+                'gcash': 'fas fa-mobile-alt',
+                'hatid': 'fas fa-truck'
+            };
+            return iconMap[paymentMethod] || 'fas fa-money-bill-wave';
+        },
+        getPaymentDisplay(paymentMethod) {
+            const displayMap = {
+                'cash': 'Cash on Pickup',
+                'gcash': 'GCash',
+                'hatid': 'Cash on Delivery'
+            };
+            return displayMap[paymentMethod] || paymentMethod;
+        },
         viewReceipt(orderId) {
             this.$router.push(`/receipt/${orderId}`);
         },
@@ -490,6 +570,14 @@ export default {
       color: #2c3e50;
   }
   
+  .status-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
   .status-badge {
       padding: 0.5rem 1rem;
       border-radius: 20px;
@@ -497,12 +585,60 @@ export default {
       font-weight: 500;
       text-transform: capitalize;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+  }
+
+  .payment-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .cancel-reason-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background-color: #f8d7da;
+      color: #721c24;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
   }
   
   .pending {
       background-color: #fff3cd;
       color: #856404;
       border: 1px solid #ffeeba;
+  }
+
+  .pending-payment {
+      background-color: #fef7e0;
+      color: #92400e;
+      border: 1px solid #fde68a;
+  }
+
+  .pending-pickup {
+      background-color: #e0f2fe;
+      color: #0277bd;
+      border: 1px solid #b3e5fc;
+  }
+
+  .pending-delivery {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #c8e6c9;
   }
   
   .preparing {
@@ -526,13 +662,45 @@ export default {
     gap: 0.5rem;
 }
 
+.paid-gcash {
+    background-color: #cff4fc;
+    color: #055160;
+    border: 1px solid #9eeaf9;
+}
+
 .paid i {
     font-size: 0.875rem;
 }
+
+.completed {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #9eeaf9;
+}
+
   .cancelled {
     background-color: #f8d7da;
     color: #842029;
     border: 1px solid #f5c2c7;
+}
+
+/* Payment badge variants */
+.payment-cash {
+    background-color: #fff2cc;
+    color: #664d03;
+    border: 1px solid #ffecb5;
+}
+
+.payment-gcash {
+    background-color: #007bff;
+    color: white;
+    border: 1px solid #0056b3;
+}
+
+.payment-hatid {
+    background-color: #28a745;
+    color: white;
+    border: 1px solid #1e7e34;
 }
 .cancel-reason {
     color: #842029;
