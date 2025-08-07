@@ -431,7 +431,7 @@
                 </div>
                 <h2>Receipt Sent!</h2>
                 <p>A digital receipt has been emailed to <span class="customer-email">{{ selectedOrder?.email }}</span></p>
-                <button @click="showEmailSuccess = false" class="close-btn">
+                <button @click="closeEmailSuccessModal" class="close-btn">
                     <i class="fas fa-check"></i> OK
                 </button>
             </div>
@@ -954,11 +954,6 @@ export default {
                     // Print physical receipt first
                     this.printReceipt();
                     
-                    // Show email success modal if customer has email
-                    if (this.selectedOrder.email) {
-                        this.showEmailSuccess = true;
-                    }
-                    
                     await this.fetchOrders();
                     this.showPaymentConfirmation = false;
                     
@@ -974,9 +969,17 @@ export default {
                         this.userLookupError = '';
                         this.qrLookupError = '';
                         await this.fetchRewardsSettings();
+                        
+                        // Show email success modal if customer has email (after walk-in rewards)
+                        if (this.selectedOrder.email) {
+                            this.showEmailSuccess = true;
+                        }
                     } else {
-                        // Note: Don't set selectedOrder to null yet if showing email success
-                        if (!this.showEmailSuccess) {
+                        // For non-walk-in orders
+                        if (this.selectedOrder.email) {
+                            this.showEmailSuccess = true;
+                        } else {
+                            // Close the order details modal if no email success modal is shown
                             this.selectedOrder = null;
                         }
                     }
@@ -985,6 +988,13 @@ export default {
                 }
             } catch (error) {
                 console.error('Error processing payment:', error);
+            }
+        },
+        closeEmailSuccessModal() {
+            this.showEmailSuccess = false;
+            // Only close the order details modal if we're not showing walk-in rewards
+            if (!this.showWalkInRewardsModal) {
+                this.selectedOrder = null;
             }
         },
         async printReceipt() {
