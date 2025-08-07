@@ -1,44 +1,64 @@
 <template>
   <nav class="navbar">
+    <!-- Brand/Logo -->
     <div class="navbar-brand">
       <router-link to="/home" class="logo">
         <i class="fas fa-store"></i>
-        <span class="store-name">JM GARIS STORE</span>
+        <span class="store-name">JM GARIS</span>
       </router-link>
     </div>
 
-    <div class="navbar-menu">
-      <router-link to="/home" class="nav-link">Home</router-link>
-      <router-link to="/products" class="nav-link">Products</router-link>
-      <router-link to="/rewards" class="nav-link">
-        <i class="fas fa-gift"></i> Rewards
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" @click="toggleMobileMenu" :class="{ active: showMobileMenu }">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- Desktop Navigation -->
+    <div class="navbar-menu" :class="{ active: showMobileMenu }">
+      <router-link to="/home" class="nav-link" @click="closeMobileMenu">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+      </router-link>
+      <router-link to="/products" class="nav-link" @click="closeMobileMenu">
+        <i class="fas fa-box"></i>
+        <span>Products</span>
+      </router-link>
+      <router-link to="/rewards" class="nav-link" @click="closeMobileMenu">
+        <i class="fas fa-gift"></i>
+        <span>Rewards</span>
       </router-link>
     </div>
 
-    <div class="navbar-end">
-      <router-link to="/cart" class="cart-button">
-        <i class="fas fa-shopping-cart"></i> 
-        <span v-if="cartItemCount > 0" class="cart-count">{{ cartItemCount }}</span>
+    <!-- Right Side Actions -->
+    <div class="navbar-actions">
+      <!-- Cart -->
+      <router-link to="/cart" class="action-btn cart-btn" title="Shopping Cart">
+        <i class="fas fa-shopping-cart"></i>
+        <span v-if="cartItemCount > 0" class="badge">{{ cartItemCount }}</span>
       </router-link>
 
-      <router-link to="/track-orders" class="orders-button">
-        <i class="fas fa-truck"></i> 
-        <span v-if="activeOrdersCount > 0" class="count-badge">{{ activeOrdersCount }}</span>
+      <!-- Orders -->
+      <router-link to="/track-orders" class="action-btn orders-btn" title="Track Orders">
+        <i class="fas fa-truck"></i>
+        <span v-if="activeOrdersCount > 0" class="badge">{{ activeOrdersCount }}</span>
       </router-link>
       
+      <!-- Notifications -->
       <div class="notifications-dropdown" ref="notificationsDropdown">
-        <div class="notifications-trigger" @click="toggleNotifications">
+        <button class="action-btn notifications-btn" @click="toggleNotifications" title="Notifications">
           <i class="fas fa-bell"></i>
-          <span v-if="unreadNotificationsCount > 0" class="count-badge">
+          <span v-if="unreadNotificationsCount > 0" class="badge">
             {{ unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount }}
           </span>        
-        </div>
+        </button>
         
         <div v-show="showNotificationsDropdown" class="notifications-menu">
           <div class="notifications-header">
             <h3>Notifications</h3>
             <button v-if="unreadNotificationsCount > 0" @click="markAllAsRead" class="mark-all-read">
-              Mark all as read
+              Mark all read
             </button>
           </div>
           
@@ -67,41 +87,43 @@
         </div>
       </div>
 
+      <!-- Profile -->
       <div class="profile-dropdown" ref="profileDropdown">
-        <div class="profile-trigger" @click="toggleDropdown">
+        <button class="profile-trigger" @click="toggleDropdown">
           <img
-              :src="profileImage"
-              alt="Profile"
-              class="profile-image"
-              @error="handleImageError"
+            :src="profileImage"
+            alt="Profile"
+            class="profile-image"
+            @error="handleImageError"
           >
           <span class="username">{{ username }}</span>
-          <i class="fas fa-chevron-down dropdown-icon"></i>
-        </div>
+          <i class="fas fa-chevron-down dropdown-icon" :class="{ rotated: showDropdown }"></i>
+        </button>
 
         <div v-show="showDropdown" class="dropdown-menu">
-          <router-link to="/profile" class="dropdown-item">
-              <i class="fas fa-user"></i> Profile
+          <router-link to="/profile" class="dropdown-item" @click="closeDropdowns">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
           </router-link>
-          <router-link to="/qr-code" class="dropdown-item">
-            <i class="fas fa-qrcode"></i> Your QR Code
+          <router-link to="/qr-code" class="dropdown-item" @click="closeDropdowns">
+            <i class="fas fa-qrcode"></i>
+            <span>QR Code</span>
           </router-link>
-          <router-link to="/notifications" class="dropdown-item">
-            <i class="fas fa-bell"></i> Notifications
-            <span v-if="unreadNotificationsCount > 0" class="menu-badge">
-              {{ unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount }}
-            </span>
-          </router-link>
-          <router-link to="/order-history" class="dropdown-item">
-              <i class="fas fa-history"></i> Order History
+          <router-link to="/order-history" class="dropdown-item" @click="closeDropdowns">
+            <i class="fas fa-history"></i>
+            <span>Order History</span>
           </router-link>
           <div class="dropdown-divider"></div>
-          <button @click="$emit('logout')" class="dropdown-item" data-action="logout">
-              <i class="fas fa-sign-out-alt"></i> Logout
+          <button @click="handleLogout" class="dropdown-item logout-btn">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
           </button>
         </div>
       </div>
     </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div v-show="showMobileMenu" class="mobile-menu-overlay" @click="closeMobileMenu"></div>
   </nav>
 </template>
 
@@ -119,6 +141,7 @@ export default {
     return {
       showDropdown: false,
       showNotificationsDropdown: false,
+      showMobileMenu: false,
       profilePicture: null,
       cartItems: [],
       activeOrders: [],
@@ -148,6 +171,30 @@ export default {
     }
   },
   methods: {
+    // Mobile menu methods
+    toggleMobileMenu() {
+      this.showMobileMenu = !this.showMobileMenu;
+      if (this.showMobileMenu) {
+        this.closeDropdowns();
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    },
+    closeMobileMenu() {
+      this.showMobileMenu = false;
+      document.body.style.overflow = '';
+    },
+    closeDropdowns() {
+      this.showDropdown = false;
+      this.showNotificationsDropdown = false;
+    },
+    handleLogout() {
+      this.closeDropdowns();
+      this.closeMobileMenu();
+      this.$emit('logout');
+    },
+    
     loadDeletedNotificationIds() {
       try {
         const saved = localStorage.getItem('deletedNotificationIds');
@@ -278,12 +325,14 @@ export default {
       this.showDropdown = !this.showDropdown;
       if (this.showDropdown) {
         this.showNotificationsDropdown = false;
+        this.showMobileMenu = false;
       }
     },
     toggleNotifications() {
       this.showNotificationsDropdown = !this.showNotificationsDropdown;
       if (this.showNotificationsDropdown) {
         this.showDropdown = false;
+        this.showMobileMenu = false;
       }
     },
     closeDropdown(event) {
@@ -540,292 +589,220 @@ export default {
     if (this.notificationCheckInterval) {
       clearInterval(this.notificationCheckInterval);
     }
+    
+    // Clean up mobile menu
+    document.body.style.overflow = '';
   }
 }
 </script>
 
 <style scoped>
-/* ...existing styles remain the same... */
+/* Base Navbar Styles */
 .navbar {
   background-color: #ffffff;
-  padding: 0.5rem 2rem;
+  padding: 0.75rem 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
   position: sticky;
   top: 0;
   z-index: 1000;
+  border-bottom: 1px solid #e9ecef;
 }
 
+/* Brand/Logo */
 .navbar-brand {
   display: flex;
   align-items: center;
+  z-index: 1001;
 }
-.orders-button {
-  background: none;
-  border: none;
-  color: #34495e;
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 0.5rem 1rem;
-  position: relative;
-  transition: color 0.3s ease;
-  text-decoration: none;
-  margin-right: 0.5rem;
-}
-.count-badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background-color: #4CAF50;
-  color: white;
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 50%;
-  min-width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.orders-button:hover {
-  color: #2980b9;
-}
+
 .logo {
   color: #4CAF50;
-  font-size: 1.5rem;
-  font-weight: bold;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.logo i {
   font-size: 1.25rem;
-}
-
-.navbar-menu {
-  display: flex;
-  gap: 1.5rem;
-}
-.store-name {
-  font-family: Arial, sans-serif;
-}
-.nav-link {
-  color: #666;
+  font-weight: 700;
   text-decoration: none;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: all 0.3s ease;
-}
-
-.nav-link:hover {
-  color: #4CAF50;
-  background-color: #f5f5f5;
-}
-
-.navbar-end {
-  display: flex;
-  align-items: center;
-}
-
-.profile-dropdown {
-  position: relative;
-}
-
-.profile-trigger {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  transition: color 0.3s ease;
+}
+
+.logo:hover {
+  color: #45a049;
+}
+
+.store-name {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* Mobile Menu Toggle */
+.mobile-menu-toggle {
+  display: none;
+  flex-direction: column;
+  background: none;
+  border: none;
   cursor: pointer;
   padding: 0.5rem;
-  border-radius: 25px;
-  transition: background-color 0.3s ease;
+  gap: 0.25rem;
+  z-index: 1001;
 }
 
-.profile-trigger:hover {
-  background-color: #f5f5f5;
+.mobile-menu-toggle span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background-color: #4CAF50;
+  transition: all 0.3s ease;
+  border-radius: 1px;
 }
 
-.profile-image {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
+.mobile-menu-toggle.active span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
 }
 
-.username {
-  color: #333;
-  font-weight: 500;
+.mobile-menu-toggle.active span:nth-child(2) {
+  opacity: 0;
 }
 
-.dropdown-icon {
-  color: #666;
-  font-size: 0.8rem;
-  transition: transform 0.3s ease;
+.mobile-menu-toggle.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -6px);
 }
 
-.profile-trigger:hover .dropdown-icon {
-  transform: rotate(180deg);
-}
-
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  margin-top: 0.5rem;
-  min-width: 200px;
-  padding: 0.5rem 0;
-  animation: dropdownFade 0.2s ease;
-}
-
-.dropdown-item {
+/* Navigation Menu */
+.navbar-menu {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  color: #333;
-  text-decoration: none;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  cursor: pointer;
-  border: none;
-  background: none;
-  width: 100%;
-  text-align: left;
-  font-size: 1rem;
 }
 
-.dropdown-item:hover {
-  background-color: #f5f5f5;
+.nav-link {
+  color: #6c757d;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.nav-link:hover,
+.nav-link.router-link-active,
+.nav-link.router-link-exact-active {
   color: #4CAF50;
+  background-color: rgba(76, 175, 80, 0.1);
 }
 
-.dropdown-divider {
-  height: 1px;
-  background-color: #eee;
-  margin: 0.5rem 0;
+.nav-link i {
+  font-size: 0.875rem;
 }
 
-@keyframes dropdownFade {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.dropdown-item[data-action="logout"],
-button.dropdown-item {
-  color: #dc3545; /* Red text color */
+/* Actions Container */
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.dropdown-item[data-action="logout"]:hover,
-button.dropdown-item:hover {
-  background-color: #fdf1f2; /* Light red background on hover */
-  color: #dc3545; /* Keep text red on hover */
-}
-
-/* Cart button styles */
-.cart-button {
-  background: none;
-  border: none;
-  color: #34495e;
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 0.5rem 1rem;
+/* Action Buttons */
+.action-btn {
   position: relative;
-  transition: color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: none;
+  color: #6c757d;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s ease;
   text-decoration: none;
+  font-size: 1.1rem;
 }
 
-.cart-button:hover {
-  color: #2980b9;
+.action-btn:hover {
+  color: #4CAF50;
+  background-color: rgba(76, 175, 80, 0.1);
 }
 
-.cart-count {
+/* Badge */
+.badge {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  background-color: #e74c3c;
+  top: -2px;
+  right: -2px;
+  background-color: #dc3545;
   color: white;
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.15rem 0.35rem;
+  border-radius: 10px;
   min-width: 18px;
   height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-.notifications-dropdown {
-  position: relative;
-  margin-right: 1rem;
+  line-height: 1;
 }
 
-.notifications-trigger {
-  background: none;
-  border: none;
-  color: #34495e;
-  font-size: 1.25rem;
-  cursor: pointer;
-  padding: 0.5rem;
+/* Notifications Dropdown */
+.notifications-dropdown {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .notifications-menu {
   position: absolute;
-  top: 100%;
-  right: -10px;
+  top: calc(100% + 0.5rem);
+  right: 0;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-  width: 350px;
-  max-height: 500px;
-  overflow-y: auto;
-  z-index: 100;
-  padding: 0.75rem 0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  width: 320px;
+  max-height: 400px;
+  overflow: hidden;
+  z-index: 1002;
+  border: 1px solid #e9ecef;
 }
 
 .notifications-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid #eee;
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #fafafa;
 }
 
 .notifications-header h3 {
-  font-size: 1.1rem;
+  font-size: 1rem;
   margin: 0;
   color: #2c3e50;
+  font-weight: 600;
 }
 
 .mark-all-read {
   background: none;
   border: none;
-  color: #3498db;
+  color: #4CAF50;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
 }
 
 .mark-all-read:hover {
-  text-decoration: underline;
+  background-color: rgba(76, 175, 80, 0.1);
 }
 
 .notifications-list {
-  max-height: 400px;
+  max-height: 300px;
   overflow-y: auto;
 }
 
@@ -841,23 +818,28 @@ button.dropdown-item:hover {
   background-color: #f8f9fa;
 }
 
+.notification-item:last-child {
+  border-bottom: none;
+}
+
 .notification-item.unread {
-  background-color: #ebf5ff;
+  background-color: #f0f8ff;
 }
 
 .notification-item.unread:hover {
-  background-color: #e1efff;
+  background-color: #e6f3ff;
 }
 
 .notification-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 0.75rem;
   flex-shrink: 0;
+  font-size: 0.875rem;
 }
 
 .pending-icon {
@@ -866,8 +848,8 @@ button.dropdown-item:hover {
 }
 
 .preparing-icon {
-  background-color: #cce5ff;
-  color: #004085;
+  background-color: #e3f2fd;
+  color: #1976d2;
 }
 
 .ready-icon {
@@ -880,14 +862,21 @@ button.dropdown-item:hover {
   color: #0f5132;
 }
 
+.reward-icon {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
 .notification-content {
   flex: 1;
+  min-width: 0;
 }
 
 .notification-text {
   margin: 0 0 0.25rem 0;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: #2c3e50;
+  line-height: 1.4;
 }
 
 .notification-time {
@@ -907,70 +896,240 @@ button.dropdown-item:hover {
   opacity: 0.5;
 }
 
-.menu-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #e74c3c;
-  color: white;
-  font-size: 0.7rem;
-  height: 18px;
-  min-width: 18px;
-  border-radius: 9px;
-  padding: 0 6px;
-  margin-left:  2rem;
+/* Profile Dropdown */
+.profile-dropdown {
+  position: relative;
 }
 
-.navbar-end {
+.profile-trigger {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+  background: none;
+  border: none;
 }
 
-.count-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background-color: #e74c3c;
-  color: white;
+.profile-trigger:hover {
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.profile-image {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e9ecef;
+}
+
+.username {
+  color: #2c3e50;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.dropdown-icon {
+  color: #6c757d;
   font-size: 0.75rem;
-  width: 18px;
-  height: 18px;
+  transition: transform 0.3s ease;
+}
+
+.dropdown-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 180px;
+  padding: 0.5rem 0;
+  z-index: 1002;
+  border: 1px solid #e9ecef;
+}
+
+.dropdown-item {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: #2c3e50;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-size: 0.875rem;
 }
-.reward-icon {
-  background-color: #e8f5e9; 
-  color: #2e7d32;
+
+.dropdown-item:hover {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
 }
-/* Responsive styles */
+
+.dropdown-item i {
+  font-size: 0.875rem;
+  width: 16px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #f0f0f0;
+  margin: 0.5rem 0;
+}
+
+.logout-btn {
+  color: #dc3545;
+}
+
+.logout-btn:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+}
+
+/* Mobile Menu Overlay */
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: none;
+}
+
+/* Mobile Responsive */
 @media (max-width: 768px) {
   .navbar {
     padding: 0.5rem 1rem;
   }
 
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  .mobile-menu-overlay {
+    display: block;
+  }
+
   .navbar-menu {
-    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background-color: white;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 5rem 1.5rem 1.5rem 1.5rem;
+    gap: 1rem;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  }
+
+  .navbar-menu.active {
+    transform: translateX(0);
+  }
+
+  .nav-link {
+    width: 100%;
+    padding: 1rem 0.75rem;
+    font-size: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .nav-link:last-child {
+    border-bottom: none;
+  }
+
+  .nav-link span {
+    margin-left: 0.5rem;
   }
 
   .username {
     display: none;
   }
-  .orders-button {
-    padding: 0.5rem;
+
+  .navbar-actions {
+    gap: 0.25rem;
   }
 
-  .cart-button {
-    padding: 0.5rem;
+  .action-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
   }
+
   .notifications-menu {
-    width: 300px;
-    right: -100px;
+    width: calc(100vw - 2rem);
+    right: -1rem;
+    max-width: 300px;
   }
-  
-  .notifications-trigger {
-    padding: 0.5rem;
+
+  .dropdown-menu {
+    right: -1rem;
+    min-width: 160px;
+  }
+
+  .store-name {
+    font-size: 0.9rem;
+  }
+
+  .logo {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .navbar-menu {
+    width: 100vw;
+    padding: 4rem 1rem 1rem 1rem;
+  }
+
+  .notifications-menu {
+    width: calc(100vw - 1rem);
+    right: -0.5rem;
+  }
+
+  .dropdown-menu {
+    right: -0.5rem;
+  }
+
+  .store-name {
+    display: none;
+  }
+}
+
+/* Smooth animations */
+.navbar-menu,
+.dropdown-menu,
+.notifications-menu {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

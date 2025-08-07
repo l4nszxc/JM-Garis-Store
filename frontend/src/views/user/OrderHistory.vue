@@ -464,7 +464,7 @@ export default {
 }
 
 .search-bar input {
-    width: 100%;
+    width: 86.5%;
     padding: 0.75rem 0.75rem 0.75rem 2.25rem;
     border: 1px solid #dee2e6;
     border-radius: 8px;
