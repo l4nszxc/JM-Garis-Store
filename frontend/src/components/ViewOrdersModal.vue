@@ -296,7 +296,7 @@
                 
                 <div class="instruction-note">
                     <i class="fas fa-info-circle"></i>
-                    <p>After copying the message, click "Open HATID Messenger" to go to their Facebook page and send the message directly.</p>
+                    <p>After copying the message, click "Open HATID Messenger" to go directly to their messenger conversation and send the message.</p>
                 </div>
             </div>
             
@@ -421,7 +421,7 @@ export default {
             paymentFailedMessage: '',
             verifyingPayment: false,
             copySuccess: false,
-            hatidMessengerLink: 'https://www.facebook.com/hatidcpn?rdid=j0kvikC7TTWnwK9z&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1C4RDcdzKp%2F',
+            hatidMessengerLink: 'https://www.messenger.com/t/101158171295193',
             storeSettings: {
                 storeName: 'JM Garis Store',
                 storeAddress: 'Barcenaga, Naujan City, Oriental Mindoro',
