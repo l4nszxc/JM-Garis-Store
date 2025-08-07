@@ -9,7 +9,7 @@ exports.createOrder = async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        const { items, totalAmount, discountId, packagingPreference, paymentMethod } = req.body;
+        const { items, totalAmount, discountId, packagingPreference, paymentMethod, paymentId, status } = req.body;
         const userId = req.user.id;
 
         // Debug logs
@@ -17,6 +17,8 @@ exports.createOrder = async (req, res) => {
         console.log('Request body:', req.body);
         console.log('Packaging preference from request:', packagingPreference);
         console.log('Payment method from request:', paymentMethod);
+        console.log('Payment ID from request:', paymentId);
+        console.log('Status from request:', status);
         console.log('Type of packagingPreference:', typeof packagingPreference);
 
         // Validate inputs
@@ -36,6 +38,9 @@ exports.createOrder = async (req, res) => {
         // Validate payment method (default to 'cash' if not provided)
         const validPaymentMethod = ['cash', 'gcash', 'hatid'].includes(paymentMethod) ? paymentMethod : 'cash';
 
+        // Validate status for GCash payments
+        const orderStatus = status || (validPaymentMethod === 'gcash' ? 'paid using gcash' : 'pending');
+
         // Debug log
         console.log('Creating order with validated total amount:', validatedTotalAmount);
         console.log('Creating order with items:', items);
@@ -43,6 +48,7 @@ exports.createOrder = async (req, res) => {
         console.log('Validated packaging preference:', validPackagingPreference);
         console.log('Payment method received:', paymentMethod);
         console.log('Validated payment method:', validPaymentMethod);
+        console.log('Order status:', orderStatus);
 
         let finalAmount = validatedTotalAmount;
         let appliedDiscount = 0;
@@ -58,20 +64,28 @@ exports.createOrder = async (req, res) => {
             }
         }
         
-        // IMPORTANT: Pass packaging preference and payment method as parameters
-        console.log('Calling Order.create with packaging preference:', validPackagingPreference, 'and payment method:', validPaymentMethod);
-        const orderId = await Order.create(userId, items, finalAmount, validPackagingPreference, validPaymentMethod);
+        // IMPORTANT: Pass packaging preference, payment method, and status as parameters
+        console.log('Calling Order.create with packaging preference:', validPackagingPreference, 'payment method:', validPaymentMethod, 'and status:', orderStatus);
+        const orderId = await Order.create(userId, items, finalAmount, validPackagingPreference, validPaymentMethod, orderStatus);
 
-        // Double-check: Update the order to ensure packaging preference and payment method are set correctly
-        console.log('Double-checking packaging preference and payment method update for order:', orderId);
+        // If this is a GCash payment with paymentId, link the payment to the order
+        if (validPaymentMethod === 'gcash' && paymentId) {
+            await connection.execute(
+                'UPDATE payment_intents SET order_id = ? WHERE payment_link_id = ?',
+                [orderId, paymentId]
+            );
+        }
+
+        // Double-check: Update the order to ensure packaging preference, payment method, and status are set correctly
+        console.log('Double-checking order details update for order:', orderId);
         await connection.execute(
-            'UPDATE orders SET packaging_preference = ?, payment_method = ? WHERE order_id = ?',
-            [validPackagingPreference, validPaymentMethod, orderId]
+            'UPDATE orders SET packaging_preference = ?, payment_method = ?, status = ? WHERE order_id = ?',
+            [validPackagingPreference, validPaymentMethod, orderStatus, orderId]
         );
 
         // Verify the final state
         const [finalVerification] = await connection.execute(
-            'SELECT order_id, packaging_preference, payment_method, total_amount FROM orders WHERE order_id = ?',
+            'SELECT order_id, packaging_preference, payment_method, status, total_amount FROM orders WHERE order_id = ?',
             [orderId]
         );
         console.log('=== FINAL VERIFICATION ===');
@@ -113,6 +127,7 @@ exports.createOrder = async (req, res) => {
             finalAmount,
             packagingPreference: validPackagingPreference,
             paymentMethod: validPaymentMethod,
+            status: orderStatus,
             message: 'Order created successfully'
         });
 

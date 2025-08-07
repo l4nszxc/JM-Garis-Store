@@ -232,13 +232,13 @@
                     <button 
                         @click="confirmOrder" 
                         class="confirm-btn"
-                        :disabled="!isFormValid"
+                        :disabled="!isFormValid || processingPayment || verifyingPayment"
                     >
-                        <i class="fas fa-spinner fa-spin" v-if="processingPayment"></i>
+                        <i class="fas fa-spinner fa-spin" v-if="processingPayment || verifyingPayment"></i>
                         <i class="fas fa-check" v-else></i> 
-                        {{ processingPayment ? 'Processing...' : getConfirmButtonText() }}
+                        {{ getProcessingText() }}
                     </button>
-                    <button @click="$emit('close')" class="cancel-btn" :disabled="processingPayment">
+                    <button @click="$emit('close')" class="cancel-btn" :disabled="processingPayment || verifyingPayment">
                         <i class="fas fa-times"></i> 
                         Close
                     </button>
@@ -308,6 +308,75 @@
             </div>
         </div>
     </div>
+
+    <!-- Payment Success Modal -->
+    <div v-if="showPaymentSuccessModal" class="modal-overlay" @click.self="closePaymentSuccessModal">
+        <div class="payment-status-modal-content success">
+            <div class="payment-status-header">
+                <div class="status-icon success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3>Payment Successful!</h3>
+                <button @click="closePaymentSuccessModal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="payment-status-body">
+                <div class="success-message">
+                    <p>Your GCash payment has been processed successfully.</p>
+                    <div v-if="successOrderId" class="order-info">
+                        <p><strong>Order ID:</strong> #{{ successOrderId }}</p>
+                        <p>Your order has been created and is now being processed.</p>
+                    </div>
+                </div>
+                
+                <div class="payment-status-actions">
+                    <button @click="goToOrders" class="primary-btn">
+                        <i class="fas fa-list"></i>
+                        View Orders
+                    </button>
+                    <button @click="closePaymentSuccessModal" class="secondary-btn">
+                        <i class="fas fa-times"></i>
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Failed Modal -->
+    <div v-if="showPaymentFailedModal" class="modal-overlay" @click.self="closePaymentFailedModal">
+        <div class="payment-status-modal-content failed">
+            <div class="payment-status-header">
+                <div class="status-icon failed">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <h3>Payment Failed</h3>
+                <button @click="closePaymentFailedModal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="payment-status-body">
+                <div class="failed-message">
+                    <p>{{ paymentFailedMessage || 'Your GCash payment could not be processed.' }}</p>
+                    <p>Your cart items have been preserved. You can try again or choose a different payment method.</p>
+                </div>
+                
+                <div class="payment-status-actions">
+                    <button @click="retryPayment" class="primary-btn">
+                        <i class="fas fa-redo"></i>
+                        Try Again
+                    </button>
+                    <button @click="closePaymentFailedModal" class="secondary-btn">
+                        <i class="fas fa-times"></i>
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -315,6 +384,7 @@ import PaymentStatusModal from './PaymentStatusModal.vue';
 
 export default {
     name: 'ViewOrdersModal',
+    emits: ['close', 'place-order', 'payment-error', 'payment-success'],
     props: {
         show: Boolean,
         selectedItems: Array,
@@ -345,6 +415,11 @@ export default {
             deliveryAddress: '',
             specialInstructions: '',
             showHatidModal: false,
+            showPaymentSuccessModal: false,
+            showPaymentFailedModal: false,
+            successOrderId: null,
+            paymentFailedMessage: '',
+            verifyingPayment: false,
             copySuccess: false,
             hatidMessengerLink: 'https://www.facebook.com/hatidcpn?rdid=j0kvikC7TTWnwK9z&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1C4RDcdzKp%2F',
             storeSettings: {
@@ -360,6 +435,7 @@ export default {
                 this.localItems = JSON.parse(JSON.stringify(this.selectedItems));
                 this.selectedPaymentMethod = 'cash'; // Reset to default
                 this.processingPayment = false;
+                this.verifyingPayment = false;
                 this.deliveryAddress = this.userAddress || '';
                 this.specialInstructions = '';
                 this.showHatidModal = false;
@@ -436,7 +512,7 @@ Mode of Payment: Cash on Delivery - ${this.formatPrice(this.calculateTotal)}
 Special Instructions: ${this.specialInstructions || ''}`;
         },
         isFormValid() {
-            if (this.localItems.length === 0 || !this.selectedPaymentMethod || this.processingPayment) {
+            if (this.localItems.length === 0 || !this.selectedPaymentMethod || this.processingPayment || this.verifyingPayment) {
                 return false;
             }
             
@@ -502,6 +578,15 @@ Special Instructions: ${this.specialInstructions || ''}`;
             }
             return 'Confirm Order';
         },
+        
+        getProcessingText() {
+            if (this.verifyingPayment) {
+                return 'Verifying Payment...';
+            } else if (this.processingPayment) {
+                return 'Processing...';
+            }
+            return this.getConfirmButtonText();
+        },
         async confirmOrder() {
             // Validate HATID delivery address
             if (this.selectedPaymentMethod === 'hatid' && !this.deliveryAddress.trim()) {
@@ -547,38 +632,20 @@ Special Instructions: ${this.specialInstructions || ''}`;
         
         async processGCashPayment(orderData) {
             try {
-                // First create the order
+                // Create GCash payment without creating order first
                 const token = localStorage.getItem('token');
-                const orderResponse = await fetch('http://localhost:7904/api/orders', {
+                const paymentResponse = await fetch('http://localhost:7904/api/payment/gcash/create-payment-only', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
+                        amount: this.calculateTotal,
                         items: orderData.items,
-                        totalAmount: this.calculateTotal,
                         discountId: orderData.discountId,
-                        packagingPreference: orderData.packagingPreference
-                    })
-                });
-
-                if (!orderResponse.ok) {
-                    throw new Error('Failed to create order');
-                }
-
-                 const { orderId } = await orderResponse.json();
-
-                // Create GCash payment
-                const paymentResponse = await fetch('http://localhost:7904/api/payment/gcash/create', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        orderId: orderId,
-                        amount: this.calculateTotal
+                        packagingPreference: orderData.packagingPreference,
+                        paymentMethod: 'gcash'
                     })
                 });
 
@@ -600,25 +667,42 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 }
 
                 // Monitor the payment window
-                this.monitorPaymentWindow(paymentWindow, orderId);
+                this.monitorPaymentWindow(paymentWindow, paymentData.paymentId, orderData);
                 
             } catch (error) {
                 console.error('GCash payment error:', error);
                 throw error;
             }
         },
-         monitorPaymentWindow(paymentWindow, orderId) {
+         monitorPaymentWindow(paymentWindow, paymentId, orderData) {
+            let windowClosedTime = null;
+            let finalCheckDone = false;
+            
             const checkWindow = setInterval(() => {
                 try {
                     // Check if window is closed
                     if (paymentWindow.closed) {
-                        clearInterval(checkWindow);
-                        this.processingPayment = false;
+                        if (!windowClosedTime) {
+                            // Window just closed, record the time
+                            windowClosedTime = Date.now();
+                            console.log('Payment window closed, waiting for payment processing...');
+                            return;
+                        }
                         
-                        // Check payment status after window closes
-                        this.checkPaymentStatus(orderId);
+                        // Window has been closed, wait for processing time
+                        const timeSinceClosed = Date.now() - windowClosedTime;
+                        if (timeSinceClosed >= 3000 && !finalCheckDone) { // Wait 3 seconds
+                            clearInterval(checkWindow);
+                            finalCheckDone = true;
+                            this.verifyingPayment = true;
+                            console.log('Performing final payment status check...');
+                            this.checkPaymentStatusByPaymentId(paymentId, orderData);
+                        }
                         return;
                     }
+
+                    // Reset closed time if window is reopened somehow
+                    windowClosedTime = null;
 
                     // Try to detect success/failure URLs
                     try {
@@ -627,11 +711,11 @@ Special Instructions: ${this.specialInstructions || ''}`;
                         if (currentUrl.includes('payment-success')) {
                             clearInterval(checkWindow);
                             paymentWindow.close();
-                            this.handlePaymentSuccess(orderId);
+                            this.handlePaymentSuccessWithOrderCreation(paymentId, orderData);
                         } else if (currentUrl.includes('payment-failed')) {
                             clearInterval(checkWindow);
                             paymentWindow.close();
-                            this.handlePaymentFailure(orderId);
+                            this.handlePaymentFailure(paymentId, 'Payment was declined or failed.');
                         }
                     } catch (e) {
                         // Cross-origin restrictions prevent URL access
@@ -644,18 +728,21 @@ Special Instructions: ${this.specialInstructions || ''}`;
 
             // Set a timeout for the payment window (10 minutes)
             setTimeout(() => {
-                if (!paymentWindow.closed) {
+                if (!paymentWindow.closed && !finalCheckDone) {
                     clearInterval(checkWindow);
                     paymentWindow.close();
                     this.processingPayment = false;
-                    this.$emit('payment-error', 'Payment session expired. Please try again.');
+                    this.handlePaymentFailure(paymentId, 'Payment session expired. Please try again.');
                 }
             }, 600000); // 10 minutes
         },
-        async checkPaymentStatus(orderId) {
+        async checkPaymentStatusByPaymentId(paymentId, orderData, retryCount = 0) {
+            const maxRetries = 3;
+            const retryDelay = 2000; // 2 seconds between retries
+            
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/payment/status/${orderId}`, {
+                const response = await fetch(`http://localhost:7904/api/payment/status-by-payment-id/${paymentId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -663,38 +750,117 @@ Special Instructions: ${this.specialInstructions || ''}`;
 
                 if (response.ok) {
                     const paymentStatus = await response.json();
+                    console.log(`Payment status check (attempt ${retryCount + 1}):`, paymentStatus.status);
                     
-                    if (paymentStatus.status === 'succeeded') {
-                        this.handlePaymentSuccess(orderId);
-                    } else if (paymentStatus.status === 'failed') {
-                        this.handlePaymentFailure(orderId);
+                    if (paymentStatus.status === 'paid' || paymentStatus.status === 'succeeded') {
+                        this.processingPayment = false;
+                        this.verifyingPayment = false;
+                        this.handlePaymentSuccessWithOrderCreation(paymentId, orderData);
+                    } else if (paymentStatus.status === 'failed' || paymentStatus.status === 'expired') {
+                        this.processingPayment = false;
+                        this.verifyingPayment = false;
+                        this.handlePaymentFailure(paymentId, 'Payment failed or expired. Please try again.');
                     } else {
-                        // Payment still pending
-                        this.$emit('payment-error', 'Payment status is still pending. Please check your order history.');
+                        // Payment still pending - retry if we haven't exceeded max retries
+                        if (retryCount < maxRetries) {
+                            console.log(`Payment still processing, retrying in ${retryDelay/1000}s... (${retryCount + 1}/${maxRetries})`);
+                            setTimeout(() => {
+                                this.checkPaymentStatusByPaymentId(paymentId, orderData, retryCount + 1);
+                            }, retryDelay);
+                        } else {
+                            // Final retry exceeded, show pending message
+                            this.processingPayment = false;
+                            this.verifyingPayment = false;
+                            this.handlePaymentFailure(paymentId, 'Payment is still processing. The payment window was closed before completion. Please check your GCash transaction history. If payment was successful, your order will be processed automatically.');
+                        }
+                    }
+                } else {
+                    if (retryCount < maxRetries) {
+                        console.log(`API error, retrying in ${retryDelay/1000}s... (${retryCount + 1}/${maxRetries})`);
+                        setTimeout(() => {
+                            this.checkPaymentStatusByPaymentId(paymentId, orderData, retryCount + 1);
+                        }, retryDelay);
+                    } else {
+                        this.processingPayment = false;
+                        this.verifyingPayment = false;
+                        this.handlePaymentFailure(paymentId, 'Unable to verify payment status. Please check your GCash transaction history or contact support.');
                     }
                 }
             } catch (error) {
                 console.error('Error checking payment status:', error);
-                this.$emit('payment-error', 'Unable to verify payment status. Please check your order history.');
+                if (retryCount < maxRetries) {
+                    console.log(`Network error, retrying in ${retryDelay/1000}s... (${retryCount + 1}/${maxRetries})`);
+                    setTimeout(() => {
+                        this.checkPaymentStatusByPaymentId(paymentId, orderData, retryCount + 1);
+                    }, retryDelay);
+                } else {
+                    this.processingPayment = false;
+                    this.verifyingPayment = false;
+                    this.handlePaymentFailure(paymentId, 'Unable to verify payment status due to network error. Please check your GCash transaction history or contact support.');
+                }
             }
         },
-        handlePaymentSuccess(orderId) {
-            this.processingPayment = false;
-            this.$emit('close');
-            
-            // Show success message
-            this.$emit('payment-success', {
-                message: `Payment successful! Order #${orderId} has been processed.`,
-                orderId: orderId
-            });
-            
-            // Redirect to order history or receipt
-            this.$router.push(`/receipt/${orderId}`);
+        
+        async handlePaymentSuccessWithOrderCreation(paymentId, orderData) {
+            try {
+                // Create order only after payment is confirmed successful
+                const token = localStorage.getItem('token');
+                const orderResponse = await fetch('http://localhost:7904/api/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        items: orderData.items,
+                        totalAmount: this.calculateTotal,
+                        discountId: orderData.discountId,
+                        packagingPreference: orderData.packagingPreference,
+                        paymentMethod: 'gcash',
+                        paymentId: paymentId,
+                        status: 'paid using gcash'
+                    })
+                });
+
+                if (!orderResponse.ok) {
+                    throw new Error('Failed to create order after successful payment');
+                }
+
+                const { orderId } = await orderResponse.json();
+                
+                this.processingPayment = false;
+                this.successOrderId = orderId;
+                
+                // Close main modal and show success modal
+                this.$emit('close');
+                this.showPaymentSuccessModal = true;
+                
+                // Emit success event for cart handling
+                this.$emit('payment-success', {
+                    message: `Payment successful! Order #${orderId} has been processed.`,
+                    orderId: orderId
+                });
+                
+            } catch (error) {
+                console.error('Error creating order after payment success:', error);
+                this.processingPayment = false;
+                this.paymentFailedMessage = 'Payment was successful but order creation failed. Please contact support.';
+                this.$emit('close');
+                this.showPaymentFailedModal = true;
+            }
         },
 
-        handlePaymentFailure(orderId) {
+        handlePaymentFailure(paymentId, message = null) {
             this.processingPayment = false;
-            this.$emit('payment-error', `Payment failed for Order #${orderId}. Please try again or use a different payment method.`);
+            this.verifyingPayment = false;
+            this.paymentFailedMessage = message || 'Your GCash payment could not be processed.';
+            
+            // Close main modal and show failure modal
+            this.$emit('close');
+            this.showPaymentFailedModal = true;
+            
+            // Emit error event for cart handling
+            this.$emit('payment-error', this.paymentFailedMessage);
         },
         
         async processHatidOrder(orderData) {
@@ -773,6 +939,26 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 message: `HATID order #${this.currentOrderId} created successfully! Message HATID to complete your delivery.`,
                 orderId: this.currentOrderId
             });
+        },
+
+        closePaymentSuccessModal() {
+            this.showPaymentSuccessModal = false;
+            this.successOrderId = null;
+        },
+
+        closePaymentFailedModal() {
+            this.showPaymentFailedModal = false;
+            this.paymentFailedMessage = '';
+        },
+
+        goToOrders() {
+            this.closePaymentSuccessModal();
+            this.$router.push('/view-orders');
+        },
+
+        retryPayment() {
+            this.closePaymentFailedModal();
+            // The modal will remain closed, user can try payment again
         }
     },
     mounted() {
@@ -2039,6 +2225,194 @@ input:checked + .slider:before {
     .done-btn {
         padding: clamp(0.875rem, 2vh, 1rem) clamp(1rem, 3vw, 1.5rem);
         font-size: clamp(0.875rem, 2.5vw, 1rem);
+    }
+}
+
+/* Payment Status Modal Styles */
+.payment-status-modal-content {
+    background-color: white;
+    border-radius: clamp(16px, 3vw, 24px);
+    max-width: min(500px, calc(100vw - 2rem));
+    width: 100%;
+    min-height: min-content;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    animation: modalSlideIn 0.3s ease-out;
+    margin: auto 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.payment-status-modal-content.success {
+    border-top: 6px solid #4CAF50;
+}
+
+.payment-status-modal-content.failed {
+    border-top: 6px solid #f44336;
+}
+
+.payment-status-header {
+    padding: clamp(2rem, 4vh, 3rem) clamp(2rem, 5vw, 3rem) clamp(1rem, 2vh, 1.5rem);
+    text-align: center;
+    position: relative;
+}
+
+.status-icon {
+    width: clamp(60px, 15vw, 80px);
+    height: clamp(60px, 15vw, 80px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto clamp(1rem, 3vh, 1.5rem);
+    font-size: clamp(1.5rem, 6vw, 2.5rem);
+    color: white;
+}
+
+.status-icon.success {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+}
+
+.status-icon.failed {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    box-shadow: 0 8px 25px rgba(244, 67, 54, 0.3);
+}
+
+.payment-status-header h3 {
+    margin: 0;
+    color: #1e293b;
+    font-size: clamp(1.5rem, 5vw, 2rem);
+    font-weight: 700;
+}
+
+.payment-status-header .close-btn {
+    position: absolute;
+    top: clamp(1rem, 3vh, 1.5rem);
+    right: clamp(1rem, 3vw, 1.5rem);
+    background: none;
+    border: 2px solid transparent;
+    color: #64748b;
+    cursor: pointer;
+    padding: clamp(0.5rem, 1vw, 0.75rem);
+    border-radius: clamp(8px, 1vw, 12px);
+    transition: all 0.3s ease;
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    width: clamp(36px, 6vw, 48px);
+    height: clamp(36px, 6vw, 48px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.payment-status-header .close-btn:hover {
+    background-color: #fee2e2;
+    color: #dc2626;
+    border-color: #fecaca;
+    transform: scale(1.05);
+}
+
+.payment-status-body {
+    padding: 0 clamp(2rem, 5vw, 3rem) clamp(2rem, 4vh, 3rem);
+    text-align: center;
+}
+
+.success-message p, .failed-message p {
+    margin: 0 0 clamp(1rem, 2vh, 1.5rem) 0;
+    color: #475569;
+    font-size: clamp(1rem, 3vw, 1.1rem);
+    line-height: 1.6;
+}
+
+.order-info {
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+    border: 2px solid #bbf7d0;
+    border-radius: clamp(12px, 2vw, 16px);
+    padding: clamp(1rem, 3vh, 1.5rem) clamp(1.5rem, 4vw, 2rem);
+    margin: clamp(1rem, 2vh, 1.5rem) 0;
+}
+
+.order-info p {
+    margin: 0 0 clamp(0.5rem, 1vh, 0.75rem) 0;
+    color: #059669;
+    font-weight: 600;
+}
+
+.order-info p:last-child {
+    margin-bottom: 0;
+    font-weight: 500;
+    color: #047857;
+}
+
+.payment-status-actions {
+    display: flex;
+    gap: clamp(1rem, 3vw, 1.5rem);
+    flex-wrap: wrap;
+    margin-top: clamp(1.5rem, 3vh, 2rem);
+}
+
+.primary-btn, .secondary-btn {
+    flex: 1;
+    min-width: min(150px, 100%);
+    padding: clamp(1rem, 2.5vh, 1.25rem) clamp(1.5rem, 4vw, 2rem);
+    border-radius: clamp(12px, 2vw, 16px);
+    font-size: clamp(0.9rem, 2.5vw, 1rem);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.5rem, 1vw, 0.75rem);
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    border-color: #4CAF50;
+}
+
+.primary-btn:hover {
+    background: linear-gradient(135deg, #45a049, #3e8e41);
+    border-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+}
+
+.secondary-btn {
+    background: white;
+    color: #64748b;
+    border-color: #e2e8f0;
+}
+
+.secondary-btn:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+    color: #475569;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive Design for Payment Status Modals */
+@media (max-width: 768px) {
+    .payment-status-actions {
+        flex-direction: column;
+    }
+    
+    .primary-btn, .secondary-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .payment-status-header {
+        padding: clamp(1.5rem, 4vh, 2rem) clamp(1rem, 3vw, 1.5rem) clamp(0.75rem, 2vh, 1rem);
+    }
+    
+    .payment-status-body {
+        padding: 0 clamp(1rem, 3vw, 1.5rem) clamp(1.5rem, 4vh, 2rem);
     }
 }
 </style>

@@ -567,9 +567,10 @@ export default {
         },
         handlePaymentError(message) {
             this.showNotification(message, 'error');
+            // Do NOT remove items from cart on payment error
         },
         handlePaymentSuccess(data) {
-            // Remove items from cart
+            // Remove items from cart only after confirmed payment success
             this.cartItems = this.cartItems.filter(cartItem => 
                 !this.selectedItems.some(item => item.id === cartItem.id)
             );

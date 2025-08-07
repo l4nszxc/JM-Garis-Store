@@ -1,6 +1,59 @@
 const paymongoService = require('../services/paymongoService');
 const db = require('../config/db');
 
+exports.createGCashPaymentOnly = async (req, res) => {
+    try {
+        const { amount, items, discountId, packagingPreference, paymentMethod } = req.body;
+        const userId = req.user.id;
+        
+        // Generate a temporary payment reference
+        const tempReference = `temp_${Date.now()}_${userId}`;
+        
+        // Create PayMongo payment link
+        const paymentLink = await paymongoService.createPaymentLink(
+            amount,
+            tempReference,
+            'JM Garis Store Order Payment'
+        );
+        
+        console.log('Payment Link Created:', paymentLink);
+        
+        // Store payment info in database with order data for later use
+        await db.execute(
+            `INSERT INTO payment_intents (
+                payment_link_id, 
+                paymongo_link_id,
+                reference_number,
+                amount, 
+                status,
+                order_data,
+                user_id,
+                created_at
+            ) VALUES (?, ?, ?, ?, 'pending', ?, ?, NOW())`,
+            [
+                paymentLink.id, 
+                paymentLink.id,
+                paymentLink.attributes.reference_number,
+                amount,
+                JSON.stringify({ items, discountId, packagingPreference, paymentMethod }),
+                userId
+            ]
+        );
+        
+        res.json({
+            paymentId: paymentLink.id,
+            linkId: paymentLink.id,
+            checkoutUrl: paymentLink.attributes.checkout_url,
+            referenceNumber: paymentLink.attributes.reference_number,
+            amount: paymentLink.attributes.amount / 100
+        });
+        
+    } catch (error) {
+        console.error('Error creating GCash payment:', error);
+        res.status(500).json({ message: 'Failed to create GCash payment' });
+    }
+};
+
 exports.createGCashPayment = async (req, res) => {
     try {
         const { orderId, amount } = req.body;
@@ -91,6 +144,53 @@ exports.handlePaymentResult = async (req, res) => {
     } catch (error) {
         console.error('Error handling payment result:', error);
         res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:8080'}/payment-failed`);
+    }
+};
+
+exports.checkPaymentStatusByPaymentId = async (req, res) => {
+    try {
+        const { paymentId } = req.params;
+        
+        const [payments] = await db.execute(
+            'SELECT * FROM payment_intents WHERE payment_link_id = ? ORDER BY created_at DESC LIMIT 1',
+            [paymentId]
+        );
+        
+        if (payments.length === 0) {
+            return res.status(404).json({ message: 'Payment not found' });
+        }
+
+        // Get the latest status from PayMongo
+        try {
+            const paymentLink = await paymongoService.getPaymentLink(payments[0].payment_link_id);
+            
+            // Update local status based on PayMongo status
+            let localStatus = 'pending';
+            if (paymentLink.attributes.status === 'paid') {
+                localStatus = 'succeeded';
+            } else if (paymentLink.attributes.status === 'unpaid') {
+                localStatus = 'pending';
+            } else if (paymentLink.attributes.status === 'expired') {
+                localStatus = 'failed';
+            }
+            
+            if (localStatus !== payments[0].status) {
+                await db.execute(
+                    'UPDATE payment_intents SET status = ? WHERE id = ?',
+                    [localStatus, payments[0].id]
+                );
+                payments[0].status = localStatus;
+            }
+            
+        } catch (error) {
+            console.error('Error checking PayMongo status:', error);
+        }
+        
+        res.json(payments[0]);
+        
+    } catch (error) {
+        console.error('Error checking payment status by payment ID:', error);
+        res.status(500).json({ message: 'Failed to check payment status' });
     }
 };
 
@@ -192,39 +292,121 @@ exports.webhookHandler = async (req, res) => {
 };
 async function handleLinkPaymentPaid(data) {
     try {
-        const orderId = data.attributes.reference_number;
-        console.log('Processing paid payment for order:', orderId);
+        const referenceNumber = data.attributes.reference_number;
+        console.log('Processing paid payment for reference:', referenceNumber);
         
-        // Update order status
-        await db.execute(
-            'UPDATE orders SET status = "paid using gcash", paid_at = NOW() WHERE order_id = ?',
-            [orderId]
-        );
+        // Check if this is a temporary reference (new flow) or an order ID (old flow)
+        if (referenceNumber.startsWith('temp_')) {
+            // New flow: Create order after payment confirmation
+            const [paymentIntents] = await db.execute(
+                'SELECT * FROM payment_intents WHERE reference_number = ?',
+                [referenceNumber]
+            );
+            
+            if (paymentIntents.length > 0) {
+                const paymentIntent = paymentIntents[0];
+                const orderData = JSON.parse(paymentIntent.order_data);
+                
+                // Update payment status first
+                await db.execute(
+                    'UPDATE payment_intents SET status = "succeeded", updated_at = NOW() WHERE reference_number = ?',
+                    [referenceNumber]
+                );
+                
+                // Create the order with the stored data
+                const orderId = await createOrderFromPayment(paymentIntent.user_id, orderData, paymentIntent.amount, paymentIntent.payment_link_id);
+                
+                console.log('Successfully created order after payment confirmation:', orderId);
+            }
+        } else {
+            // Old flow: Update existing order status
+            await db.execute(
+                'UPDATE orders SET status = "paid using gcash", paid_at = NOW() WHERE order_id = ?',
+                [referenceNumber]
+            );
+            
+            await db.execute(
+                'UPDATE payment_intents SET status = "succeeded", updated_at = NOW() WHERE order_id = ?',
+                [referenceNumber]
+            );
+            
+            console.log('Successfully updated order status to paid for order:', referenceNumber);
+        }
         
-        // Update payment status
-        await db.execute(
-            'UPDATE payment_intents SET status = "succeeded", updated_at = NOW() WHERE order_id = ?',
-            [orderId]
-        );
-        
-        console.log('Successfully updated order status to paid for order:', orderId);
     } catch (error) {
         console.error('Error handling paid payment:', error);
     }
 }
 
-async function handleLinkPaymentFailed(data) {
+async function createOrderFromPayment(userId, orderData, amount, paymentId) {
+    const Order = require('../models/orderModel');
+    const Reward = require('../models/rewardModel');
+    
     try {
-        const orderId = data.attributes.reference_number;
-        console.log('Processing failed payment for order:', orderId);
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
         
-        // Update payment status
-        await db.execute(
-            'UPDATE payment_intents SET status = "failed", updated_at = NOW() WHERE order_id = ?',
-            [orderId]
+        const { items, discountId, packagingPreference, paymentMethod } = orderData;
+        
+        let finalAmount = amount / 100; // PayMongo amounts are in centavos
+        let appliedDiscount = 0;
+
+        // Apply discount if provided
+        if (discountId) {
+            try {
+                appliedDiscount = await Reward.applyDiscount(userId, null, discountId);
+                finalAmount = Math.max(0, finalAmount - appliedDiscount);
+            } catch (error) {
+                console.error('Error applying discount:', error);
+            }
+        }
+        
+        // Create order with paid status
+        const orderId = await Order.create(userId, items, finalAmount, packagingPreference, paymentMethod, 'paid using gcash');
+        
+        // Link payment to order
+        await connection.execute(
+            'UPDATE payment_intents SET order_id = ? WHERE payment_link_id = ?',
+            [orderId, paymentId]
         );
         
-        console.log('Successfully updated payment status to failed for order:', orderId);
+        // Add reward points
+        try {
+            await Reward.addPoints(userId, orderId, finalAmount);
+        } catch (error) {
+            console.error('Error adding reward points:', error);
+        }
+        
+        await connection.commit();
+        connection.release();
+        
+        return orderId;
+    } catch (error) {
+        console.error('Error creating order from payment:', error);
+        throw error;
+    }
+}
+
+async function handleLinkPaymentFailed(data) {
+    try {
+        const referenceNumber = data.attributes.reference_number;
+        console.log('Processing failed payment for reference:', referenceNumber);
+        
+        // Update payment status to failed
+        await db.execute(
+            'UPDATE payment_intents SET status = "failed", updated_at = NOW() WHERE reference_number = ?',
+            [referenceNumber]
+        );
+        
+        // For old flow, also check if there's an order to update
+        if (!referenceNumber.startsWith('temp_')) {
+            await db.execute(
+                'UPDATE payment_intents SET status = "failed", updated_at = NOW() WHERE order_id = ?',
+                [referenceNumber]
+            );
+        }
+        
+        console.log('Successfully updated payment status to failed for reference:', referenceNumber);
     } catch (error) {
         console.error('Error handling failed payment:', error);
     }
