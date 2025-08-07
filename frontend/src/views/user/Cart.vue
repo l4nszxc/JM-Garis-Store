@@ -764,18 +764,18 @@ export default {
 .cart-content {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 1.5rem;
 }
 
 /* Header Section */
 .cart-header {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     position: relative;
 }
 
 .cart-header h1 {
     color: #2a3f2a;
-    font-size: 2rem;
+    font-size: 1.875rem;
     font-weight: 600;
     margin: 0 0 1rem 0;
     display: flex;
@@ -853,16 +853,16 @@ export default {
 /* Select All Section */
 .select-all-section {
     background: white;
-    padding: 1.5rem;
-    border-radius: 16px;
+    padding: 1.25rem;
+    border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border-left: 4px solid #4CAF50;
+    border-left: 3px solid #4CAF50;
 }
 
 .select-all-checkbox {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     cursor: pointer;
     user-select: none;
 }
@@ -872,10 +872,10 @@ export default {
 }
 
 .checkbox-custom {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border: 2px solid #e2e8f0;
-    border-radius: 6px;
+    border-radius: 4px;
     position: relative;
     transition: all 0.2s ease;
     flex-shrink: 0;
@@ -893,13 +893,13 @@ export default {
     left: 50%;
     transform: translate(-50%, -50%);
     color: white;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: bold;
 }
 
 .checkbox-label {
     color: #2a3f2a;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 500;
 }
 
@@ -912,17 +912,17 @@ export default {
 
 .cart-item {
     display: flex;
-    gap: 1.5rem;
-    padding: 1.5rem;
+    gap: 1rem;
+    padding: 1.25rem;
     background: white;
-    border-radius: 16px;
+    border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border-left: 4px solid #f1f9f1;
+    border-left: 3px solid #f1f9f1;
     transition: all 0.2s ease;
 }
 
 .cart-item:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(76, 175, 80, 0.1);
     border-left-color: #4CAF50;
 }
@@ -938,8 +938,8 @@ export default {
 }
 
 .item-checkbox .checkbox-custom {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border: 2px solid #e2e8f0;
     border-radius: 4px;
     cursor: pointer;
@@ -957,15 +957,15 @@ export default {
     left: 50%;
     transform: translate(-50%, -50%);
     color: white;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: bold;
 }
 
 .item-image-container {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
     flex-shrink: 0;
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
     background-color: #f8f9fa;
     border: 1px solid #e2e8f0;
@@ -981,13 +981,13 @@ export default {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .item-name {
     margin: 0;
     color: #2a3f2a;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     line-height: 1.3;
 }
@@ -995,33 +995,33 @@ export default {
 .choice-info {
     background-color: #f1f9f1;
     color: #4CAF50;
-    padding: 0.35rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.25rem;
     font-weight: 500;
     width: fit-content;
 }
 
 .item-price {
     color: #4CAF50;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.25rem;
 }
 
 .quantity-section {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.25rem;
 }
 
 .quantity-label {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: #64748b;
     font-weight: 500;
 }
@@ -1029,21 +1029,21 @@ export default {
 .quantity-controls {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .quantity-btn {
-    width: 2rem;
-    height: 2rem;
+    width: 1.75rem;
+    height: 1.75rem;
     border: 2px solid #4CAF50;
     background-color: white;
     color: #4CAF50;
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     transition: all 0.2s ease;
 }
 
@@ -1060,20 +1060,20 @@ export default {
 }
 
 .quantity-display {
-    min-width: 2rem;
+    min-width: 1.75rem;
     text-align: center;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.9rem;
     color: #2a3f2a;
     background-color: #f8f9fa;
-    padding: 0.5rem;
-    border-radius: 6px;
+    padding: 0.375rem;
+    border-radius: 4px;
     border: 2px solid #e2e8f0;
 }
 
 .item-subtotal {
     color: #64748b;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 500;
 }
 
@@ -1081,13 +1081,13 @@ export default {
     background-color: #fee2e2;
     color: #dc2626;
     border: 2px solid #fecaca;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
+    gap: 0.375rem;
+    font-size: 0.8rem;
     font-weight: 600;
     transition: all 0.2s ease;
     width: fit-content;
@@ -1103,21 +1103,21 @@ export default {
 /* Cart Summary */
 .cart-summary {
     background: white;
-    border-radius: 16px;
+    border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    border-left: 4px solid #4CAF50;
+    border-left: 3px solid #4CAF50;
 }
 
 .summary-header {
-    padding: 1.5rem 2rem 1rem;
+    padding: 1.25rem 1.5rem 0.75rem;
     border-bottom: 1px solid #f1f9f1;
 }
 
 .summary-header h3 {
     margin: 0;
     color: #2a3f2a;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -1125,7 +1125,7 @@ export default {
 }
 
 .summary-content {
-    padding: 1.5rem 2rem;
+    padding: 1.25rem 1.5rem;
     background-color: #fafffe;
 }
 
@@ -1133,9 +1133,9 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     color: #64748b;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 
 .summary-row:last-child {
@@ -1145,32 +1145,32 @@ export default {
 .summary-divider {
     height: 1px;
     background-color: #e2e8f0;
-    margin: 1rem 0;
+    margin: 0.75rem 0;
 }
 
 .total-row {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     color: #2a3f2a;
 }
 
 .total-price {
     color: #4CAF50;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 700;
 }
 
 .cart-actions {
-    padding: 1.5rem 2rem;
+    padding: 1.25rem 1.5rem;
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 .share-btn, .checkout-btn {
     flex: 1;
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    font-size: 1rem;
+    padding: 0.875rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
     display: flex;
@@ -1382,52 +1382,135 @@ export default {
     }
     
     .cart-header h1 {
-        font-size: 1.75rem;
+        font-size: 1.5rem;
     }
     
     .cart-item {
         flex-direction: column;
-        gap: 1rem;
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+    
+    .item-checkbox {
+        order: -1;
+        align-self: flex-start;
+        padding-top: 0;
     }
     
     .item-image-container {
         width: 100%;
-        height: 200px;
+        height: 150px;
         align-self: center;
+        max-width: 200px;
+    }
+    
+    .item-details {
+        gap: 0.75rem;
+    }
+    
+    .item-name {
+        font-size: 1.1rem;
+    }
+    
+    .quantity-controls {
+        justify-content: center;
+        gap: 0.75rem;
+    }
+    
+    .quantity-btn {
+        width: 2rem;
+        height: 2rem;
+        font-size: 0.8rem;
+    }
+    
+    .quantity-display {
+        min-width: 2rem;
+        padding: 0.5rem;
+        font-size: 1rem;
     }
     
     .cart-actions {
         flex-direction: column;
+        gap: 0.75rem;
     }
     
     .sharing-badge {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.75rem;
+        padding: 1rem;
     }
     
     .action-btn {
         align-self: flex-start;
+        font-size: 0.8rem;
+        padding: 0.5rem 0.75rem;
     }
 }
 
 @media (max-width: 480px) {
     .cart-content {
-        padding: 0.5rem;
+        padding: 0.75rem;
     }
     
     .cart-header h1 {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
     }
     
     .select-all-section,
     .cart-item,
     .cart-summary {
-        padding: 1rem;
+        padding: 0.875rem;
+        border-radius: 8px;
     }
     
-    .quantity-controls {
-        justify-content: center;
+    .cart-item {
+        gap: 0.5rem;
+    }
+    
+    .item-image-container {
+        height: 120px;
+        max-width: 150px;
+    }
+    
+    .item-name {
+        font-size: 1rem;
+    }
+    
+    .choice-info {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .item-price {
+        font-size: 0.95rem;
+    }
+    
+    .quantity-btn {
+        width: 1.75rem;
+        height: 1.75rem;
+        font-size: 0.75rem;
+    }
+    
+    .quantity-display {
+        min-width: 1.75rem;
+        padding: 0.375rem;
+        font-size: 0.9rem;
+    }
+    
+    .remove-btn {
+        font-size: 0.75rem;
+        padding: 0.375rem 0.5rem;
+    }
+    
+    .sharing-badge {
+        padding: 0.875rem;
+        font-size: 0.85rem;
+    }
+    
+    .action-btn {
+        font-size: 0.75rem;
+        padding: 0.375rem 0.5rem;
     }
 }
 

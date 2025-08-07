@@ -29,7 +29,7 @@
                         <div class="payment-card">
                             <i class="fas fa-money-bill-wave"></i>
                             <span>Cash on Pickup</span>
-                            <small>Downpayment required via GCash (min. ₱100)</small>
+                            <small>Downpayment required via GCash (25% of order)</small>
                         </div>
                     </label>
                     
@@ -66,15 +66,20 @@
             <!-- Cash on Pickup Downpayment Info -->
             <div v-if="selectedPaymentMethod === 'cash'" class="downpayment-info-section">
                 <div class="downpayment-info">
-                    <i class="fas fa-info-circle"></i>
+                    <div class="downpayment-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
                     <div class="downpayment-details">
                         <h5>Downpayment Required</h5>
-                        <p>To prevent un-claimed order, a downpayment is required for cash on pickup orders.</p>
-                        <p><small>* Minimum downpayment: ₱100 (25% of order total or ₱100, whichever is higher)</small></p>
+                        <p>To prevent un-claimed orders, a downpayment is required for cash on pickup orders.</p>
                         <div class="payment-breakdown">
+                            <div class="breakdown-header">
+                                <i class="fas fa-calculator"></i>
+                                <span>Payment Breakdown</span>
+                            </div>
                             <div class="breakdown-row">
                                 <span>Downpayment ({{ downpaymentPercentage }}%):</span>
-                                <span class="amount">{{ formatPrice(downpaymentAmount) }}</span>
+                                <span class="amount primary">{{ formatPrice(downpaymentAmount) }}</span>
                             </div>
                             <div class="breakdown-row">
                                 <span>Remaining (Pay on pickup):</span>
@@ -83,7 +88,7 @@
                             <div class="breakdown-divider"></div>
                             <div class="breakdown-row total">
                                 <span>Total Order:</span>
-                                <span class="amount">{{ formatPrice(calculateTotal) }}</span>
+                                <span class="amount total-amount">{{ formatPrice(calculateTotal) }}</span>
                             </div>
                         </div>
                     </div>
@@ -505,8 +510,8 @@ export default {
         downpaymentAmount() {
             if (this.selectedPaymentMethod === 'cash') {
                 const calculatedDownpayment = this.calculateTotal * 0.25;
-                // Ensure minimum downpayment of ₱100 for PayMongo
-                return Math.max(100, Math.round(calculatedDownpayment * 100) / 100);
+                // 25% of order total
+                return Math.round(calculatedDownpayment * 100) / 100;
             }
             return 0;
         },
@@ -574,17 +579,10 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 return false;
             }
             
-            // Validation for cash orders - warn if downpayment is more than 50% of total
-            if (this.selectedPaymentMethod === 'cash' && this.calculateTotal < 200 && this.downpaymentAmount >= this.calculateTotal * 0.5) {
-                return false;
-            }
-            
             return true;
         },
         cashOrderWarning() {
-            if (this.selectedPaymentMethod === 'cash' && this.calculateTotal < 200 && this.downpaymentAmount >= this.calculateTotal * 0.5) {
-                return `Note: Downpayment (₱${this.downpaymentAmount.toFixed(2)}) is ${this.downpaymentPercentage}% of your order total. Consider adding more items or choose a different payment method.`;
-            }
+            // Remove the minimum downpayment warning since there's no minimum requirement
             return null;
         }
     },
@@ -2111,42 +2109,42 @@ input:checked + .slider:before {
 @media (max-width: 767px) and (min-width: 576px) {
     .modal-overlay {
         align-items: flex-start;
-        padding: clamp(0.25rem, 0.5vh, 0.75rem);
+        padding: 0.75rem;
     }
     
     .modal-content {
-        max-width: calc(100vw - 1rem);
-        max-height: calc(100vh - 1rem);
-        margin-top: clamp(0.25rem, 0.5vh, 0.5rem);
+        max-width: calc(100vw - 1.5rem);
+        max-height: calc(100vh - 1.5rem);
+        margin-top: 0.75rem;
     }
     
     .payment-methods {
         grid-template-columns: 1fr;
-        gap: clamp(0.75rem, 1.5vh, 1rem);
+        gap: 1rem;
     }
     
     .modal-actions {
         flex-direction: column;
-        gap: clamp(0.75rem, 1.5vh, 1rem);
+        gap: 1rem;
     }
     
     .confirm-btn, .cancel-btn {
         min-width: 100%;
-        padding: clamp(0.875rem, 2vh, 1.125rem) clamp(1rem, 3vw, 1.5rem);
-        font-size: clamp(0.875rem, 2.25vw, 1rem);
+        padding: 1rem 1.25rem;
+        font-size: 0.95rem;
     }
     
     .order-item {
         flex-direction: column;
         gap: 1rem;
-        padding: clamp(1rem, 2vh, 1.25rem);
+        padding: 1.25rem;
     }
     
     .item-image-container {
         width: 100%;
-        height: clamp(100px, 18vh, 150px);
+        height: 140px;
         align-self: center;
-        max-width: 250px;
+        max-width: 200px;
     }
 }
 
@@ -2154,30 +2152,30 @@ input:checked + .slider:before {
 @media (max-width: 575px) {
     .modal-overlay {
         align-items: flex-start;
-        padding: clamp(0.25rem, 0.5vh, 0.5rem);
+        padding: 0.5rem;
         overflow-y: auto;
     }
     
     .modal-content {
-        max-width: calc(100vw - 0.5rem);
+        max-width: calc(100vw - 1rem);
         max-height: none;
-        min-height: calc(100vh - 1rem);
-        margin: clamp(0.25rem, 0.5vh, 0.5rem) auto;
-        border-radius: clamp(8px, 1.5vw, 16px);
+        min-height: auto;
+        margin: 0.5rem auto;
+        border-radius: 12px;
     }
     
     .modal-header {
-        padding: clamp(1rem, 2vh, 1.5rem) clamp(1rem, 3vw, 1.5rem) clamp(0.75rem, 1.5vh, 1rem);
-        border-radius: clamp(8px, 1.5vw, 16px) clamp(8px, 1.5vw, 16px) 0 0;
+        padding: 1rem 1rem 0.75rem;
+        border-radius: 12px 12px 0 0;
     }
     
     .modal-header h3 {
-        font-size: clamp(1.125rem, 4vw, 1.35rem);
+        font-size: 1.25rem;
     }
     
     .section-title {
-        font-size: clamp(0.95rem, 3vw, 1.1rem);
-        margin-bottom: clamp(0.75rem, 1.5vh, 1rem);
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
     }
     
     .payment-method-section,
@@ -2186,17 +2184,29 @@ input:checked + .slider:before {
     .discount-section,
     .scrollable-content,
     .fixed-bottom {
-        padding: clamp(1rem, 2vh, 1.5rem) clamp(1rem, 3vw, 1.5rem);
+        padding: 1rem;
     }
     
     .payment-methods {
         grid-template-columns: 1fr;
-        gap: clamp(0.75rem, 1.5vh, 1rem);
+        gap: 0.75rem;
     }
     
     .payment-card {
-        min-height: clamp(70px, 10vh, 100px);
-        padding: clamp(0.75rem, 2vh, 1rem);
+        min-height: 80px;
+        padding: 0.875rem;
+    }
+    
+    .payment-card i {
+        font-size: 1.25rem;
+    }
+    
+    .payment-card span {
+        font-size: 0.95rem;
+    }
+    
+    .payment-card small {
+        font-size: 0.8rem;
     }
     
     .total-calculation {
@@ -2444,89 +2454,178 @@ input:checked + .slider:before {
 
 /* Downpayment Info Styles */
 .downpayment-info-section {
-    margin-bottom: 1.5rem;
+    padding: clamp(1.5rem, 3vh, 2rem) clamp(1.5rem, 4vw, 2.5rem);
+    border-bottom: 2px solid #f1f9f1;
+    background: linear-gradient(135deg, #fff8f5 0%, #fef7f0 100%);
+    flex-shrink: 0;
 }
 
 .downpayment-info {
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
-    padding: 1.5rem;
-    background: linear-gradient(135deg, #fff8f0 0%, #fff5f2 100%);
-    border: 2px solid #fed7cc;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.1);
+    gap: 1.5rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
+    border: 2px solid #e8f5e8;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(76, 175, 80, 0.12);
+    position: relative;
+    overflow: hidden;
 }
 
-.downpayment-info i {
-    color: #ea580c;
-    font-size: 1.25rem;
-    margin-top: 0.25rem;
+.downpayment-info::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #4CAF50, #66BB6A, #4CAF50);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.downpayment-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #4CAF50, #66BB6A);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.25);
+}
+
+.downpayment-icon i {
+    color: white;
+    font-size: 1.5rem;
+}
+
+.downpayment-details {
+    flex: 1;
 }
 
 .downpayment-details h5 {
-    margin: 0 0 0.5rem 0;
-    color: #9a3412;
-    font-size: 1.1rem;
+    margin: 0 0 0.75rem 0;
+    color: #1e293b;
+    font-size: 1.25rem;
     font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .downpayment-details p {
-    margin: 0 0 1rem 0;
-    color: #7c2d12;
-    font-size: 0.95rem;
-    line-height: 1.4;
+    margin: 0 0 1.5rem 0;
+    color: #475569;
+    font-size: 1rem;
+    line-height: 1.5;
 }
 
 .payment-breakdown {
-    background-color: white;
-    border: 1px solid #fed7cc;
-    border-radius: 8px;
-    padding: 1rem;
+    background: linear-gradient(135deg, #f8fffe 0%, #f1f9f1 100%);
+    border: 2px solid #e8f5e8;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.08);
+}
+
+.breakdown-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e8f5e8;
+}
+
+.breakdown-header i {
+    color: #4CAF50;
+    font-size: 1.1rem;
+}
+
+.breakdown-header span {
+    color: #1e293b;
+    font-size: 1.1rem;
+    font-weight: 600;
 }
 
 .breakdown-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.5rem 0;
-    font-size: 0.95rem;
+    padding: 0.75rem 0;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.breakdown-row:hover {
+    background-color: rgba(76, 175, 80, 0.05);
+    border-radius: 8px;
+    margin: 0 -0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
 }
 
 .breakdown-row span:first-child {
-    color: #7c2d12;
+    color: #475569;
     font-weight: 500;
 }
 
 .breakdown-row .amount {
-    color: #ea580c;
+    color: #4CAF50;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.breakdown-row .amount.primary {
+    color: #1976d2;
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
 }
 
 .breakdown-divider {
-    height: 1px;
-    background-color: #fed7cc;
-    margin: 0.5rem 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #e8f5e8, transparent);
+    margin: 0.75rem 0;
 }
 
 .breakdown-row.total {
-    border-top: 2px solid #fed7cc;
-    padding-top: 0.75rem;
-    margin-top: 0.5rem;
+    border-top: 2px solid #e8f5e8;
+    padding-top: 1rem;
+    margin-top: 0.75rem;
+    background: linear-gradient(135deg, #f8fffe, #f1f9f1);
+    border-radius: 8px;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
 }
 
 .breakdown-row.total span:first-child {
-    color: #9a3412;
+    color: #1e293b;
     font-weight: 700;
-    font-size: 1.05rem;
+    font-size: 1.1rem;
 }
 
-.breakdown-row.total .amount {
-    color: #dc2626;
+.breakdown-row.total .amount.total-amount {
+    color: #4CAF50;
+    font-size: 1.25rem;
     font-weight: 800;
-    font-size: 1.1rem;
+    background: linear-gradient(135deg, #e8f5e8, #f1f9f1);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
 }
 
 /* Cash Order Warning */
@@ -2573,6 +2672,160 @@ input:checked + .slider:before {
     border-color: #45a049;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+/* Responsive Design for Downpayment Section */
+@media (max-width: 768px) {
+    .downpayment-info-section {
+        padding: 1rem 1.5rem;
+    }
+    
+    .downpayment-info {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1.25rem;
+    }
+    
+    .downpayment-icon {
+        width: 45px;
+        height: 45px;
+        align-self: center;
+    }
+    
+    .downpayment-icon i {
+        font-size: 1.1rem;
+    }
+    
+    .downpayment-details h5 {
+        text-align: center;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .downpayment-details p {
+        text-align: center;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .payment-breakdown {
+        padding: 1rem;
+    }
+    
+    .breakdown-header {
+        justify-content: center;
+        margin-bottom: 0.75rem;
+    }
+    
+    .breakdown-header span {
+        font-size: 1rem;
+    }
+    
+    .breakdown-row {
+        padding: 0.5rem 0;
+        font-size: 0.9rem;
+    }
+    
+    .breakdown-row .amount {
+        font-size: 0.95rem;
+    }
+    
+    .breakdown-row .amount.primary {
+        padding: 0.5rem 0.75rem;
+        font-size: 1rem;
+    }
+    
+    .breakdown-row.total {
+        margin-left: 0;
+        margin-right: 0;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        padding-top: 0.75rem;
+    }
+    
+    .breakdown-row.total span:first-child {
+        font-size: 1rem;
+    }
+    
+    .breakdown-row.total .amount.total-amount {
+        font-size: 1.1rem;
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .downpayment-info-section {
+        padding: 0.75rem 1rem;
+    }
+    
+    .downpayment-info {
+        padding: 1rem;
+        gap: 0.75rem;
+    }
+    
+    .downpayment-icon {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .downpayment-icon i {
+        font-size: 0.9rem;
+    }
+    
+    .downpayment-details h5 {
+        font-size: 0.95rem;
+        margin-bottom: 0.4rem;
+    }
+    
+    .downpayment-details p {
+        font-size: 0.85rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .payment-breakdown {
+        padding: 0.75rem;
+    }
+    
+    .breakdown-header {
+        margin-bottom: 0.5rem;
+    }
+    
+    .breakdown-header i {
+        font-size: 0.9rem;
+    }
+    
+    .breakdown-header span {
+        font-size: 0.9rem;
+    }
+    
+    .breakdown-row {
+        padding: 0.4rem 0;
+        font-size: 0.85rem;
+    }
+    
+    .breakdown-row .amount {
+        font-size: 0.9rem;
+    }
+    
+    .breakdown-row .amount.primary {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.9rem;
+    }
+    
+    .breakdown-row.total {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        padding-top: 0.6rem;
+    }
+    
+    .breakdown-row.total span:first-child {
+        font-size: 0.9rem;
+    }
+    
+    .breakdown-row.total .amount.total-amount {
+        font-size: 1rem;
+        padding: 0.4rem 0.6rem;
+    }
 }
 
 /* Responsive Design for HATID Modal */
