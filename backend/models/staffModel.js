@@ -41,10 +41,14 @@ class Staff {
                     o.payment_method,
                     o.is_physical_order,
                     u.email,
-                    s.username as staff_name
+                    s.username as staff_name,
+                    pi.payment_type,
+                    pi.total_amount as original_total,
+                    pi.remaining_amount
                 FROM orders o
                 LEFT JOIN users u ON o.user_id = u.id
                 LEFT JOIN users s ON o.accepted_by = s.id
+                LEFT JOIN payment_intents pi ON o.order_id = pi.order_id
                 ORDER BY o.created_at DESC
             `);
             return rows;
@@ -65,6 +69,9 @@ class Staff {
                     ad.amount as discount_amount,
                     o.payment_method,
                     u.email,
+                    pi.payment_type,
+                    pi.total_amount as original_total,
+                    pi.remaining_amount,
                     (SELECT SUM(oi.price * oi.quantity) 
                      FROM order_items oi 
                      WHERE oi.order_id = o.order_id) as subtotal
@@ -72,6 +79,7 @@ class Staff {
                 LEFT JOIN users u ON o.user_id = u.id
                 LEFT JOIN users s ON o.accepted_by = s.id
                 LEFT JOIN available_discounts ad ON o.order_id = ad.order_id AND ad.used = TRUE
+                LEFT JOIN payment_intents pi ON o.order_id = pi.order_id
                 WHERE o.order_id = ?`,
                 [orderId]
             );
@@ -143,13 +151,19 @@ class Staff {
             const [rows] = await db.execute(`
                 SELECT 
                     o.order_id,
-                    u.username as customer_name,
+                    CASE 
+                        WHEN o.is_physical_order = 1 THEN o.customer_name
+                        ELSE u.username
+                    END as customer_name,
                     o.status,
                     o.total_amount,
                     o.created_at,
                     o.accepted_at,
                     o.accepted_by,
                     o.payment_method,
+                    pi.payment_type,
+                    pi.total_amount as original_total,
+                    pi.remaining_amount,
                     JSON_ARRAYAGG(
                         JSON_OBJECT(
                             'product_id', oi.product_id,
@@ -160,11 +174,12 @@ class Staff {
                         )
                     ) as items
                 FROM orders o
-                JOIN users u ON o.user_id = u.id
+                LEFT JOIN users u ON o.user_id = u.id
+                LEFT JOIN payment_intents pi ON o.order_id = pi.order_id
                 JOIN order_items oi ON o.order_id = oi.order_id
                 JOIN products p ON oi.product_id = p.products_id
                 WHERE o.accepted_by = ?
-                GROUP BY o.order_id, o.status, o.total_amount, o.created_at, o.accepted_at, o.accepted_by, o.payment_method, u.username
+                GROUP BY o.order_id, o.status, o.total_amount, o.created_at, o.accepted_at, o.accepted_by, o.payment_method, u.username, o.customer_name, pi.payment_type, pi.total_amount, pi.remaining_amount
                 ORDER BY o.accepted_at DESC
             `, [staffId]);
     

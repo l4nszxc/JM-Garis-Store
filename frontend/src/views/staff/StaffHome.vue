@@ -113,7 +113,17 @@
                                         {{ getPaymentMethodLabel(order.payment_method) }}
                                     </span>
                                 </td>
-                                <td>{{ formatPrice(order.total_amount) }}</td>
+                                <td>
+                                    <span v-if="order.payment_method === 'cash' && order.payment_type === 'downpayment'">
+                                        {{ formatPrice(getRemainingAmount(order)) }}
+                                        <small style="display: block; color: #6b7280; font-size: 0.8rem;">
+                                            Remaining ({{ formatPrice(getDownpaymentAmount(order)) }} paid)
+                                        </small>
+                                    </span>
+                                    <span v-else>
+                                        {{ formatPrice(order.total_amount) }}
+                                    </span>
+                                </td>
                                 <td>{{ formatDate(order.created_at) }}</td>
                                 <td>
                                     <button 
@@ -230,8 +240,18 @@
                                 <i class="fas fa-tag"></i> Discount: -{{ formatPrice(selectedOrder.discount_amount) }}
                             </p>
                             <p class="total-amount">
-                                <i class="fas fa-dollar-sign"></i> Total: {{ formatPrice(selectedOrder.total_amount) }}
+                                <i class="fas fa-dollar-sign"></i> Original Total: {{ formatPrice(getOriginalTotal(selectedOrder)) }}
                             </p>
+                            
+                            <!-- Downpayment breakdown for cash on pickup -->
+                            <div v-if="selectedOrder.payment_method === 'cash' && selectedOrder.payment_type === 'downpayment'" class="downpayment-breakdown">
+                                <p class="downpayment-info">
+                                    <i class="fas fa-hand-holding-usd"></i> Downpayment (25%): {{ formatPrice(getDownpaymentAmount(selectedOrder)) }}
+                                </p>
+                                <p class="remaining-amount">
+                                    <i class="fas fa-wallet"></i> Remaining to Pay: {{ formatPrice(getRemainingAmount(selectedOrder)) }}
+                                </p>
+                            </div>
                         </div>
                     </div>
                     
@@ -264,8 +284,22 @@
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="4" class="total-label">Total Amount:</td>
-                                    <td class="total-amount">{{ formatPrice(selectedOrder.total_amount) }}</td>
+                                    <td colspan="4" class="total-label">
+                                        <span v-if="selectedOrder.payment_method === 'cash' && selectedOrder.payment_type === 'downpayment'">
+                                            Amount Due:
+                                        </span>
+                                        <span v-else>
+                                            Total Amount:
+                                        </span>
+                                    </td>
+                                    <td class="total-amount">
+                                        <span v-if="selectedOrder.payment_method === 'cash' && selectedOrder.payment_type === 'downpayment'">
+                                            {{ formatPrice(getRemainingAmount(selectedOrder)) }}
+                                        </span>
+                                        <span v-else>
+                                            {{ formatPrice(selectedOrder.total_amount) }}
+                                        </span>
+                                    </td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -577,6 +611,25 @@ export default {
                 hour: '2-digit',
                 minute: '2-digit'
             });
+        },
+        getRemainingAmount(order) {
+            // Use the remaining_amount from payment_intents if available (downpayment order)
+            if (order.payment_type === 'downpayment' && order.remaining_amount !== null) {
+                return order.remaining_amount;
+            }
+            // For non-downpayment orders or if no payment intent data, return full amount
+            return order.total_amount;
+        },
+        getOriginalTotal(order) {
+            // Use original_total from payment_intents if available, otherwise use total_amount
+            return order.original_total || order.total_amount;
+        },
+        getDownpaymentAmount(order) {
+            if (order.payment_type === 'downpayment') {
+                const originalTotal = this.getOriginalTotal(order);
+                return originalTotal * 0.25;
+            }
+            return 0;
         },
         getPaymentMethodLabel(method) {
             switch (method) {
@@ -1158,6 +1211,35 @@ th {
     color: #2c3e50;
     font-size: 1.1rem;
     font-weight: bold;
+}
+
+.downpayment-breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f0f9ff;
+    padding: 1rem;
+    border-radius: 6px;
+}
+
+.downpayment-info {
+    color: #0369a1;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.remaining-amount {
+    color: #dc2626;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
 }
 
 .product-image {

@@ -71,6 +71,7 @@
                                 <th>Order ID</th>
                                 <th>Customer</th>
                                 <th>Status</th>
+                                <th>Payment Method</th>
                                 <th>Total Amount</th>
                                 <th>Order Date</th>
                                 <th>Staff Assigned</th>
@@ -92,13 +93,38 @@
                                 </td>
                                 <td>
                                     <span :class="['status-badge', order.status.toLowerCase().replace(/ /g, '-')]">
-                                        <template v-if="order.status === 'paid', 'paid using gcash'">
-                                            <i class="fas fa-check-circle"></i>
-                                        </template>
-                                        {{ order.status }}
+                                        <i v-if="order.status === 'pending'" class="fas fa-clock"></i>
+                                        <i v-else-if="order.status === 'pending_pickup'" class="fas fa-hand-holding"></i>
+                                        <i v-else-if="order.status === 'pending_delivery'" class="fas fa-truck"></i>
+                                        <i v-else-if="order.status === 'paid using gcash'" class="fas fa-mobile-alt"></i>
+                                        <i v-else-if="order.status === 'preparing'" class="fas fa-utensils"></i>
+                                        <i v-else-if="order.status === 'ready for pickup'" class="fas fa-check-circle"></i>
+                                        <i v-else-if="order.status === 'paid'" class="fas fa-check-double"></i>
+                                        <i v-else-if="order.status === 'cancelled'" class="fas fa-times-circle"></i>
+                                        <i v-else class="fas fa-info-circle"></i>
+                                        {{ getStatusDisplay(order.status) }}
                                     </span>
                                 </td>
-                                <td>{{ formatPrice(order.total_amount) }}</td>
+                                <td>
+                                    <span class="payment-method">
+                                        <i v-if="order.payment_method === 'cash'" class="fas fa-money-bill-wave"></i>
+                                        <i v-else-if="order.payment_method === 'gcash'" class="fas fa-mobile-alt"></i>
+                                        <i v-else-if="order.payment_method === 'hatid'" class="fas fa-truck"></i>
+                                        <i v-else class="fas fa-credit-card"></i>
+                                        {{ getPaymentMethodLabel(order.payment_method) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span v-if="order.payment_type === 'downpayment'">
+                                        {{ formatPrice(getRemainingAmount(order)) }}
+                                        <div class="subtotal">
+                                            <i class="fas fa-info-circle"></i> Downpayment paid: {{ formatPrice(getDownpaymentAmount(order)) }}
+                                        </div>
+                                    </span>
+                                    <span v-else>
+                                        {{ formatPrice(order.total_amount) }}
+                                    </span>
+                                </td>
                                 <td>{{ formatDate(order.created_at) }}</td>
                                 <td>
                                     <span v-if="order.staff_name" class="staff-info">
@@ -113,12 +139,48 @@
                                 </td>
                             </tr>
                             <tr v-if="filteredOrders.length === 0">
-                                <td colspan="7" class="no-data">
+                                <td colspan="8" class="no-data">
                                     No orders found for the selected filters
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination-container" v-if="totalPages > 1">
+                    <div class="pagination-info">
+                        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, totalFilteredOrders.length) }} of {{ totalFilteredOrders.length }} orders
+                    </div>
+                    <div class="pagination">
+                        <button 
+                            @click="prevPage" 
+                            :disabled="currentPage === 1"
+                            class="pagination-btn"
+                        >
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        
+                        <button 
+                            v-for="page in totalPages" 
+                            :key="page"
+                            @click="goToPage(page)"
+                            :class="['pagination-btn', 'page-btn', { 'active': currentPage === page }]"
+                            v-show="page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2"
+                        >
+                            {{ page }}
+                        </button>
+                        
+                        <span v-if="totalPages > 5 && currentPage < totalPages - 2" class="pagination-ellipsis">...</span>
+                        
+                        <button 
+                            @click="nextPage" 
+                            :disabled="currentPage === totalPages"
+                            class="pagination-btn"
+                        >
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -133,7 +195,16 @@
                         <p><strong>Customer:</strong> {{ selectedOrder.customer_name }}</p>
                         <p><strong>Status:</strong> 
                             <span :class="['status-badge', selectedOrder.status.toLowerCase().replace(/ /g, '-')]">
-                                {{ selectedOrder.status }}
+                                <i v-if="selectedOrder.status === 'pending'" class="fas fa-clock"></i>
+                                <i v-else-if="selectedOrder.status === 'pending_pickup'" class="fas fa-hand-holding"></i>
+                                <i v-else-if="selectedOrder.status === 'pending_delivery'" class="fas fa-truck"></i>
+                                <i v-else-if="selectedOrder.status === 'paid using gcash'" class="fas fa-mobile-alt"></i>
+                                <i v-else-if="selectedOrder.status === 'preparing'" class="fas fa-utensils"></i>
+                                <i v-else-if="selectedOrder.status === 'ready for pickup'" class="fas fa-check-circle"></i>
+                                <i v-else-if="selectedOrder.status === 'paid'" class="fas fa-check-double"></i>
+                                <i v-else-if="selectedOrder.status === 'cancelled'" class="fas fa-times-circle"></i>
+                                <i v-else class="fas fa-info-circle"></i>
+                                {{ getStatusDisplay(selectedOrder.status) }}
                             </span>
                         </p>
                         <p><strong>Order Date:</strong> {{ formatDate(selectedOrder.created_at) }}</p>
@@ -164,8 +235,21 @@
                                 <i class="fas fa-tag"></i> Discount: -{{ formatPrice(selectedOrder.discount_amount) }}
                             </p>
                             <p class="total-amount">
-                                <i class="fas fa-dollar-sign"></i> Total: {{ formatPrice(selectedOrder.total_amount) }}
+                                <i class="fas fa-dollar-sign"></i> 
+                                <span v-if="selectedOrder.payment_type === 'downpayment'">Original Total:</span>
+                                <span v-else>Total:</span>
+                                {{ formatPrice(getOriginalTotal(selectedOrder)) }}
                             </p>
+                            
+                            <!-- Downpayment Information -->
+                            <div v-if="selectedOrder.payment_type === 'downpayment'" class="downpayment-breakdown">
+                                <p class="downpayment-info">
+                                    <i class="fas fa-credit-card"></i> Downpayment (25%): {{ formatPrice(getDownpaymentAmount(selectedOrder)) }}
+                                </p>
+                                <p class="remaining-amount">
+                                    <i class="fas fa-money-bill-wave"></i> Remaining Amount: {{ formatPrice(getRemainingAmount(selectedOrder)) }}
+                                </p>
+                            </div>
                         </div>
                     </div>
                     
@@ -203,8 +287,18 @@
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="4" class="total-label">Total Amount:</td>
-                                    <td class="total-amount">{{ formatPrice(selectedOrder.total_amount) }}</td>
+                                    <td colspan="4" class="total-label">
+                                        <span v-if="selectedOrder.payment_type === 'downpayment'">Amount Due:</span>
+                                        <span v-else>Total Amount:</span>
+                                    </td>
+                                    <td class="total-amount">
+                                        <span v-if="selectedOrder.payment_type === 'downpayment'">
+                                            {{ formatPrice(getRemainingAmount(selectedOrder)) }}
+                                        </span>
+                                        <span v-else>
+                                            {{ formatPrice(selectedOrder.total_amount) }}
+                                        </span>
+                                    </td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -270,6 +364,23 @@
 
                     <div class="payment-calculator">
                         <h3>Payment Calculator</h3>
+                        
+                        <!-- Show payment breakdown for downpayment orders -->
+                        <div v-if="selectedOrder.payment_type === 'downpayment'" class="payment-breakdown-info">
+                            <div class="breakdown-item">
+                                <span>Total Order Amount:</span>
+                                <span>{{ formatPrice(selectedOrder.total_amount) }}</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span>Downpayment Paid (25%):</span>
+                                <span>{{ formatPrice(selectedOrder.total_amount * 0.25) }}</span>
+                            </div>
+                            <div class="breakdown-item remaining">
+                                <span>Remaining Amount Due:</span>
+                                <span>{{ formatPrice(getRemainingAmount(selectedOrder)) }}</span>
+                            </div>
+                        </div>
+                        
                         <div class="calculator-input">
                             <label for="cashAmount">Cash Amount</label>
                             <div class="input-wrapper">
@@ -279,11 +390,14 @@
                                     id="cashAmount" 
                                     v-model="cashAmount"
                                     @input="calculateChange"
-                                    :min="selectedOrder.total_amount"
+                                    :min="getAmountToPay(selectedOrder)"
                                     step="0.01"
                                     placeholder="Enter amount"
                                 >
                             </div>
+                            <small class="amount-due-note">
+                                Amount due: {{ formatPrice(getAmountToPay(selectedOrder)) }}
+                            </small>
                         </div>
 
                         <div class="calculator-result" :class="{ 'insufficient': isInsufficientCash }">
@@ -626,11 +740,13 @@ export default {
             statusFilters: [
                 { label: 'All Status', value: '' },
                 { label: 'Pending', value: 'pending' },
+                { label: 'Pending Pickup', value: 'pending_pickup' },
+                { label: 'Pending Delivery', value: 'pending_delivery' },
+                { label: 'Paid via GCash', value: 'paid using gcash' },
                 { label: 'Preparing', value: 'preparing' },
                 { label: 'Ready for Pickup', value: 'ready for pickup' },
                 { label: 'Paid', value: 'paid' },
-                { label: 'Cancelled', value: 'cancelled' },
-                {label: 'Paid using GCash', value: 'paid using gcash' }
+                { label: 'Cancelled', value: 'cancelled' }
             ],
             showPaymentConfirmation: false,
             cashAmount: '',
@@ -666,12 +782,17 @@ export default {
                 points_per_amount: 1,
                 amount_threshold: 100,
                 point_value: 0.50
-            }
+            },
+            // Pagination
+            currentPage: 1,
+            itemsPerPage: 20
         }
     },
     computed: {
         isInsufficientCash() {
-            return this.cashAmount < this.selectedOrder?.total_amount;
+            if (!this.selectedOrder) return false;
+            const amountToPay = this.getAmountToPay(this.selectedOrder);
+            return this.cashAmount < amountToPay;
         },
         hasActiveFilters() {
             return this.searchQuery !== '' || 
@@ -679,9 +800,9 @@ export default {
                   this.selectedStatus !== this.defaultStatusFilter ||
                   this.sortOption !== this.defaultSortOption;
         },
-        filteredOrders() {
+        totalFilteredOrders() {
             // First filter the orders based on existing criteria
-            let filtered = this.orders.filter(order => {
+            return this.orders.filter(order => {
                 const searchMatch = !this.searchQuery || 
                     order.order_id.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
                     order.customer_name.toLowerCase().includes(this.searchQuery.toLowerCase());
@@ -701,6 +822,13 @@ export default {
                 
                 return searchMatch && statusMatch && dateMatch;
             });
+        },
+        totalPages() {
+            return Math.ceil(this.totalFilteredOrders.length / this.itemsPerPage);
+        },
+        filteredOrders() {
+            // Get all filtered orders
+            let filtered = this.totalFilteredOrders;
             
             // Then sort the filtered results
             if (this.sortOption) {
@@ -721,11 +849,28 @@ export default {
                 });
             }
             
-            return filtered;
+            // Apply pagination
+            const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+            const endIndex = startIndex + this.itemsPerPage;
+            return filtered.slice(startIndex, endIndex);
         },
         canApplyRewards() {
             return (this.selectedRewardMethod === 'user_id' && this.foundUser) ||
                    (this.selectedRewardMethod === 'qr_code' && this.qrFoundUser);
+        }
+    },
+    watch: {
+        searchQuery() {
+            this.currentPage = 1;
+        },
+        selectedStatus() {
+            this.currentPage = 1;
+        },
+        dateFilter() {
+            this.currentPage = 1;
+        },
+        sortOption() {
+            this.currentPage = 1;
         }
     },
     methods: {
@@ -734,17 +879,62 @@ export default {
             this.dateFilter = '';
             this.selectedStatus = this.defaultStatusFilter;
             this.sortOption = this.defaultSortOption;
+            this.currentPage = 1; // Reset to first page
+        },
+        // Pagination methods
+        goToPage(page) {
+            if (page >= 1 && page <= this.totalPages) {
+                this.currentPage = page;
+            }
+        },
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+            }
+        },
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+            }
+        },
+        getRemainingAmount(order) {
+            if (order.payment_type === 'downpayment') {
+                return order.remaining_amount || (order.total_amount * 0.75);
+            }
+            return order.total_amount;
+        },
+        getOriginalTotal(order) {
+            if (order.payment_type === 'downpayment') {
+                return order.original_total || order.total_amount;
+            }
+            return order.total_amount;
+        },
+        getDownpaymentAmount(order) {
+            if (order.payment_type === 'downpayment') {
+                const originalTotal = this.getOriginalTotal(order);
+                return originalTotal * 0.25;
+            }
+            return 0;
+        },
+        getAmountToPay(order) {
+            if (order.payment_type === 'downpayment') {
+                return this.getRemainingAmount(order);
+            }
+            return order.total_amount;
         },
         calculateChange() {
             if (!this.cashAmount || !this.selectedOrder) {
                 this.changeAmount = 0;
                 return;
             }
-            this.changeAmount = parseFloat(this.cashAmount) - this.selectedOrder.total_amount;
+            const amountToPay = this.getAmountToPay(this.selectedOrder);
+            this.changeAmount = parseFloat(this.cashAmount) - amountToPay;
         },
         async processPayment() {
             try {
                 const token = localStorage.getItem('token');
+                const amountToPay = this.getAmountToPay(this.selectedOrder);
+                
                 const response = await fetch(`http://localhost:7904/api/admin/orders/${this.selectedOrder.order_id}/pay`, {
                     method: 'PUT',
                     headers: {
@@ -754,7 +944,9 @@ export default {
                     body: JSON.stringify({
                         cashAmount: parseFloat(this.cashAmount),
                         changeAmount: this.changeAmount,
-                        sendEmailReceipt: true // Add flag to indicate email receipt should be sent
+                        amountToPay: amountToPay,
+                        isDownpaymentPayment: this.selectedOrder.payment_type === 'downpayment',
+                        sendEmailReceipt: true
                     })
                 });
 
@@ -1000,6 +1192,10 @@ export default {
                             <p><strong>Order #:</strong> ${this.selectedOrder.order_id}</p>
                             <p><strong>Date:</strong> ${date}</p>
                             <p><strong>Customer:</strong> ${this.selectedOrder.customer_name}</p>
+                            <p><strong>Payment Method:</strong> ${this.getPaymentMethodLabel(this.selectedOrder.payment_method)}</p>
+                            ${this.selectedOrder.payment_type === 'downpayment' ? `
+                            <p><strong>Payment Type:</strong> Remaining Balance Payment</p>
+                            ` : ''}
                         </div>
                         
                         <div class="items-section">
@@ -1022,7 +1218,19 @@ export default {
                             <div class="total">
                                 Total Amount: ${this.formatPrice(this.selectedOrder.total_amount)}
                             </div>
+                            ${this.selectedOrder.payment_type === 'downpayment' ? `
+                            <div class="payment-breakdown">
+                                <div style="margin-top: 8px; padding-top: 4px; border-top: 1px dashed black;">
+                                    <div>Downpayment (25%): ${this.formatPrice(this.selectedOrder.total_amount * 0.25)}</div>
+                                    <div>Remaining Amount: ${this.formatPrice(this.getAmountToPay(this.selectedOrder))}</div>
+                                </div>
+                            </div>
+                            ` : ''}
                             <div class="payment-details">
+                                ${this.selectedOrder.payment_type === 'downpayment' ? 
+                                    `Amount Due: ${this.formatPrice(this.getAmountToPay(this.selectedOrder))}<br>` : 
+                                    `Amount Due: ${this.formatPrice(this.selectedOrder.total_amount)}<br>`
+                                }
                                 Cash Amount: ${this.formatPrice(this.cashAmount)}
                                 <br>
                                 Change: ${this.formatPrice(this.changeAmount)}
@@ -1090,6 +1298,20 @@ export default {
                 default:
                     return method || 'Not specified';
             }
+        },
+        getStatusDisplay(status) {
+            const displayMap = {
+                'pending': 'Pending',
+                'pending_pickup': 'Pending Pickup (Downpayment)',
+                'pending_delivery': 'Pending Delivery',
+                'paid using gcash': 'Paid via GCash',
+                'preparing': 'Preparing',
+                'ready for pickup': 'Ready for Pickup',
+                'paid': 'Paid',
+                'cancelled': 'Cancelled',
+                'completed': 'Completed'
+            };
+            return displayMap[status.toLowerCase()] || status;
         },
         handleImageError(e) {
             e.target.src = '/img/placeholder.jpg';
@@ -1810,6 +2032,21 @@ th {
     color: #92400e;
 }
 
+.pending_pickup, .pending-pickup {
+    background-color: #e0f2fe;
+    color: #0277bd;
+}
+
+.pending_delivery, .pending-delivery {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.paid-using-gcash {
+    background-color: #cff4fc;
+    color: #055160;
+}
+
 .preparing {
     background-color: #cce5ff;
     color: #004085;
@@ -2224,6 +2461,65 @@ tfoot tr td {
     margin-top: 2rem;
     padding-top: 1.5rem;
     border-top: 1px solid #e2e8f0;
+}
+
+.payment-breakdown-info {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.breakdown-item.remaining {
+    font-weight: 600;
+    color: #1e293b;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+}
+
+.downpayment-breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+    background-color: #f0f9ff;
+    padding: 1rem;
+    border-radius: 6px;
+}
+
+.downpayment-info, .remaining-amount {
+    margin: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.downpayment-info {
+    color: #0369a1;
+    font-weight: 500;
+}
+
+.remaining-amount {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.amount-due-note {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    display: block;
 }
 
 .calculator-input {
@@ -3091,6 +3387,83 @@ tfoot tr td {
     .skip-btn {
         width: 100%;
         justify-content: center;
+    }
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    background-color: #f8fafc;
+    border-radius: 8px;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.pagination-controls .btn {
+    min-width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.pagination-controls .btn:disabled {
+    background-color: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pagination-controls .btn:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-info {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin: 0 1rem;
+    white-space: nowrap;
+}
+
+.pagination-select {
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background-color: white;
+    color: #374151;
+    margin-left: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .pagination-container {
+        padding: 0.75rem;
+    }
+    
+    .pagination-controls {
+        gap: 0.5rem;
+    }
+    
+    .pagination-controls .btn {
+        min-width: 36px;
+        height: 36px;
+        font-size: 0.8rem;
+    }
+    
+    .pagination-info {
+        font-size: 0.8rem;
+        margin: 0 0.5rem;
     }
 }
 </style>

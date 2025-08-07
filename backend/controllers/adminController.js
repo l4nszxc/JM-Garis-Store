@@ -3079,3 +3079,7 @@ exports.processWalkInRewards = async (req, res) => {
         connection.release();
     }
 };
+
+// Admin order management methods
+
+
