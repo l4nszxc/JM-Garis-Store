@@ -1109,6 +1109,10 @@ export default {
   .dropdown-menu {
     right: -0.5rem;
   }
+
+  .store-name {
+    display: none;
+  }
 }
 
 /* Smooth animations */
