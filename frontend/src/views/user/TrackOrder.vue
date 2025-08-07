@@ -431,7 +431,7 @@ export default {
 
 <style scoped>
 .view-order-container {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: Arial, sans-serif;
     min-height: 100vh;
     background-color: #f8f9fa;
 }
