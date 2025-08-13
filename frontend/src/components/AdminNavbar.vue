@@ -197,7 +197,7 @@ export default {
         const token = localStorage.getItem('token');
         if (!token) return;
         
-        const response = await fetch('/api/admin/low-stock', {
+        const response = await this.$fetch('/api/admin/low-stock', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -559,3 +559,4 @@ export default {
   color: white;
 }
 </style>
+

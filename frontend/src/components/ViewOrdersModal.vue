@@ -590,7 +590,7 @@ Special Instructions: ${this.specialInstructions || ''}`;
         async fetchStoreSettings() {
             try {
                 // Use the public receipt settings endpoint that doesn't require authentication
-                const response = await fetch('/api/admin/receipt-settings/public');
+                const response = await this.$fetch('/api/admin/receipt-settings/public');
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -700,7 +700,7 @@ Special Instructions: ${this.specialInstructions || ''}`;
             try {
                 // Create GCash payment without creating order first
                 const token = localStorage.getItem('token');
-                const paymentResponse = await fetch('/api/payment/gcash/create-payment-only', {
+                const paymentResponse = await this.$fetch('/api/payment/gcash/create-payment-only', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -871,7 +871,7 @@ Special Instructions: ${this.specialInstructions || ''}`;
             try {
                 // Create order only after payment is confirmed successful
                 const token = localStorage.getItem('token');
-                const orderResponse = await fetch('/api/orders', {
+                const orderResponse = await this.$fetch('/api/orders', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -933,7 +933,7 @@ Special Instructions: ${this.specialInstructions || ''}`;
             try {
                 // Create GCash payment for downpayment only
                 const token = localStorage.getItem('token');
-                const paymentResponse = await fetch('/api/payment/gcash/create-downpayment', {
+                const paymentResponse = await this.$fetch('/api/payment/gcash/create-downpayment', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1108,7 +1108,7 @@ Special Instructions: ${this.specialInstructions || ''}`;
             try {
                 // Create order with downpayment status
                 const token = localStorage.getItem('token');
-                const orderResponse = await fetch('/api/orders/cash-with-downpayment', {
+                const orderResponse = await this.$fetch('/api/orders/cash-with-downpayment', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1159,7 +1159,7 @@ Special Instructions: ${this.specialInstructions || ''}`;
             try {
                 // Create the order with HATID delivery
                 const token = localStorage.getItem('token');
-                const orderResponse = await fetch('/api/orders', {
+                const orderResponse = await this.$fetch('/api/orders', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3072,3 +3072,5 @@ input:checked + .slider:before {
     }
 }
 </style>
+
+

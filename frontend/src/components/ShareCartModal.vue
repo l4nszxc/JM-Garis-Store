@@ -57,7 +57,7 @@ export default {
         async generateLink() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/shared-cart/share', {
+                const response = await this.$fetch('/api/shared-cart/share', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -209,3 +209,5 @@ export default {
     line-height: 1.4;
 }
 </style>
+
+
