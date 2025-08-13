@@ -25,8 +25,23 @@ const allowedOrigins = [
     'https://jm-garis-frontend.vercel.app' // backup domain
 ];
 
+// Add debugging
+console.log('🔧 CORS Origins configured:', allowedOrigins);
+
 app.use(cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+        console.log('🌐 CORS Request from origin:', origin);
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            console.log('✅ CORS: Origin allowed');
+            callback(null, true);
+        } else {
+            console.log('❌ CORS: Origin blocked');
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
