@@ -482,7 +482,7 @@ export default {
           timeFilter: this.timeFilter
         });
         
-        const response = await fetch(`http://localhost:7904/api/admin/dashboard-stats?${params}`, {
+        const response = await this.$fetch(`/api/admin/dashboard-stats?${params}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -521,7 +521,7 @@ export default {
           period: this.timeFilter
         });
         
-        const response = await fetch(`http://localhost:7904/api/admin/top-customers?${params}`, {
+        const response = await this.$fetch(`/api/admin/top-customers?${params}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -544,7 +544,7 @@ export default {
           quarter: this.selectedTopSellingQuarter
         });
         
-        const response = await fetch(`http://localhost:7904/api/admin/top-products?${params}`, {
+        const response = await this.$fetch(`/api/admin/top-products?${params}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -563,7 +563,7 @@ export default {
       try {
         this.chartLoading = true;
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/admin/sales-chart?period=${this.chartPeriod}`, {
+        const response = await this.$fetch(`/api/admin/sales-chart?period=${this.chartPeriod}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -1363,3 +1363,4 @@ export default {
     }
   }
 </style>
+

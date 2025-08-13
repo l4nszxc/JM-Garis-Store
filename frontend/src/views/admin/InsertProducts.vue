@@ -686,7 +686,7 @@ export default {
               }
 
               const token = localStorage.getItem('token');
-              const response = await fetch('http://localhost:7904/api/products', {
+              const response = await this.$fetch('/api/products', {
                   method: 'POST',
                   headers: {
                       'Authorization': `Bearer ${token}`
@@ -1467,3 +1467,4 @@ input:disabled,
   background: #94a3b8;
 }
 </style>
+

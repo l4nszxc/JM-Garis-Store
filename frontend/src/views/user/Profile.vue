@@ -461,7 +461,7 @@ export default {
 
         this.isChangingPassword = true;
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/users/change-password', {
+        const response = await this.$fetch('/api/users/change-password', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -536,7 +536,7 @@ export default {
     async confirmRemovePhoto() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/users/remove-profile-picture', {
+        const response = await this.$fetch('/api/users/remove-profile-picture', {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -579,7 +579,7 @@ export default {
     async fetchProfile() {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch('http://localhost:7904/api/users/profile', {
+        const response = await this.$fetch('/api/users/profile', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -655,7 +655,7 @@ export default {
         }
 
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/users/profile', {
+        const response = await this.$fetch('/api/users/profile', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -697,7 +697,7 @@ export default {
         formData.append('profilePicture', file);
 
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/users/upload-profile-picture', {
+        const response = await this.$fetch('/api/users/upload-profile-picture', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -1367,3 +1367,5 @@ export default {
   }
 }
 </style>
+
+

@@ -91,7 +91,7 @@ export default {
                     return;
                 }
 
-                const response = await fetch('http://localhost:7904/api/users/getUsername', {
+                const response = await this.$fetch('/api/users/getUsername', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -116,7 +116,7 @@ export default {
                     throw new Error('Invalid share link');
                 }
                 
-                const response = await fetch(`http://localhost:7904/api/shared-cart/${shareId}`, {
+                const response = await this.$fetch(`/api/shared-cart/${shareId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -143,7 +143,7 @@ export default {
                 const token = localStorage.getItem('token');
                 const shareId = this.$route.params.shareId;
                 
-                const response = await fetch(`http://localhost:7904/api/shared-cart/${shareId}/accept`, {
+                const response = await this.$fetch(`/api/shared-cart/${shareId}/accept`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -350,3 +350,4 @@ export default {
     background-color: #2980b9;
 }
 </style>
+

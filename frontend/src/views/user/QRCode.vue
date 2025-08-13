@@ -252,7 +252,7 @@ export default {
     async fetchUserData() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/users/profile', {
+        const response = await this.$fetch('/api/users/profile', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -1338,3 +1338,4 @@ export default {
   }
 }
 </style>
+

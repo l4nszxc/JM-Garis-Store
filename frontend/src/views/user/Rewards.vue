@@ -435,7 +435,7 @@ export default {
           throw new Error('No authentication token');
         }
 
-        const response = await fetch(`http://localhost:7904${url}`, {
+        const response = await this.$fetch(`${url}`, {
           ...options,
           headers: {
             ...options.headers,
@@ -541,7 +541,7 @@ export default {
 
     async fetchLoyaltyStatus() {
       try {
-        const response = await fetch('http://localhost:7904/api/rewards/loyalty-status', {
+        const response = await this.$fetch('/api/rewards/loyalty-status', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
             'Content-Type': 'application/json'
@@ -1862,3 +1862,4 @@ export default {
   }
 }
 </style>
+

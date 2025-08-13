@@ -57,7 +57,7 @@ export default {
         async generateLink() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/shared-cart/share', {
+                const response = await fetch('/api/shared-cart/share', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

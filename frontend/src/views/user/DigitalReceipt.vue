@@ -136,7 +136,7 @@ export default {
         const token = localStorage.getItem('token');
         const orderId = this.$route.params.orderId;
         
-        const response = await fetch('http://localhost:7904/api/orders/history', {
+        const response = await this.$fetch('/api/orders/history', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -165,7 +165,7 @@ export default {
 
     async fetchReceiptSettings() {
         try {
-            const response = await fetch('http://localhost:7904/api/admin/receipt-settings/public');
+            const response = await this.$fetch('/api/admin/receipt-settings/public');
             
             if (response.ok) {
             const data = await response.json();
@@ -773,3 +773,4 @@ export default {
   }
 }
 </style>
+

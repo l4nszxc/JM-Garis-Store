@@ -418,7 +418,7 @@ export default {
           }
 
           // Changed endpoint to match the pattern used elsewhere in the application
-          const response = await fetch('http://localhost:7904/api/orders/user', {
+          const response = await this.$fetch('/api/orders/user', {
           headers: {
               'Authorization': `Bearer ${token}`
           }
@@ -454,7 +454,7 @@ export default {
     async fetchOrderReview() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/orders/${this.orderId}/review`, {
+        const response = await this.$fetch(`/api/orders/${this.orderId}/review`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -525,7 +525,7 @@ export default {
     async cancelOrder() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/orders/${this.orderId}/cancel`, {
+        const response = await this.$fetch(`/api/orders/${this.orderId}/cancel`, {
           method: 'POST',  
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -574,7 +574,7 @@ export default {
         
         this.isSubmittingReport = true;
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/orders/${this.orderId}/report`, {
+        const response = await this.$fetch(`/api/orders/${this.orderId}/report`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -623,7 +623,7 @@ export default {
         
         this.isSubmittingReview = true;
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/orders/${this.orderId}/review`, {
+        const response = await this.$fetch(`/api/orders/${this.orderId}/review`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -664,7 +664,7 @@ export default {
         
         this.isSubmittingReview = true;
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/orders/${this.orderId}/review`, {
+        const response = await this.$fetch(`/api/orders/${this.orderId}/review`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1440,3 +1440,4 @@ textarea.form-input {
   }
 }
 </style>
+

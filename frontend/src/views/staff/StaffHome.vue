@@ -661,7 +661,7 @@ export default {
             try {
                 this.isLoading = true;
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/staff/orders/${orderId}/accept`, {
+                const response = await this.$fetch(`/api/staff/orders/${orderId}/accept`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -686,7 +686,7 @@ export default {
             try {
                 this.isLoading = true;
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/staff/orders', {
+                const response = await this.$fetch('/api/staff/orders', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -716,7 +716,7 @@ export default {
             try {
                 this.isLoading = true;
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/staff/orders/${order.order_id}`, {
+                const response = await this.$fetch(`/api/staff/orders/${order.order_id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -1589,3 +1589,4 @@ tfoot tr td {
     }
 }
 </style>
+

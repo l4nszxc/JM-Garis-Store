@@ -155,7 +155,7 @@ export default {
     async fetchUsers() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/users', {
+        const response = await this.$fetch('/api/admin/users', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -433,3 +433,4 @@ tbody tr:hover {
   font-size: 1rem;
 }
 </style>
+

@@ -329,7 +329,7 @@ export default {
 
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/orders/${this.selectedOrder.order_id}/cancel`, {
+                const response = await this.$fetch(`/api/orders/${this.selectedOrder.order_id}/cancel`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -351,7 +351,7 @@ export default {
         async fetchOrders() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/orders/user', {
+                const response = await this.$fetch('/api/orders/user', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -995,3 +995,4 @@ export default {
     }
 }
 </style>
+

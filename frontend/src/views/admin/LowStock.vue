@@ -241,7 +241,7 @@ export default {
           search: this.searchQuery
         });
         
-        const response = await fetch(`http://localhost:7904/api/admin/download-low-stock?${params}`, {
+        const response = await this.$fetch(`/api/admin/download-low-stock?${params}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -319,14 +319,14 @@ export default {
         let endpoint, payload;
         
         if (this.itemToUpdate.type === 'choice') {
-          endpoint = `http://localhost:7904/api/products/choices/${this.itemToUpdate.choice_id}`;
+          endpoint = `/api/products/choices/${this.itemToUpdate.choice_id}`;
           payload = { 
             stock: parseInt(this.editingStock),
             price: this.itemToUpdate.price,
             name: this.itemToUpdate.choice_name
           };
         } else {
-          endpoint = `http://localhost:7904/api/products/${this.itemToUpdate.id}`;
+          endpoint = `/api/products/${this.itemToUpdate.id}`;
           payload = { 
             stock_quantity: parseInt(this.editingStock),
             price: this.itemToUpdate.price,
@@ -389,7 +389,7 @@ export default {
     async fetchLowStockItems() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/low-stock', {
+        const response = await this.$fetch('/api/admin/low-stock', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -961,3 +961,4 @@ tr:hover {
   }
 }
 </style>
+

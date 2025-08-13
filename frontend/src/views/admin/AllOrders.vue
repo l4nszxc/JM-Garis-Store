@@ -935,7 +935,7 @@ export default {
                 const token = localStorage.getItem('token');
                 const amountToPay = this.getAmountToPay(this.selectedOrder);
                 
-                const response = await fetch(`http://localhost:7904/api/admin/orders/${this.selectedOrder.order_id}/pay`, {
+                const response = await this.$fetch(`/api/admin/orders/${this.selectedOrder.order_id}/pay`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1027,7 +1027,7 @@ export default {
             try {
                 // Fetch receipt settings
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/admin/receipt-settings', {
+                const response = await this.$fetch('/api/admin/receipt-settings', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -1353,7 +1353,7 @@ export default {
         async fetchOrders() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/admin/orders', {
+                const response = await this.$fetch('/api/admin/orders', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -1369,7 +1369,7 @@ export default {
         async viewOrderDetails(order) {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/admin/orders/${order.order_id}`, {
+                const response = await this.$fetch(`/api/admin/orders/${order.order_id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -1400,7 +1400,7 @@ export default {
         async fetchRewardsSettings() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/admin/rewards/settings', {
+                const response = await this.$fetch('/api/admin/rewards/settings', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -1428,7 +1428,7 @@ export default {
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/admin/walk-in/lookup-user/${this.customerUserId}`, {
+                const response = await this.$fetch(`/api/admin/walk-in/lookup-user/${this.customerUserId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -1493,7 +1493,7 @@ export default {
                 console.log('Processing user ID:', userId);
                 
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/admin/walk-in/lookup-user/${userId}`, {
+                const response = await this.$fetch(`/api/admin/walk-in/lookup-user/${userId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -1681,7 +1681,7 @@ export default {
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/admin/walk-in/process-rewards', {
+                const response = await this.$fetch('/api/admin/walk-in/process-rewards', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -3477,3 +3477,4 @@ tfoot tr td {
     }
 }
 </style>
+

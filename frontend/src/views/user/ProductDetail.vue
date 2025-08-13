@@ -491,7 +491,7 @@ export default {
           return;
         }
 
-        const response = await fetch('http://localhost:7904/api/users/getUsername', {
+        const response = await this.$fetch('/api/users/getUsername', {
           headers: {
             'Authorization': `Bearer ${token}`
           },
@@ -514,7 +514,7 @@ export default {
             
             console.log(`Fetching product details for ID: ${productId}`); // Add logging
             
-            const response = await fetch(`http://localhost:7904/api/products/${productId}`, {
+            const response = await this.$fetch(`/api/products/${productId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -560,7 +560,7 @@ export default {
     async fetchProductRating(productId) {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:7904/api/products/${productId}/rating`, {
+            const response = await this.$fetch(`/api/products/${productId}/rating`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -588,7 +588,7 @@ export default {
     async fetchProductReviews(productId) {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:7904/api/products/${productId}/reviews`, {
+            const response = await this.$fetch(`/api/products/${productId}/reviews`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -609,7 +609,7 @@ export default {
     async fetchSimilarProducts(category, currentProductId) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/products/category/${category}`, {
+        const response = await this.$fetch(`/api/products/category/${category}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -650,7 +650,7 @@ export default {
           return;
         }
         
-        const response = await fetch('http://localhost:7904/api/cart', {
+        const response = await this.$fetch('/api/cart', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -697,7 +697,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/products/${this.product.products_id}/report`, {
+        const response = await this.$fetch(`/api/products/${this.product.products_id}/report`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1523,3 +1523,4 @@ export default {
   }
 }
 </style>
+

@@ -362,7 +362,7 @@ export default {
 
                 this.isChangingPassword = true;
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/users/change-password', {
+                const response = await this.$fetch('/api/users/change-password', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -403,7 +403,7 @@ export default {
 
                 this.isAddingAdmin = true;
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/admin/add-admin', {
+                const response = await this.$fetch('/api/admin/add-admin', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -812,3 +812,4 @@ export default {
     }
 }
 </style>
+

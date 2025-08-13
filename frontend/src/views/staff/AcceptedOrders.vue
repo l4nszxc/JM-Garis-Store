@@ -674,7 +674,7 @@ export default {
         async fetchAcceptedOrders() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/staff/orders/accepted', {
+                const response = await this.$fetch('/api/staff/orders/accepted', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -695,7 +695,7 @@ export default {
         async viewOrderDetails(order) {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/staff/orders/${order.order_id}`, {
+                const response = await this.$fetch(`/api/staff/orders/${order.order_id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -716,7 +716,7 @@ export default {
         async updateOrderStatus(orderId, newStatus) {
             try {
                 const token = localStorage.getItem('token')
-                const response = await fetch(`http://localhost:7904/api/staff/orders/${orderId}/status`, {
+                const response = await this.$fetch(`/api/staff/orders/${orderId}/status`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1589,3 +1589,4 @@ input[type="checkbox"] {
     }
 }
 </style>
+

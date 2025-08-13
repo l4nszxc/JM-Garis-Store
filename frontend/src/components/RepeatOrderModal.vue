@@ -91,7 +91,7 @@ export default {
       this.loading = true;
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/orders/${this.orderId}/repeat`, {
+        const response = await fetch(`/api/orders/${this.orderId}/repeat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

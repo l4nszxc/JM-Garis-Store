@@ -345,9 +345,9 @@ export default {
       if (imagePath.startsWith('http')) {
         return imagePath;
       } else if (imagePath.startsWith('/uploads/')) {
-        return `http://localhost:7904${imagePath}`;
+        return `${imagePath}`;
       } else if (imagePath.startsWith('uploads/')) {
-        return `http://localhost:7904/${imagePath}`;
+        return `/${imagePath}`;
       }
       return imagePath;
     },
@@ -383,7 +383,7 @@ export default {
           timeFilter: this.timeFilter
         });
         
-        const response = await fetch(`http://localhost:7904/api/staff/analytics/stats?${params}`, {
+        const response = await this.$fetch(`/api/staff/analytics/stats?${params}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -412,7 +412,7 @@ export default {
           period: this.customersPeriod
         });
         
-        const response = await fetch(`http://localhost:7904/api/staff/analytics/top-customers?${params}`, {
+        const response = await this.$fetch(`/api/staff/analytics/top-customers?${params}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -432,7 +432,7 @@ export default {
       try {
         const token = localStorage.getItem('token');
         
-        const response = await fetch('http://localhost:7904/api/staff/analytics/insights', {
+        const response = await this.$fetch('/api/staff/analytics/insights', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -1040,3 +1040,5 @@ export default {
   }
 }
 </style>
+
+

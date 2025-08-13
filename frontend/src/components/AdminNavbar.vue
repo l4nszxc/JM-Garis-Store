@@ -197,7 +197,7 @@ export default {
         const token = localStorage.getItem('token');
         if (!token) return;
         
-        const response = await fetch('http://localhost:7904/api/admin/low-stock', {
+        const response = await fetch('/api/admin/low-stock', {
           headers: {
             'Authorization': `Bearer ${token}`
           }

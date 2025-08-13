@@ -619,7 +619,7 @@ export default {
           queryParams += `&quarter=${this.selectedQuarter}`;
         }
         
-        const response = await fetch(`http://localhost:7904/api/admin/forecasts?${queryParams}`, {
+        const response = await this.$fetch(`/api/admin/forecasts?${queryParams}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -1716,3 +1716,4 @@ export default {
   }
 }
 </style>
+

@@ -709,7 +709,7 @@ export default {
     async fetchRewardsSettings() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/rewards/settings', {
+        const response = await this.$fetch('/api/admin/rewards/settings', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -724,7 +724,7 @@ export default {
     async fetchRewardTiers() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/rewards/tiers', {
+        const response = await this.$fetch('/api/admin/rewards/tiers', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -739,7 +739,7 @@ export default {
     async fetchLoyaltyTiers() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/loyalty/tiers', {
+        const response = await this.$fetch('/api/admin/loyalty/tiers', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -754,7 +754,7 @@ export default {
     async fetchRewardStatistics() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/rewards/statistics', {
+        const response = await this.$fetch('/api/admin/rewards/statistics', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -769,7 +769,7 @@ export default {
     async fetchLoyaltyStatistics() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/loyalty/statistics', {
+        const response = await this.$fetch('/api/admin/loyalty/statistics', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -834,7 +834,7 @@ export default {
         }
 
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/rewards/settings', {
+        const response = await this.$fetch('/api/admin/rewards/settings', {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -893,8 +893,8 @@ export default {
         
         const token = localStorage.getItem('token');
         const url = this.editingReward 
-          ? `http://localhost:7904/api/admin/rewards/tiers/${this.editingReward.id}`
-          : 'http://localhost:7904/api/admin/rewards/tiers';
+          ? `/api/admin/rewards/tiers/${this.editingReward.id}`
+          : '/api/admin/rewards/tiers';
         
         const method = this.editingReward ? 'PUT' : 'POST';
         
@@ -963,8 +963,8 @@ export default {
         
         const token = localStorage.getItem('token');
         const url = this.editingLoyalty 
-          ? `http://localhost:7904/api/admin/loyalty/tiers/${this.editingLoyalty.id}`
-          : 'http://localhost:7904/api/admin/loyalty/tiers';
+          ? `/api/admin/loyalty/tiers/${this.editingLoyalty.id}`
+          : '/api/admin/loyalty/tiers';
         
         const method = this.editingLoyalty ? 'PUT' : 'POST';
         
@@ -1015,7 +1015,7 @@ export default {
         const token = localStorage.getItem('token');
         const endpoint = this.deleteType === 'reward tier' ? 'rewards' : 'loyalty';
         
-        const response = await fetch(`http://localhost:7904/api/admin/${endpoint}/tiers/${this.deleteId}`, {
+        const response = await this.$fetch(`/api/admin/${endpoint}/tiers/${this.deleteId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -1797,3 +1797,4 @@ export default {
   }
 }
 </style>
+

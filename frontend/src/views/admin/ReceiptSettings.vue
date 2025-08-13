@@ -259,7 +259,7 @@ export default {
         this.errorMessage = '';
         
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/receipt-settings', {
+        const response = await this.$fetch('/api/admin/receipt-settings', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -302,7 +302,7 @@ export default {
     async fetchSettings() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/receipt-settings', {
+        const response = await this.$fetch('/api/admin/receipt-settings', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -721,3 +721,4 @@ export default {
   }
 }
 </style>
+

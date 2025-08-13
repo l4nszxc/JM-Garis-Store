@@ -227,7 +227,7 @@
       async handleEditSubmit() {
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(`http://localhost:7904/api/admin/staff/${this.selectedStaff.user_id}`, {
+          const response = await this.$fetch(`/api/admin/staff/${this.selectedStaff.user_id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -255,7 +255,7 @@
       async confirmDelete() {
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(`http://localhost:7904/api/admin/staff/${this.selectedStaff.user_id}`, {
+          const response = await this.$fetch(`/api/admin/staff/${this.selectedStaff.user_id}`, {
             method: 'DELETE',
             headers: {
               'Authorization': `Bearer ${token}`
@@ -275,7 +275,7 @@
         async fetchStaff() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/admin/staff', {
+                const response = await this.$fetch('/api/admin/staff', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -617,3 +617,4 @@ td {
     }
   }
   </style>
+

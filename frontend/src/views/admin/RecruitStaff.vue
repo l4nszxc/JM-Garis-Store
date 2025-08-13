@@ -262,7 +262,7 @@ export default {
 
                 this.isSubmitting = true;
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/admin/recruit-staff', {
+                const response = await this.$fetch('/api/admin/recruit-staff', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -663,3 +663,4 @@ export default {
     }
 }
 </style>
+

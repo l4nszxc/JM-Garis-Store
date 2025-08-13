@@ -315,7 +315,7 @@ export default {
         async fetchProfile() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/users/profile', {
+                const response = await this.$fetch('/api/users/profile', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -372,7 +372,7 @@ export default {
                 }
 
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/users/profile', {
+                const response = await this.$fetch('/api/users/profile', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -408,7 +408,7 @@ export default {
 
                 this.isChangingPassword = true;
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/users/change-password', {
+                const response = await this.$fetch('/api/users/change-password', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -878,3 +878,4 @@ export default {
     }
 }
 </style>
+

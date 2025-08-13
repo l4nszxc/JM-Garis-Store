@@ -572,7 +572,7 @@ export default {
                     return;
                 }
                 
-                const response = await fetch(`http://localhost:7904/api/products/choices/${this.choiceToDelete.choice_id}`, {
+                const response = await this.$fetch(`/api/products/choices/${this.choiceToDelete.choice_id}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -638,7 +638,7 @@ export default {
         async confirmDelete() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/products/${this.productToDelete.products_id}`, {
+                const response = await this.$fetch(`/api/products/${this.productToDelete.products_id}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -673,7 +673,7 @@ export default {
                     return;
                 }
                 
-                const response = await fetch('http://localhost:7904/api/products', {
+                const response = await this.$fetch('/api/products', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -804,7 +804,7 @@ export default {
                     });
                 }
 
-                const response = await fetch(`http://localhost:7904/api/products/${this.editingProduct.products_id}`, {
+                const response = await this.$fetch(`/api/products/${this.editingProduct.products_id}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -848,7 +848,7 @@ export default {
                     console.log('Adding choice image to form:', this.newChoiceImage.name);
                 }
 
-                const response = await fetch(`http://localhost:7904/api/products/choices/${this.editingChoice.choice_id}`, {
+                const response = await this.$fetch(`/api/products/choices/${this.editingChoice.choice_id}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -1686,3 +1686,4 @@ input:disabled {
     font-size: 1.1rem;
 }
 </style>
+

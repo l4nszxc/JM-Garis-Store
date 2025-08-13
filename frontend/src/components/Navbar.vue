@@ -221,7 +221,7 @@ export default {
     async fetchActiveOrders() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/orders/user', {
+        const response = await fetch('/api/orders/user', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -239,7 +239,7 @@ export default {
     async fetchActiveOrdersOnly() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/orders/user', {
+        const response = await fetch('/api/orders/user', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -257,7 +257,7 @@ export default {
     async checkForNewNotifications() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/orders/user', {
+        const response = await fetch('/api/orders/user', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -308,7 +308,7 @@ export default {
     async fetchCart() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/cart', {
+        const response = await fetch('/api/cart', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -348,7 +348,7 @@ export default {
     async fetchProfilePicture() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/users/profile', {
+        const response = await fetch('/api/users/profile', {
           headers: {
             'Authorization': `Bearer ${token}`
           }

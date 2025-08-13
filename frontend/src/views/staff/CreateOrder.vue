@@ -364,7 +364,7 @@
             async fetchProducts() {
                 try {
                     const token = localStorage.getItem('token');
-                    const response = await fetch('http://localhost:7904/api/products', {
+                    const response = await this.$fetch('/api/products', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -377,7 +377,7 @@
                         // Check if product has choices
                         try {
                         const choicesResponse = await fetch(
-                            `http://localhost:7904/api/products/${product.products_id}/has-choices`, 
+                            `/api/products/${product.products_id}/has-choices`, 
                             {
                             headers: { 'Authorization': `Bearer ${token}` }
                             }
@@ -417,7 +417,7 @@
       async fetchProductChoices(productId) {
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(`http://localhost:7904/api/products/${productId}/choices`, {
+          const response = await this.$fetch(`/api/products/${productId}/choices`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -523,7 +523,7 @@
             isPhysicalOrder: true
           };
           
-          const response = await fetch('http://localhost:7904/api/staff/orders/create', {
+          const response = await this.$fetch('/api/staff/orders/create', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1638,3 +1638,4 @@
   background: #a8a8a8;
 }
 </style>
+

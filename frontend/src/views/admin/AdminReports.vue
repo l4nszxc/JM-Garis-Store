@@ -430,7 +430,7 @@ export default {
     async fetchOrderReports() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/order-reports', {
+        const response = await this.$fetch('/api/admin/order-reports', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -447,7 +447,7 @@ export default {
     async fetchProductReports() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/product-reports', {
+        const response = await this.$fetch('/api/admin/product-reports', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -550,7 +550,7 @@ export default {
       // Fetch order details
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/admin/orders/${report.order_id}`, {
+        const response = await this.$fetch(`/api/admin/orders/${report.order_id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -593,7 +593,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/admin/order-reports/${this.selectedReport.id}`, {
+        const response = await this.$fetch(`/api/admin/order-reports/${this.selectedReport.id}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -636,7 +636,7 @@ export default {
       
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:7904/api/admin/product-reports/${this.selectedReport.id}`, {
+        const response = await this.$fetch(`/api/admin/product-reports/${this.selectedReport.id}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1371,3 +1371,4 @@ h1 {
   }
 }
 </style>
+
