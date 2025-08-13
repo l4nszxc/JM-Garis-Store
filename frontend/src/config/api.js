@@ -10,9 +10,9 @@ const getApiBaseUrl = () => {
     return process.env.VUE_APP_API_BASE_URL;
   }
   
-  // Fallback to the current production backend URL
-  const currentBackendUrl = 'https://backend-a21vvhb4l-l4nszxcs-projects.vercel.app';
-  console.log('Using fallback API URL:', currentBackendUrl);
+  // Updated production backend URL (Render)
+  const currentBackendUrl = 'https://jm-garis-backend.onrender.com';
+  console.log('Using production API URL:', currentBackendUrl);
   return currentBackendUrl;
 };
 
