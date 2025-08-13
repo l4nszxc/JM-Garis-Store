@@ -76,6 +76,8 @@
 </template>
   
 <script>
+import { apiPost } from '@/config/api'
+
 export default {
     name: 'Login',
     data() {
@@ -93,14 +95,7 @@ export default {
         
       async handleLogin() {
         try {
-            const response = await fetch('http://localhost:7904/api/users/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include',
-                body: JSON.stringify(this.formData)
-            });
+            const response = await apiPost('/api/users/login', this.formData);
 
             const data = await response.json();
 
@@ -160,13 +155,7 @@ export default {
 
     async resendVerification() {
         try {
-            const response = await fetch('http://localhost:7904/api/users/resend-otp', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email: this.unverifiedEmail })
-            });
+            const response = await apiPost('/api/users/resend-otp', { email: this.unverifiedEmail });
 
             const data = await response.json();
 

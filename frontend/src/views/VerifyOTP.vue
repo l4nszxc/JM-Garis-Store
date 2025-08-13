@@ -22,6 +22,8 @@
 </template>
 
 <script>
+import { apiPost } from '@/config/api'
+
 export default {
     name: 'VerifyOTP',
     data() {
@@ -43,16 +45,10 @@ export default {
     methods: {
         async handleVerify() {
             try {
-                const response = await fetch('http://localhost:7904/api/users/verify-otp', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
+                const response = await apiPost('/api/users/verify-otp', {
                         email: this.email,
                         otp: this.otp
-                    })
-                });
+                    });
 
                 const data = await response.json();
 
@@ -64,17 +60,10 @@ export default {
 
                 if (this.fromLogin) {
                     // If came from login, attempt to log in automatically
-                    const loginResponse = await fetch('http://localhost:7904/api/users/login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        credentials: 'include',
-                        body: JSON.stringify({
+                    const loginResponse = await apiPost('/api/users/login', {
                             email: this.email,
                             password: localStorage.getItem('tempPassword') // Get stored password
-                        })
-                    });
+                        });
 
                     const loginData = await loginResponse.json();
 

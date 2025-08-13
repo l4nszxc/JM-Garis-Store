@@ -275,6 +275,8 @@
 </template>
 
 <script>
+import { apiPost } from '@/config/api'
+
 export default {
   name: 'Register',
   data() {
@@ -396,13 +398,7 @@ export default {
         if (!registrationData.civilStatus) delete registrationData.civilStatus;
         if (!registrationData.middlename) delete registrationData.middlename;
 
-        const response = await fetch('http://localhost:7904/api/users/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(registrationData)
-        });
+        const response = await apiPost('/api/users/register', registrationData);
 
         const data = await response.json();
 
