@@ -24,6 +24,7 @@ const allowedOrigins = [
     'https://frontend-1bmz2c9lr-l4nszxcs-projects.vercel.app',
     'https://frontend-kxmpt26cd-l4nszxcs-projects.vercel.app',
     'https://frontend-oyxci34dt-l4nszxcs-projects.vercel.app',
+    'https://frontend-jatiu7u2v-l4nszxcs-projects.vercel.app',
     'https://jm-garis-frontend.vercel.app' // backup domain
 ];
 
