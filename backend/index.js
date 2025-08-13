@@ -28,13 +28,15 @@ const allowedOrigins = [
 // Add debugging
 console.log('🔧 CORS Origins configured:', allowedOrigins);
 
+// Temporarily allow all Vercel domains for debugging
 app.use(cors({
     origin: function (origin, callback) {
         console.log('🌐 CORS Request from origin:', origin);
         // Allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
         
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        // Temporarily allow all vercel.app domains
+        if (origin.includes('vercel.app') || allowedOrigins.indexOf(origin) !== -1) {
             console.log('✅ CORS: Origin allowed');
             callback(null, true);
         } else {
