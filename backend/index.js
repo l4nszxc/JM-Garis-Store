@@ -42,6 +42,24 @@ app.use(session({
     }
 }));
 
+// Health check and root route
+app.get('/', (req, res) => {
+    res.json({
+        message: 'JM-Garis Backend API is running!',
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
+
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'OK',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes); 
