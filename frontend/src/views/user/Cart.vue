@@ -246,6 +246,8 @@ import ViewOrdersModal from '../../components/ViewOrdersModal.vue';
 import ShareCartModal from '../../components/ShareCartModal.vue'
 import ConfirmationModal from '../../components/ConfirmationModal.vue';
 
+import { apiPost, apiGet, apiDelete, apiPut, replaceLocalhostUrl } from '@/config/api'
+
 export default {
     name: 'Cart',
     components: {

@@ -138,6 +138,8 @@
 import Navbar from '../../components/Navbar.vue'
 import LogoutModal from '../../components/LogoutModal.vue'
   
+import { apiPost, apiGet, replaceLocalhostUrl } from '@/config/api'
+
 export default {
   name: 'Home',
   components: {
@@ -184,13 +186,10 @@ export default {
     async handleLogout() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/users/logout', {
-          method: 'POST',
+        const response = await apiPost('/api/users/logout', {}, {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include'
+          }
         });
 
         if (response.ok) {

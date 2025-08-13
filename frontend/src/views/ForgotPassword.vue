@@ -211,6 +211,8 @@
 </template>
 
 <script>
+import { apiPost } from '@/config/api'
+
 export default {
     name: 'ForgotPassword',
     data() {
@@ -294,11 +296,7 @@ export default {
         async handleEmailSubmit() {
             try {
                 this.error = '';
-                const response = await fetch('http://localhost:7904/api/users/forgot-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: this.email })
-                });
+                const response = await apiPost('/api/users/forgot-password', { email: this.email });
 
                 const data = await response.json();
 
@@ -315,14 +313,10 @@ export default {
         async handleOTPSubmit() {
             try {
                 this.error = '';
-                const response = await fetch('http://localhost:7904/api/users/verify-password-reset', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
+                const response = await apiPost('/api/users/verify-password-reset', { 
                         email: this.email,
                         otp: this.otp 
-                    })
-                });
+                    });
 
                 const data = await response.json();
 
@@ -343,15 +337,10 @@ export default {
                 if (!this.isPasswordValid) {
                     throw new Error('Please ensure all password requirements are met');
                 }
-
-                const response = await fetch('http://localhost:7904/api/users/reset-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
+                const response = await apiPost('/api/users/reset-password', {
                         email: this.email,
                         password: this.password
-                    })
-                });
+                    });
 
                 const data = await response.json();
 
@@ -374,11 +363,7 @@ export default {
                 this.error = '';
                 this.success = '';
                 
-                const response = await fetch('http://localhost:7904/api/users/forgot-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: this.email })
-                });
+                const response = await apiPost('/api/users/forgot-password', { email: this.email });
 
                 const data = await response.json();
 

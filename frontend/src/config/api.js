@@ -59,4 +59,28 @@ export const apiPost = (endpoint, data, options = {}) => apiCall(endpoint, { met
 export const apiPut = (endpoint, data, options = {}) => apiCall(endpoint, { method: 'PUT', body: JSON.stringify(data), ...options });
 export const apiDelete = (endpoint, options = {}) => apiCall(endpoint, { method: 'DELETE', ...options });
 
+// Specialized API methods
+export const apiUpload = (endpoint, formData, options = {}) => {
+  const uploadOptions = {
+    ...options,
+    headers: {
+      // Don't set Content-Type for FormData, let browser set it
+      ...options.headers,
+    },
+  };
+  // Remove Content-Type for file uploads
+  if (uploadOptions.headers['Content-Type']) {
+    delete uploadOptions.headers['Content-Type'];
+  }
+  return apiCall(endpoint, { method: 'POST', body: formData, ...uploadOptions });
+};
+
+// Common URL patterns - helps replace localhost URLs quickly
+export const replaceLocalhostUrl = (originalUrl) => {
+  if (originalUrl.includes('localhost:7904')) {
+    return originalUrl.replace('http://localhost:7904', API_BASE_URL);
+  }
+  return originalUrl;
+};
+
 export default API_BASE_URL;

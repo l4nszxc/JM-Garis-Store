@@ -170,6 +170,8 @@ import Navbar from '../../components/Navbar.vue';
 import LogoutModal from '../../components/LogoutModal.vue';
 import QuantityModal from '../../components/QuantityModal.vue';
 
+import { apiPost, apiGet, apiDelete, replaceLocalhostUrl } from '@/config/api'
+
 export default {
     name: 'Products',
     components: {
