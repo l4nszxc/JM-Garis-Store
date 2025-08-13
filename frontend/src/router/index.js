@@ -18,7 +18,7 @@ import Rewards from '../views/user/Rewards.vue'
 import SharedCart from '../views/user/SharedCart.vue'
 import RewardsManagement from '../views/admin/RewardsManagement.vue'
 import CreateOrder from '../views/staff/CreateOrder.vue'
-import Notifications from'../views/user/Notifications.vue'
+import Notifications from '../views/user/Notifications.vue'
 import SalesForecast from '../views/admin/SalesForecast.vue'
 import AdminReceiptSettings from '../views/admin/ReceiptSettings.vue'
 import ProductDetail from '../views/user/ProductDetail.vue';

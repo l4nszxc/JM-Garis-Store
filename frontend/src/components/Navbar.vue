@@ -105,6 +105,10 @@
             <i class="fas fa-user"></i>
             <span>Profile</span>
           </router-link>
+          <router-link to="/notifications" class="dropdown-item" @click="closeDropdowns">
+            <i class="fas fa-bell"></i>
+            <span>Notifications</span>
+          </router-link>
           <router-link to="/qr-code" class="dropdown-item" @click="closeDropdowns">
             <i class="fas fa-qrcode"></i>
             <span>QR Code</span>
