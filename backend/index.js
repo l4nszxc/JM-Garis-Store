@@ -22,6 +22,7 @@ const allowedOrigins = [
     'https://frontend-beta-coral.vercel.app',
     'https://frontend-mj39pf9dy-l4nszxcs-projects.vercel.app',
     'https://frontend-1bmz2c9lr-l4nszxcs-projects.vercel.app',
+    'https://frontend-kxmpt26cd-l4nszxcs-projects.vercel.app',
     'https://jm-garis-frontend.vercel.app' // backup domain
 ];
 
