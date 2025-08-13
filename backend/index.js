@@ -18,7 +18,9 @@ const app = express();
 // Update CORS configuration to use environment variables
 const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:8080',
-    'http://localhost:8081'
+    'http://localhost:8081',
+    'https://frontend-beta-coral.vercel.app',
+    'https://jm-garis-frontend.vercel.app' // backup domain
 ];
 
 app.use(cors({
