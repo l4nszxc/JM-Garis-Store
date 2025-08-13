@@ -20,6 +20,7 @@ const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:8080',
     'http://localhost:8081',
     'https://frontend-beta-coral.vercel.app',
+    'https://frontend-mj39pf9dy-l4nszxcs-projects.vercel.app',
     'https://jm-garis-frontend.vercel.app' // backup domain
 ];
 
