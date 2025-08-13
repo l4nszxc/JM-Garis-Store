@@ -212,11 +212,10 @@ export default {
           return;
         }
 
-        const response = await fetch('http://localhost:7904/api/users/getUsername', {
+        const response = await this.$fetch('/api/users/getUsername', {
           headers: {
             'Authorization': `Bearer ${token}`
-          },
-          credentials: 'include'
+          }
         });
 
         if (response.ok) {

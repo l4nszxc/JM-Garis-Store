@@ -345,7 +345,7 @@ export default {
         async confirmStopSharing() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/shared-cart/stop-sharing', {
+                const response = await this.$fetch('/api/shared-cart/stop-sharing', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -372,7 +372,7 @@ export default {
         async confirmLeaveSharing() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/shared-cart/leave-sharing', {
+                const response = await this.$fetch('/api/shared-cart/leave-sharing', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -402,7 +402,7 @@ export default {
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/users/username/${this.syncStatus.partnerId}`, {
+                const response = await this.$fetch(`/api/users/username/${this.syncStatus.partnerId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -425,7 +425,7 @@ export default {
                 const token = localStorage.getItem('token');
                 if (!token) return;
                 
-                const response = await fetch('http://localhost:7904/api/shared-cart/active/status', {
+                const response = await this.$fetch('/api/shared-cart/active/status', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -464,7 +464,7 @@ export default {
                     return;
                 }
 
-                const response = await fetch('http://localhost:7904/api/rewards/available-discounts', {
+                const response = await this.$fetch('/api/rewards/available-discounts', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -530,7 +530,7 @@ export default {
                 console.log('Cart handlePlaceOrder - Request body:', requestBody);
                 console.log('Cart handlePlaceOrder - Packaging preference:', packagingPreference);
 
-                const response = await fetch('http://localhost:7904/api/orders', {
+                const response = await this.$fetch('/api/orders', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -599,7 +599,7 @@ export default {
         async handleLogout() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/users/logout', {
+                const response = await this.$fetch('/api/users/logout', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -630,11 +630,10 @@ export default {
                 }
 
                 // Fetch username
-                const usernameResponse = await fetch('http://localhost:7904/api/users/getUsername', {
+                const usernameResponse = await this.$fetch('/api/users/getUsername', {
                     headers: {
                         'Authorization': `Bearer ${token}`
-                    },
-                    credentials: 'include'
+                    }
                 });
 
                 if (usernameResponse.ok) {
@@ -643,11 +642,10 @@ export default {
                 }
 
                 // Fetch user profile for address
-                const profileResponse = await fetch('http://localhost:7904/api/users/profile', {
+                const profileResponse = await this.$fetch('/api/users/profile', {
                     headers: {
                         'Authorization': `Bearer ${token}`
-                    },
-                    credentials: 'include'
+                    }
                 });
 
                 if (profileResponse.ok) {
@@ -668,7 +666,7 @@ export default {
                     return;
                 }
 
-                const response = await fetch('http://localhost:7904/api/cart', {
+                const response = await this.$fetch('/api/cart', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -690,7 +688,7 @@ export default {
         async removeFromCart(itemId) {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/cart/${itemId}`, {
+                const response = await this.$fetch(`/api/cart/${itemId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -714,7 +712,7 @@ export default {
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/cart/${itemId}`, {
+                const response = await this.$fetch(`/api/cart/${itemId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

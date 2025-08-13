@@ -317,10 +317,9 @@ export default {
                     price = data.choice.price;
                 }
                 
-                const response = await fetch('http://localhost:7904/api/cart', {
+                const response = await this.$fetch('/api/cart', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(payload)
@@ -364,7 +363,7 @@ export default {
         async fetchCart() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/cart', {
+                const response = await this.$fetch('/api/cart', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -381,13 +380,11 @@ export default {
         async handleLogout() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/users/logout', {
+                const response = await this.$fetch('/api/users/logout', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include'
+                    }
                 });
 
                 if (response.ok) {
@@ -410,11 +407,10 @@ export default {
                     return;
                 }
 
-                const response = await fetch('http://localhost:7904/api/users/getUsername', {
+                const response = await this.$fetch('/api/users/getUsername', {
                     headers: {
                         'Authorization': `Bearer ${token}`
-                    },
-                    credentials: 'include'
+                    }
                 });
 
                 if (response.ok) {
@@ -429,15 +425,14 @@ export default {
             this.loading = true;
             try {
                 const token = localStorage.getItem('token');
-                let url = 'http://localhost:7904/api/products';
+                let url = '/api/products';
                 if (this.selectedCategory) {
-                    url = `http://localhost:7904/api/products/category/${this.selectedCategory}`;
+                    url = `/api/products/category/${this.selectedCategory}`;
                 }
 
-                const response = await fetch(url, {
+                const response = await this.$fetch(url, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
                     }
                 });
 
@@ -466,7 +461,7 @@ export default {
         async fetchProductRatings() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/products/ratings', {
+                const response = await this.$fetch('/api/products/ratings', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

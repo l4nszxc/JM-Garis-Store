@@ -459,7 +459,7 @@ export default {
     async handleLogout() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/users/logout', {
+        const response = await this.$fetch('/api/users/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
