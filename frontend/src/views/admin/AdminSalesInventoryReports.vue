@@ -701,7 +701,7 @@ export default {
           type: this.activeTab
         });
         
-        const response = await fetch(`http://localhost:7904/api/admin/detailed-reports?${params}`, {
+        const response = await this.$fetch(`/api/admin/detailed-reports?${params}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -935,7 +935,7 @@ export default {
     async fetchCategories() {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/categories', {
+        const response = await this.$fetch('/api/admin/categories', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -1030,7 +1030,7 @@ export default {
           type: this.activeTab
         });
         
-        const response = await fetch(`http://localhost:7904/api/admin/download-reports?${params}`, {
+        const response = await this.$fetch(`/api/admin/download-reports?${params}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -1129,7 +1129,7 @@ export default {
     async handleLogout() {
       try {
         const token = localStorage.getItem('token');
-        await fetch('http://localhost:7904/api/auth/logout', {
+        const response = await this.$fetch('/api/users/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -1137,10 +1137,17 @@ export default {
           }
         });
         
-        localStorage.removeItem('token');
-        this.$router.push('/login');
+        if (response.ok) {
+          localStorage.removeItem('token');
+          this.$router.push('/login');
+        } else {
+          throw new Error('Logout failed');
+        }
       } catch (error) {
         console.error('Logout failed:', error);
+        // Even if logout API fails, remove token and redirect
+        localStorage.removeItem('token');
+        this.$router.push('/login');
       } finally {
         this.showLogoutModal = false;
       }

@@ -282,7 +282,7 @@ export default {
         if (!token) return;
 
         // Fetch staff summary
-        const summaryResponse = await fetch(`http://localhost:7904/api/admin/staff-analytics/summary?period=${this.timeFilter}`, {
+        const summaryResponse = await this.$fetch(`/api/admin/staff-analytics/summary?period=${this.timeFilter}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -293,7 +293,7 @@ export default {
         }
 
         // Fetch staff performance data
-        const performanceResponse = await fetch(`http://localhost:7904/api/admin/staff-analytics/performance?period=${this.timeFilter}`, {
+        const performanceResponse = await this.$fetch(`/api/admin/staff-analytics/performance?period=${this.timeFilter}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -317,7 +317,7 @@ export default {
         if (!token) return;
 
         // Fetch sales chart data
-        const salesResponse = await fetch(`http://localhost:7904/api/admin/staff-analytics/sales-chart?period=${this.chartPeriod}`, {
+        const salesResponse = await this.$fetch(`/api/admin/staff-analytics/sales-chart?period=${this.chartPeriod}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -342,7 +342,7 @@ export default {
         }
 
         // Fetch orders chart data
-        const ordersResponse = await fetch(`http://localhost:7904/api/admin/staff-analytics/orders-chart?period=${this.chartPeriod}`, {
+        const ordersResponse = await this.$fetch(`/api/admin/staff-analytics/orders-chart?period=${this.chartPeriod}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -634,10 +634,26 @@ export default {
 
     async handleLogout() {
       try {
-        localStorage.removeItem('token');
-        this.$router.push('/login');
+        const token = localStorage.getItem('token');
+        const response = await this.$fetch('/api/users/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          localStorage.removeItem('token');
+          this.$router.push('/login');
+        } else {
+          throw new Error('Logout failed');
+        }
       } catch (error) {
         console.error('Logout failed:', error);
+        // Even if logout API fails, remove token and redirect
+        localStorage.removeItem('token');
+        this.$router.push('/login');
       } finally {
         this.showLogoutModal = false;
       }
