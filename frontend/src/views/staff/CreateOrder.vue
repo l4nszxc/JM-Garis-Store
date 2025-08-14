@@ -274,9 +274,11 @@
 
   <script>
   import StaffNavbar from '../../components/StaffNavbar.vue'
+  import apiMixin from '../../mixins/apiMixin.js'
   
   export default {
     name: 'CreateOrder',
+    mixins: [apiMixin],
     components: {
       StaffNavbar
     },
@@ -371,44 +373,55 @@
                     });
                     
                     if (response.ok) {
-                    const data = await response.json();
-                    // Enhance products with has_choices flag
-                    this.products = await Promise.all(data.map(async product => {
-                        // Check if product has choices
-                        try {
-                        const choicesResponse = await fetch(
-                            `/api/products/${product.products_id}/has-choices`, 
-                            {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                            }
-                        );
-                        if (choicesResponse.ok) {
-                            const { hasChoices } = await choicesResponse.json();
-                            return { ...product, has_choices: hasChoices };
+                        // Check if response is JSON
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            // Enhance products with has_choices flag
+                            this.products = await Promise.all(data.map(async product => {
+                                // Check if product has choices
+                                try {
+                                    const choicesResponse = await this.$fetch(
+                                        `/api/products/${product.products_id}/has-choices`, 
+                                        {
+                                            headers: { 'Authorization': `Bearer ${token}` }
+                                        }
+                                    );
+                                    if (choicesResponse.ok) {
+                                        const choicesContentType = choicesResponse.headers.get('content-type');
+                                        if (choicesContentType && choicesContentType.includes('application/json')) {
+                                            const { hasChoices } = await choicesResponse.json();
+                                            return { ...product, has_choices: hasChoices };
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error('Error checking product choices:', error);
+                                }
+                                return { ...product, has_choices: false };
+                            }));
+                            
+                            // Use predefined categories
+                            this.categories = [...this.predefinedCategories];
+                            
+                            // Map products to categories
+                            this.products = this.products.map(product => {
+                                // Find matching category in predefined list
+                                const categoryMatch = this.categories.find(cat => 
+                                cat.name === product.category
+                                );
+                                
+                                return {
+                                ...product,
+                                category_name: product.category || 'Uncategorized',
+                                // Use the matched category ID or null if no match
+                                category_id: categoryMatch ? categoryMatch.id : null
+                                };
+                            });
+                        } else {
+                            console.error('API returned non-JSON response:', await response.text());
                         }
-                        } catch (error) {
-                        console.error('Error checking product choices:', error);
-                        }
-                        return { ...product, has_choices: false };
-                    }));
-                    
-                    // Use predefined categories
-                    this.categories = [...this.predefinedCategories];
-                    
-                    // Map products to categories
-                    this.products = this.products.map(product => {
-                        // Find matching category in predefined list
-                        const categoryMatch = this.categories.find(cat => 
-                        cat.name === product.category
-                        );
-                        
-                        return {
-                        ...product,
-                        category_name: product.category || 'Uncategorized',
-                        // Use the matched category ID or null if no match
-                        category_id: categoryMatch ? categoryMatch.id : null
-                        };
-                    });
+                    } else {
+                        console.error('API request failed:', response.status, response.statusText);
                     }
                 } catch (error) {
                     console.error('Error fetching products:', error);
@@ -424,11 +437,18 @@
           });
           
           if (response.ok) {
-            const choices = await response.json();
-            this.selectedProduct = {
-              ...this.selectedProduct,
-              choices: choices.filter(choice => choice.stock > 0)
-            };
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const choices = await response.json();
+              this.selectedProduct = {
+                ...this.selectedProduct,
+                choices: choices.filter(choice => choice.stock > 0)
+              };
+            } else {
+              console.error('Choices API returned non-JSON response:', await response.text());
+            }
+          } else {
+            console.error('Choices API request failed:', response.status, response.statusText);
           }
         } catch (error) {
           console.error('Error fetching product choices:', error);
@@ -533,12 +553,23 @@
           });
           
           if (response.ok) {
-            const result = await response.json();
-            this.createdOrderId = result.orderId;
-            this.showOrderConfirmation = true;
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const result = await response.json();
+              this.createdOrderId = result.orderId;
+              this.showOrderConfirmation = true;
+            } else {
+              console.error('Create order API returned non-JSON response:', await response.text());
+              alert('Error creating order: Invalid response from server');
+            }
           } else {
-            const errorData = await response.json();
-            alert(`Error creating order: ${errorData.message || 'Unknown error'}`);
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await response.json();
+              alert(`Error creating order: ${errorData.message || 'Unknown error'}`);
+            } else {
+              alert(`Error creating order: ${response.status} ${response.statusText}`);
+            }
           }
         } catch (error) {
           console.error('Error creating order:', error);
@@ -586,6 +617,9 @@
           }
         } catch (error) {
           console.error('Logout failed:', error);
+          // Even if logout API fails, clear local storage and redirect
+          localStorage.removeItem('token');
+          this.$router.push('/login');
         } finally {
           this.showLogoutModal = false;
         }
