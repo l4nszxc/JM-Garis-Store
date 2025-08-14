@@ -55,13 +55,7 @@ export const apiMixin = {
       };
       
       console.log(`🌐 $fetch: ${options.method || 'GET'} ${fullUrl}`);
-      const response = await fetch(fullUrl, mergedOptions);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      return await response.json();
+      return await fetch(fullUrl, mergedOptions);
     }
   }
 }
