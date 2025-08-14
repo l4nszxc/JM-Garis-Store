@@ -274,9 +274,11 @@
 
   <script>
   import StaffNavbar from '../../components/StaffNavbar.vue'
+  import apiMixin from '../../mixins/apiMixin.js'
   
   export default {
     name: 'CreateOrder',
+    mixins: [apiMixin],
     components: {
       StaffNavbar
     },
@@ -364,28 +366,24 @@
             async fetchProducts() {
                 try {
                     const token = localStorage.getItem('token');
-                    const response = await this.$fetch('/api/products', {
+                    const data = await this.$fetch('/api/products', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                     });
                     
-                    if (response.ok) {
-                    const data = await response.json();
                     // Enhance products with has_choices flag
                     this.products = await Promise.all(data.map(async product => {
                         // Check if product has choices
                         try {
-                        const choicesResponse = await fetch(
+                        const choicesResponse = await this.$fetch(
                             `/api/products/${product.products_id}/has-choices`, 
                             {
                             headers: { 'Authorization': `Bearer ${token}` }
                             }
                         );
-                        if (choicesResponse.ok) {
-                            const { hasChoices } = await choicesResponse.json();
-                            return { ...product, has_choices: hasChoices };
-                        }
+                        const { hasChoices } = choicesResponse;
+                        return { ...product, has_choices: hasChoices };
                         } catch (error) {
                         console.error('Error checking product choices:', error);
                         }
@@ -409,27 +407,23 @@
                         category_id: categoryMatch ? categoryMatch.id : null
                         };
                     });
-                    }
                 } catch (error) {
                     console.error('Error fetching products:', error);
                 }
-                },
+            },
       async fetchProductChoices(productId) {
         try {
           const token = localStorage.getItem('token');
-          const response = await this.$fetch(`/api/products/${productId}/choices`, {
+          const choices = await this.$fetch(`/api/products/${productId}/choices`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
           });
           
-          if (response.ok) {
-            const choices = await response.json();
-            this.selectedProduct = {
-              ...this.selectedProduct,
-              choices: choices.filter(choice => choice.stock > 0)
-            };
-          }
+          this.selectedProduct = {
+            ...this.selectedProduct,
+            choices: choices.filter(choice => choice.stock > 0)
+          };
         } catch (error) {
           console.error('Error fetching product choices:', error);
         }
@@ -523,7 +517,7 @@
             isPhysicalOrder: true
           };
           
-          const response = await this.$fetch('/api/staff/orders/create', {
+          const result = await this.$fetch('/api/staff/orders/create', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -532,14 +526,8 @@
             body: JSON.stringify(orderData)
           });
           
-          if (response.ok) {
-            const result = await response.json();
-            this.createdOrderId = result.orderId;
-            this.showOrderConfirmation = true;
-          } else {
-            const errorData = await response.json();
-            alert(`Error creating order: ${errorData.message || 'Unknown error'}`);
-          }
+          this.createdOrderId = result.orderId;
+          this.showOrderConfirmation = true;
         } catch (error) {
           console.error('Error creating order:', error);
           alert('Error creating order. Please try again.');
@@ -569,7 +557,7 @@
       async handleLogout() {
         try {
           const token = localStorage.getItem('token');
-          const response = await this.$fetch('/api/users/logout', {
+          await this.$fetch('/api/users/logout', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -578,12 +566,8 @@
             credentials: 'include'
           });
   
-          if (response.ok) {
-            localStorage.removeItem('token');
-            this.$router.push('/login');
-          } else {
-            throw new Error('Logout failed');
-          }
+          localStorage.removeItem('token');
+          this.$router.push('/login');
         } catch (error) {
           console.error('Logout failed:', error);
         } finally {
