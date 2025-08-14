@@ -372,22 +372,31 @@
                     }
                     });
                     
+                    console.log('Products API response:', data);
+                    
+                    // Check if data is an array
+                    if (!Array.isArray(data)) {
+                        console.error('Expected array but received:', typeof data, data);
+                        this.products = [];
+                        return;
+                    }
+                    
                     // Enhance products with has_choices flag
                     this.products = await Promise.all(data.map(async product => {
                         // Check if product has choices
                         try {
-                        const choicesResponse = await this.$fetch(
-                            `/api/products/${product.products_id}/has-choices`, 
-                            {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                            }
-                        );
-                        const { hasChoices } = choicesResponse;
-                        return { ...product, has_choices: hasChoices };
+                            const choicesResponse = await this.$fetch(
+                                `/api/products/${product.products_id}/has-choices`, 
+                                {
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                }
+                            );
+                            const { hasChoices } = choicesResponse || { hasChoices: false };
+                            return { ...product, has_choices: hasChoices };
                         } catch (error) {
-                        console.error('Error checking product choices:', error);
+                            console.error('Error checking product choices for product:', product.products_id, error);
+                            return { ...product, has_choices: false };
                         }
-                        return { ...product, has_choices: false };
                     }));
                     
                     // Use predefined categories
