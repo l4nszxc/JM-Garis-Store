@@ -279,6 +279,7 @@
 <script>
 import StaffNavbar from '../../components/StaffNavbar.vue'
 import LogoutModal from '../../components/LogoutModal.vue'
+import API_BASE_URL from '../../config/api.js'
 
 export default {
   name: 'StaffAnalytics',
@@ -495,7 +496,7 @@ export default {
           return;
         }
 
-        const response = await fetch(`http://localhost:7904/api/staff/analytics/download?timeFilter=${this.timeFilter}`, {
+        const response = await fetch(`${API_BASE_URL}/api/staff/analytics/download?timeFilter=${this.timeFilter}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
