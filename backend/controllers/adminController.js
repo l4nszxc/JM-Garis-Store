@@ -3082,4 +3082,404 @@ exports.processWalkInRewards = async (req, res) => {
 
 // Admin order management methods
 
+// Staff Performance Analytics
+exports.getStaffPerformance = async (req, res) => {
+    try {
+        const { period = 'overall', fromDate, toDate, staffId } = req.query;
+        
+        let dateCondition = '';
+        let params = [];
+        
+        // Build date condition based on period
+        if (period === 'today') {
+            dateCondition = 'AND DATE(o.created_at) = CURDATE()';
+        } else if (period === 'week') {
+            dateCondition = 'AND YEARWEEK(o.created_at, 1) = YEARWEEK(CURDATE(), 1)';
+        } else if (period === 'month') {
+            dateCondition = 'AND YEAR(o.created_at) = YEAR(CURDATE()) AND MONTH(o.created_at) = MONTH(CURDATE())';
+        } else if (period === 'year') {
+            dateCondition = 'AND YEAR(o.created_at) = YEAR(CURDATE())';
+        } else if (period === 'custom' && fromDate && toDate) {
+            dateCondition = 'AND DATE(o.created_at) BETWEEN ? AND ?';
+            params = [fromDate, toDate];
+        }
+        
+        // Staff filter
+        let staffCondition = '';
+        if (staffId) {
+            staffCondition = 'AND u.id = ?';
+            params.push(staffId);
+        }
+        
+        const query = `
+            SELECT 
+                u.id as user_id,
+                u.username,
+                CONCAT(u.firstname, ' ', COALESCE(u.middlename, ''), ' ', u.lastname) as fullname,
+                u.email,
+                u.phone_number,
+                
+                -- Sales Metrics
+                COUNT(DISTINCT o.order_id) as total_orders,
+                COUNT(DISTINCT CASE WHEN o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.order_id END) as orders_accepted,
+                COUNT(DISTINCT CASE WHEN o.status IN ('paid', 'paid using gcash') THEN o.order_id END) as orders_completed,
+                COALESCE(SUM(CASE WHEN o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.total_amount END), 0) as total_sales,
+                COALESCE(AVG(CASE WHEN o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.total_amount END), 0) as avg_order_value,
+                
+                -- Performance Metrics
+                ROUND(
+                    (COUNT(DISTINCT CASE WHEN o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.order_id END) / 
+                     NULLIF(COUNT(DISTINCT o.order_id), 0)) * 100, 2
+                ) as acceptance_rate,
+                
+                ROUND(
+                    (COUNT(DISTINCT CASE WHEN o.status IN ('paid', 'paid using gcash') THEN o.order_id END) / 
+                     NULLIF(COUNT(DISTINCT CASE WHEN o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.order_id END), 0)) * 100, 2
+                ) as completion_rate,
+                
+                -- Time-based metrics
+                COUNT(DISTINCT CASE WHEN DATE(o.created_at) = CURDATE() THEN o.order_id END) as today_orders,
+                COALESCE(SUM(CASE WHEN DATE(o.created_at) = CURDATE() AND o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.total_amount END), 0) as today_sales,
+                
+                COUNT(DISTINCT CASE WHEN YEARWEEK(o.created_at, 1) = YEARWEEK(CURDATE(), 1) THEN o.order_id END) as week_orders,
+                COALESCE(SUM(CASE WHEN YEARWEEK(o.created_at, 1) = YEARWEEK(CURDATE(), 1) AND o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.total_amount END), 0) as week_sales,
+                
+                COUNT(DISTINCT CASE WHEN YEAR(o.created_at) = YEAR(CURDATE()) AND MONTH(o.created_at) = MONTH(CURDATE()) THEN o.order_id END) as month_orders,
+                COALESCE(SUM(CASE WHEN YEAR(o.created_at) = YEAR(CURDATE()) AND MONTH(o.created_at) = MONTH(CURDATE()) AND o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.total_amount END), 0) as month_sales,
+                
+                COUNT(DISTINCT CASE WHEN YEAR(o.created_at) = YEAR(CURDATE()) THEN o.order_id END) as year_orders,
+                COALESCE(SUM(CASE WHEN YEAR(o.created_at) = YEAR(CURDATE()) AND o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.total_amount END), 0) as year_sales
+                
+            FROM users u
+            LEFT JOIN orders o ON u.id = o.accepted_by
+            WHERE u.role = 'staff' 
+            ${dateCondition}
+            ${staffCondition}
+            GROUP BY u.id, u.username, u.firstname, u.middlename, u.lastname, u.email, u.phone_number
+            ORDER BY total_sales DESC, orders_accepted DESC
+        `;
+        
+        const [staffPerformance] = await db.execute(query, params);
+        
+        // Calculate performance scores and rankings
+        const staffWithScores = staffPerformance.map((staff, index) => {
+            // Performance score calculation (weighted)
+            const salesWeight = 0.4;
+            const ordersWeight = 0.3;
+            const acceptanceWeight = 0.2;
+            const completionWeight = 0.1;
+            
+            const maxSales = Math.max(...staffPerformance.map(s => parseFloat(s.total_sales)));
+            const maxOrders = Math.max(...staffPerformance.map(s => parseInt(s.orders_accepted)));
+            
+            const salesScore = maxSales > 0 ? (parseFloat(staff.total_sales) / maxSales) * 100 : 0;
+            const ordersScore = maxOrders > 0 ? (parseInt(staff.orders_accepted) / maxOrders) * 100 : 0;
+            const acceptanceScore = parseFloat(staff.acceptance_rate) || 0;
+            const completionScore = parseFloat(staff.completion_rate) || 0;
+            
+            const performanceScore = (
+                salesScore * salesWeight +
+                ordersScore * ordersWeight +
+                acceptanceScore * acceptanceWeight +
+                completionScore * completionWeight
+            ).toFixed(2);
+            
+            return {
+                ...staff,
+                rank: index + 1,
+                performance_score: parseFloat(performanceScore),
+                sales_score: salesScore.toFixed(2),
+                orders_score: ordersScore.toFixed(2)
+            };
+        });
+        
+        res.json({
+            period,
+            dateRange: { fromDate, toDate },
+            staffPerformance: staffWithScores,
+            summary: {
+                totalStaff: staffWithScores.length,
+                totalSales: staffWithScores.reduce((sum, staff) => sum + parseFloat(staff.total_sales), 0),
+                totalOrders: staffWithScores.reduce((sum, staff) => sum + parseInt(staff.total_orders), 0),
+                avgPerformanceScore: staffWithScores.reduce((sum, staff) => sum + staff.performance_score, 0) / staffWithScores.length || 0
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error fetching staff performance:', error);
+        res.status(500).json({ message: 'Error fetching staff performance data' });
+    }
+};
+
+exports.downloadStaffReports = async (req, res) => {
+    try {
+        const { period = 'overall', fromDate, toDate, staffId, type = 'all' } = req.query;
+        
+        // Get staff performance data using the same logic as getStaffPerformance
+        let dateCondition = '';
+        let params = [];
+        
+        // Build date condition based on period
+        if (period === 'today') {
+            dateCondition = 'AND DATE(o.created_at) = CURDATE()';
+        } else if (period === 'week') {
+            dateCondition = 'AND YEARWEEK(o.created_at, 1) = YEARWEEK(CURDATE(), 1)';
+        } else if (period === 'month') {
+            dateCondition = 'AND YEAR(o.created_at) = YEAR(CURDATE()) AND MONTH(o.created_at) = MONTH(CURDATE())';
+        } else if (period === 'year') {
+            dateCondition = 'AND YEAR(o.created_at) = YEAR(CURDATE())';
+        } else if (period === 'custom' && fromDate && toDate) {
+            dateCondition = 'AND DATE(o.created_at) BETWEEN ? AND ?';
+            params = [fromDate, toDate];
+        }
+        
+        // Staff filter
+        let staffCondition = '';
+        if (staffId) {
+            staffCondition = 'AND u.id = ?';
+            params.push(staffId);
+        }
+        
+        const query = `
+            SELECT 
+                u.id as user_id,
+                u.username,
+                CONCAT(u.firstname, ' ', COALESCE(u.middlename, ''), ' ', u.lastname) as fullname,
+                u.email,
+                u.phone_number,
+                
+                -- Sales Metrics
+                COUNT(DISTINCT o.order_id) as total_orders,
+                COUNT(DISTINCT CASE WHEN o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.order_id END) as orders_accepted,
+                COUNT(DISTINCT CASE WHEN o.status IN ('paid', 'paid using gcash') THEN o.order_id END) as orders_completed,
+                COALESCE(SUM(CASE WHEN o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.total_amount END), 0) as total_sales,
+                COALESCE(AVG(CASE WHEN o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.total_amount END), 0) as avg_order_value,
+                
+                -- Performance Metrics
+                ROUND(
+                    (COUNT(DISTINCT CASE WHEN o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.order_id END) / 
+                     NULLIF(COUNT(DISTINCT o.order_id), 0)) * 100, 2
+                ) as acceptance_rate,
+                
+                ROUND(
+                    (COUNT(DISTINCT CASE WHEN o.status IN ('paid', 'paid using gcash') THEN o.order_id END) / 
+                     NULLIF(COUNT(DISTINCT CASE WHEN o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.order_id END), 0)) * 100, 2
+                ) as completion_rate,
+                
+                -- Time-based metrics
+                COUNT(DISTINCT CASE WHEN DATE(o.created_at) = CURDATE() THEN o.order_id END) as today_orders,
+                COALESCE(SUM(CASE WHEN DATE(o.created_at) = CURDATE() AND o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.total_amount END), 0) as today_sales,
+                
+                COUNT(DISTINCT CASE WHEN YEARWEEK(o.created_at, 1) = YEARWEEK(CURDATE(), 1) THEN o.order_id END) as week_orders,
+                COALESCE(SUM(CASE WHEN YEARWEEK(o.created_at, 1) = YEARWEEK(CURDATE(), 1) AND o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.total_amount END), 0) as week_sales,
+                
+                COUNT(DISTINCT CASE WHEN YEAR(o.created_at) = YEAR(CURDATE()) AND MONTH(o.created_at) = MONTH(CURDATE()) THEN o.order_id END) as month_orders,
+                COALESCE(SUM(CASE WHEN YEAR(o.created_at) = YEAR(CURDATE()) AND MONTH(o.created_at) = MONTH(CURDATE()) AND o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.total_amount END), 0) as month_sales,
+                
+                COUNT(DISTINCT CASE WHEN YEAR(o.created_at) = YEAR(CURDATE()) THEN o.order_id END) as year_orders,
+                COALESCE(SUM(CASE WHEN YEAR(o.created_at) = YEAR(CURDATE()) AND o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup') THEN o.total_amount END), 0) as year_sales
+                
+            FROM users u
+            LEFT JOIN orders o ON u.id = o.accepted_by
+            WHERE u.role = 'staff' 
+            ${dateCondition}
+            ${staffCondition}
+            GROUP BY u.id, u.username, u.firstname, u.middlename, u.lastname, u.email, u.phone_number
+            ORDER BY total_sales DESC, orders_accepted DESC
+        `;
+        
+        const [staffPerformanceData] = await db.execute(query, params);
+        
+        // Calculate performance scores and rankings
+        const staffWithScores = staffPerformanceData.map((staff, index) => {
+            // Performance score calculation (weighted)
+            const salesWeight = 0.4;
+            const ordersWeight = 0.3;
+            const acceptanceWeight = 0.2;
+            const completionWeight = 0.1;
+            
+            const maxSales = Math.max(...staffPerformanceData.map(s => parseFloat(s.total_sales)));
+            const maxOrders = Math.max(...staffPerformanceData.map(s => parseInt(s.orders_accepted)));
+            
+            const salesScore = maxSales > 0 ? (parseFloat(staff.total_sales) / maxSales) * 100 : 0;
+            const ordersScore = maxOrders > 0 ? (parseInt(staff.orders_accepted) / maxOrders) * 100 : 0;
+            const acceptanceScore = parseFloat(staff.acceptance_rate) || 0;
+            const completionScore = parseFloat(staff.completion_rate) || 0;
+            
+            const performanceScore = (
+                salesScore * salesWeight +
+                ordersScore * ordersWeight +
+                acceptanceScore * acceptanceWeight +
+                completionScore * completionWeight
+            ).toFixed(2);
+            
+            return {
+                ...staff,
+                rank: index + 1,
+                performance_score: parseFloat(performanceScore),
+                sales_score: salesScore.toFixed(2),
+                orders_score: ordersScore.toFixed(2)
+            };
+        });
+        
+        // Create workbook
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'JM Garis Store';
+        workbook.created = new Date();
+        
+        if (type === 'all' || type === 'rankings') {
+            // Create Staff Rankings worksheet
+            const rankingsSheet = workbook.addWorksheet('Staff Rankings');
+            
+            // Set column widths
+            rankingsSheet.columns = [
+                { width: 8 },   // Rank
+                { width: 20 },  // Name
+                { width: 25 },  // Email
+                { width: 15 },  // Performance Score
+                { width: 15 },  // Total Sales
+                { width: 12 },  // Orders Accepted
+                { width: 12 },  // Sales Count
+                { width: 15 },  // Acceptance Rate
+                { width: 15 },  // Completion Rate
+                { width: 15 }   // Avg Order Value
+            ];
+            
+            // Add store header
+            rankingsSheet.mergeCells('A1:J1');
+            const titleCell = rankingsSheet.getCell('A1');
+            titleCell.value = 'JM GARIS STORE';
+            titleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
+            titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+            
+            // Add report title
+            rankingsSheet.mergeCells('A2:J2');
+            const reportTitleCell = rankingsSheet.getCell('A2');
+            reportTitleCell.value = 'STAFF PERFORMANCE RANKINGS';
+            reportTitleCell.font = { name: 'Arial', size: 14, bold: true };
+            reportTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Add period info
+            rankingsSheet.mergeCells('A3:J3');
+            const periodCell = rankingsSheet.getCell('A3');
+            let periodText = period.charAt(0).toUpperCase() + period.slice(1);
+            if (period === 'custom' && fromDate && toDate) {
+                periodText = `Custom Period: ${fromDate} to ${toDate}`;
+            }
+            periodCell.value = `Period: ${periodText}`;
+            periodCell.font = { name: 'Arial', size: 11 };
+            periodCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Add generation timestamp
+            rankingsSheet.mergeCells('A4:J4');
+            const timestampCell = rankingsSheet.getCell('A4');
+            timestampCell.value = `Generated: ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}`;
+            timestampCell.font = { name: 'Arial', size: 10, italic: true };
+            timestampCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Add empty row
+            rankingsSheet.addRow([]);
+            
+            // Add headers
+            const headerRow = rankingsSheet.addRow([
+                'Rank',
+                'Staff Name',
+                'Email',
+                'Performance Score',
+                'Total Sales (₱)',
+                'Orders Accepted',
+                'Sales Count',
+                'Acceptance Rate (%)',
+                'Completion Rate (%)',
+                'Avg Order Value (₱)'
+            ]);
+            
+            // Style headers
+            headerRow.eachCell((cell) => {
+                cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F5597' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Add data rows
+            staffWithScores.forEach((staff) => {
+                const dataRow = rankingsSheet.addRow([
+                    staff.rank,
+                    staff.fullname,
+                    staff.email,
+                    staff.performance_score,
+                    parseFloat(staff.total_sales),
+                    parseInt(staff.orders_accepted),
+                    parseInt(staff.total_orders),
+                    parseFloat(staff.acceptance_rate) || 0,
+                    parseFloat(staff.completion_rate) || 0,
+                    parseFloat(staff.avg_order_value)
+                ]);
+                
+                // Style data rows
+                dataRow.eachCell((cell, colNumber) => {
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    
+                    // Format currency columns
+                    if (colNumber === 5 || colNumber === 10) { // Total Sales and Avg Order Value
+                        cell.numFmt = '₱#,##0.00';
+                    }
+                    
+                    // Format percentage columns
+                    if (colNumber === 8 || colNumber === 9) { // Acceptance Rate and Completion Rate
+                        cell.numFmt = '0.00%';
+                        cell.value = (parseFloat(cell.value) || 0) / 100;
+                    }
+                });
+            });
+            
+            // Add summary row
+            const summaryStartRow = rankingsSheet.lastRow.number + 2;
+            rankingsSheet.mergeCells(`A${summaryStartRow}:J${summaryStartRow}`);
+            const summaryTitleCell = rankingsSheet.getCell(`A${summaryStartRow}`);
+            summaryTitleCell.value = 'SUMMARY STATISTICS';
+            summaryTitleCell.font = { bold: true, size: 12 };
+            summaryTitleCell.alignment = { horizontal: 'center' };
+            
+            const summaryData = [
+                ['Total Staff Members:', staffWithScores.length],
+                ['Total Combined Sales:', `₱${staffWithScores.reduce((sum, staff) => sum + parseFloat(staff.total_sales), 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`],
+                ['Total Orders Processed:', staffWithScores.reduce((sum, staff) => sum + parseInt(staff.total_orders), 0)],
+                ['Average Performance Score:', `${(staffWithScores.reduce((sum, staff) => sum + staff.performance_score, 0) / staffWithScores.length || 0).toFixed(2)}%`]
+            ];
+            
+            summaryData.forEach((row, index) => {
+                const summaryRow = rankingsSheet.addRow(['', '', '', '', row[0], row[1]]);
+                summaryRow.getCell(5).font = { bold: true };
+            });
+        }
+        
+        // Set response headers for download
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=staff_performance_${period}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        
+        // Write workbook to response
+        await workbook.xlsx.write(res);
+        res.end();
+        
+    } catch (error) {
+        console.error('Error generating staff report:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ message: 'Error generating staff performance report' });
+        }
+    }
+};
+
 

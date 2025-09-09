@@ -60,6 +60,10 @@ router.get('/download-reports', authenticate, isAdmin, adminController.downloadR
 
 router.get('/download-low-stock', adminController.downloadLowStockReport);
 
+// Staff Performance Routes
+router.get('/staff-performance', authenticate, isAdmin, adminController.getStaffPerformance);
+router.get('/download-staff-reports', authenticate, isAdmin, adminController.downloadStaffReports);
+
 // Staff Analytics Routes
 router.get('/staff-analytics/summary', authenticate, isAdmin, adminController.getStaffAnalyticsSummary);
 router.get('/staff-analytics/performance', authenticate, isAdmin, adminController.getStaffPerformanceData);

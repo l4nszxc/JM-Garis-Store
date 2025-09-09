@@ -7,7 +7,7 @@
       
       <div class="staff-content">
         <div class="header">
-          <h2>ALL STAFF</h2>
+          <h2>TOP STAFF PERFORMANCE</h2>
           <div class="filters">
             <div class="search-box">
               <input 
@@ -16,11 +16,28 @@
                 placeholder="Search by name, email, position..."
               >
             </div>
+            <select v-model="periodFilter" class="period-filter" @change="fetchStaffPerformance">
+              <option value="overall">Overall</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="year">This Year</option>
+              <option value="custom">Custom Period</option>
+            </select>
+            <div v-if="periodFilter === 'custom'" class="date-filters">
+              <input type="date" v-model="customFromDate" @change="fetchStaffPerformance" class="date-input" />
+              <input type="date" v-model="customToDate" @change="fetchStaffPerformance" class="date-input" />
+            </div>
             <select v-model="statusFilter" class="status-filter">
               <option value="all">All Status</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
+            <!-- Download Button -->
+            <button @click="downloadStaffReport" class="download-btn" :disabled="loading">
+              <i class="fas fa-download"></i>
+              Download Excel
+            </button>
             <!-- NEW: Create Staff Account Button -->
             <button @click="goToCreateStaff" class="create-staff-btn">
               <i class="fas fa-user-plus"></i>
@@ -28,35 +45,98 @@
             </button>
           </div>
         </div>
+
+        <!-- Performance Summary Cards -->
+        <div class="summary-cards" v-if="performanceSummary">
+          <div class="summary-card">
+            <div class="card-icon total-staff">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="card-content">
+              <h3>Total Staff</h3>
+              <div class="count">{{ performanceSummary.totalStaff }}</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="card-icon total-sales">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="card-content">
+              <h3>Total Sales</h3>
+              <div class="amount">₱{{ formatCurrency(performanceSummary.totalSales) }}</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="card-icon total-orders">
+              <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="card-content">
+              <h3>Total Orders</h3>
+              <div class="count">{{ performanceSummary.totalOrders }}</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="card-icon avg-performance">
+              <i class="fas fa-trophy"></i>
+            </div>
+            <div class="card-content">
+              <h3>Avg Performance</h3>
+              <div class="count">{{ formatPercentage(performanceSummary.avgPerformanceScore) }}%</div>
+            </div>
+          </div>
+        </div>
   
         <div class="table-container">
           <table>
             <thead>
               <tr>
-                <th>Username</th>
-                <th>Full Name</th>
-                <th>Gender</th>
-                <th>Civil Status</th>
-                <th>Phone Number</th>
+                <th>Rank</th>
+                <th>Staff Name</th>
                 <th>Email</th>
-                <th>Address</th>
+                <th>Performance Score</th>
+                <th>Total Sales</th>
+                <th>Orders Accepted</th>
+                <th>Sales Count</th>
+                <th>Today Sales</th>
+                <th>Week Sales</th>
+                <th>Month Sales</th>
+                <th>Year Sales</th>
+                <th>Acceptance Rate</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="staff in filteredStaff" :key="staff.user_id">
-                <td>{{ staff.username }}</td>
-                <td>{{ staff.fullname }}</td>
-                <td>{{ capitalizeFirst(staff.gender) }}</td>
-                <td>{{ capitalizeFirst(staff.civil_status) }}</td>
-                <td>{{ staff.phone_number }}</td>
-                <td>{{ staff.email }}</td>
-                <td>{{ staff.address }}</td>
+              <tr v-for="staff in filteredStaffPerformance" :key="staff.user_id">
                 <td>
-                  <span :class="['status-badge', staff.status.toLowerCase()]">
-                    {{ staff.status }}
+                  <div class="rank-badge" :class="getRankClass(staff.rank)">
+                    {{ staff.rank }}
+                  </div>
+                </td>
+                <td>{{ staff.fullname }}</td>
+                <td>{{ staff.email }}</td>
+                <td>
+                  <div class="performance-score">
+                    {{ formatPercentage(staff.performance_score) }}%
+                    <div class="score-bar">
+                      <div class="score-fill" :style="{ width: staff.performance_score + '%' }"></div>
+                    </div>
+                  </div>
+                </td>
+                <td class="currency">₱{{ formatCurrency(staff.total_sales) }}</td>
+                <td>{{ staff.orders_accepted }}</td>
+                <td>{{ staff.total_orders }}</td>
+                <td class="currency">₱{{ formatCurrency(staff.today_sales) }}</td>
+                <td class="currency">₱{{ formatCurrency(staff.week_sales) }}</td>
+                <td class="currency">₱{{ formatCurrency(staff.month_sales) }}</td>
+                <td class="currency">₱{{ formatCurrency(staff.year_sales) }}</td>
+                <td>
+                  <span class="percentage-badge" :class="getAcceptanceRateClass(staff.acceptance_rate)">
+                    {{ formatPercentage(staff.acceptance_rate) }}%
                   </span>
+                </td>
+                <td>
+                  <span class="status-badge" :class="staff.status">{{ capitalizeFirst(staff.status) }}</span>
                 </td>
                 <td>
                   <button class="action-btn edit" @click="editStaff(staff)">
@@ -162,8 +242,14 @@
       return {
         username: '',
         staff: [],
+        staffPerformance: [],
+        performanceSummary: null,
         searchQuery: '',
         statusFilter: 'all',
+        periodFilter: 'overall',
+        customFromDate: '',
+        customToDate: '',
+        loading: false,
         showLogoutModal: false,
         showEditModal: false,
         showDeleteModal: false,
@@ -193,6 +279,18 @@
             staff.status.toLowerCase() === this.statusFilter;
           
           return searchMatch && statusMatch;
+        });
+      },
+      filteredStaffPerformance() {
+        return this.staffPerformance.filter(staff => {
+          const searchMatch = !this.searchQuery || 
+            staff.fullname.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+            staff.email.toLowerCase().includes(this.searchQuery.toLowerCase());
+          
+          // Note: Assuming all staff in performance data are active staff
+          // You can add status filter logic here if needed
+          
+          return searchMatch;
         });
       }
     },
@@ -315,6 +413,113 @@
           } finally {
               this.showLogoutModal = false;
           }
+      },
+
+      // New methods for staff performance
+      async fetchStaffPerformance() {
+        try {
+          this.loading = true;
+          const token = localStorage.getItem('token');
+          
+          let params = new URLSearchParams({
+            period: this.periodFilter
+          });
+          
+          if (this.periodFilter === 'custom' && this.customFromDate && this.customToDate) {
+            params.append('fromDate', this.customFromDate);
+            params.append('toDate', this.customToDate);
+          }
+          
+          const response = await this.$fetch(`/api/admin/staff-performance?${params}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            this.staffPerformance = data.staffPerformance || [];
+            this.performanceSummary = data.summary || null;
+          } else {
+            console.error('Failed to fetch staff performance:', await response.text());
+          }
+        } catch (error) {
+          console.error('Error fetching staff performance:', error);
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async downloadStaffReport() {
+        try {
+          this.loading = true;
+          const token = localStorage.getItem('token');
+          
+          let params = new URLSearchParams({
+            period: this.periodFilter,
+            type: 'all'
+          });
+          
+          if (this.periodFilter === 'custom' && this.customFromDate && this.customToDate) {
+            params.append('fromDate', this.customFromDate);
+            params.append('toDate', this.customToDate);
+          }
+          
+          const response = await this.$fetch(`/api/admin/download-staff-reports?${params}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            
+            const filename = `staff_performance_${this.periodFilter}_${new Date().toISOString().split('T')[0]}.xlsx`;
+            link.download = filename;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            console.log('Staff performance report downloaded successfully');
+          } else {
+            throw new Error('Download failed');
+          }
+        } catch (error) {
+          console.error('Error downloading staff report:', error);
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      // Utility methods
+      formatCurrency(value) {
+        return new Intl.NumberFormat('en-PH', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(value || 0);
+      },
+
+      formatPercentage(value) {
+        return parseFloat(value || 0).toFixed(1);
+      },
+
+      getRankClass(rank) {
+        if (rank === 1) return 'rank-gold';
+        if (rank === 2) return 'rank-silver';
+        if (rank === 3) return 'rank-bronze';
+        return 'rank-default';
+      },
+
+      getAcceptanceRateClass(rate) {
+        if (rate >= 90) return 'excellent';
+        if (rate >= 75) return 'good';
+        if (rate >= 60) return 'average';
+        return 'poor';
       }
     },
     mounted() {
@@ -324,6 +529,7 @@
         this.username = decoded.username || 'Admin';
       }
       this.fetchStaff();
+      this.fetchStaffPerformance();
     }
   }
   </script>
@@ -591,6 +797,203 @@ td {
   
   .delete:hover {
     background-color: #dc2626;
+  }
+
+  /* Performance-specific styles */
+  .period-filter,
+  .date-input {
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background-color: white;
+  }
+
+  .date-filters {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .download-btn {
+    background-color: #059669;
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .download-btn:hover:not(:disabled) {
+    background-color: #047857;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+  }
+
+  .download-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Summary cards */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .summary-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: white;
+  }
+
+  .total-staff .card-icon {
+    background-color: #3b82f6;
+  }
+
+  .total-sales .card-icon {
+    background-color: #059669;
+  }
+
+  .total-orders .card-icon {
+    background-color: #8b5cf6;
+  }
+
+  .avg-performance .card-icon {
+    background-color: #f59e0b;
+  }
+
+  .card-content h3 {
+    margin: 0 0 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .card-content .amount,
+  .card-content .count {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  /* Rank badges */
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 0.875rem;
+  }
+
+  .rank-gold {
+    background-color: #ffd700;
+    color: #8b4513;
+  }
+
+  .rank-silver {
+    background-color: #c0c0c0;
+    color: #2c3e50;
+  }
+
+  .rank-bronze {
+    background-color: #cd7f32;
+    color: white;
+  }
+
+  .rank-default {
+    background-color: #e2e8f0;
+    color: #64748b;
+  }
+
+  /* Performance score */
+  .performance-score {
+    text-align: center;
+  }
+
+  .score-bar {
+    width: 60px;
+    height: 6px;
+    background-color: #e2e8f0;
+    border-radius: 3px;
+    margin: 0.25rem auto 0;
+    overflow: hidden;
+  }
+
+  .score-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #059669 100%);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  /* Percentage badges */
+  .percentage-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .percentage-badge.excellent {
+    background-color: #dcfce7;
+    color: #059669;
+  }
+
+  .percentage-badge.good {
+    background-color: #dbeafe;
+    color: #2563eb;
+  }
+
+  .percentage-badge.average {
+    background-color: #fef3c7;
+    color: #d97706;
+  }
+
+  .percentage-badge.poor {
+    background-color: #fee2e2;
+    color: #dc2626;
+  }
+
+  /* Currency formatting */
+  .currency {
+    text-align: right;
+    font-family: 'Monaco', monospace;
+    font-weight: 500;
   }
   
   @media (max-width: 768px) {

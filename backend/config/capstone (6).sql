@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Aug 12, 2025 at 12:34 PM
+-- Generation Time: Sep 08, 2025 at 07:14 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -71,7 +71,8 @@ INSERT INTO `cart` (`id`, `user_id`, `product_id`, `quantity`, `created_at`, `ch
 (2491818, 1000, 33, 1, '2025-07-04 06:21:34', NULL),
 (2491819, 1000, 36, 6, '2025-07-04 06:21:34', NULL),
 (2491821, 1000, 32, 1, '2025-07-04 06:21:52', NULL),
-(2491885, 58, 33, 1, '2025-08-07 14:15:34', NULL);
+(2491885, 58, 33, 1, '2025-08-07 14:15:34', NULL),
+(2491886, 58, 34, 3, '2025-08-13 17:05:34', 258);
 
 -- --------------------------------------------------------
 
@@ -4015,7 +4016,7 @@ ALTER TABLE `available_discounts`
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491886;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491887;
 
 --
 -- AUTO_INCREMENT for table `loyalty_tiers`
