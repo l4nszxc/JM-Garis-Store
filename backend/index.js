@@ -17,7 +17,7 @@ const app = express();
 
 // Update CORS configuration to use environment variables
 const allowedOrigins = [
-    process.env.FRONTEND_URL || 'http://localhost:8080',
+    'http://localhost:8080',
     'http://localhost:8081',
     'https://frontend-beta-coral.vercel.app',
     'https://frontend-mj39pf9dy-l4nszxcs-projects.vercel.app',
@@ -31,15 +31,15 @@ const allowedOrigins = [
 // Add debugging
 console.log('🔧 CORS Origins configured:', allowedOrigins);
 
-// Temporarily allow all Vercel domains for debugging
+// Configure CORS properly for development
 app.use(cors({
     origin: function (origin, callback) {
         console.log('🌐 CORS Request from origin:', origin);
         // Allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
         
-        // Temporarily allow all vercel.app domains
-        if (origin.includes('vercel.app') || allowedOrigins.indexOf(origin) !== -1) {
+        // Check if origin is in allowed origins or is a vercel.app domain
+        if (allowedOrigins.includes(origin) || origin.includes('vercel.app')) {
             console.log('✅ CORS: Origin allowed');
             callback(null, true);
         } else {
@@ -48,8 +48,9 @@ app.use(cors({
         }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 200 // For legacy browser support
 }));
 
 app.use(express.json());

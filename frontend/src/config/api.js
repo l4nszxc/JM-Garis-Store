@@ -6,7 +6,13 @@ const getApiBaseUrl = () => {
   console.log('VUE_APP_API_BASE_URL:', process.env.VUE_APP_API_BASE_URL);
   console.log('Current hostname:', window.location.hostname);
   
-  // If we're on Vercel (production), always use the Render backend
+  // If explicitly set in environment, use that
+  if (process.env.VUE_APP_API_BASE_URL) {
+    console.log('🔧 Using environment API URL:', process.env.VUE_APP_API_BASE_URL);
+    return process.env.VUE_APP_API_BASE_URL;
+  }
+  
+  // If we're on Vercel (production), use the Render backend
   if (window.location.hostname.includes('vercel.app') || process.env.NODE_ENV === 'production') {
     const productionUrl = 'https://jm-garis-backend.onrender.com';
     console.log('🚀 Using production API URL:', productionUrl);
