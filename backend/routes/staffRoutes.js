@@ -14,6 +14,7 @@ router.post('/orders/create', authenticate, staffController.createPhysicalOrder)
 router.get('/analytics/stats', authenticate, staffController.getStaffAnalyticsStats);
 router.get('/analytics/top-customers', authenticate, staffController.getTopCustomers);
 router.get('/analytics/insights', authenticate, staffController.getSalesInsights);
+router.get('/analytics/download', authenticate, staffController.downloadStaffAnalytics);
 
 
 module.exports = router;

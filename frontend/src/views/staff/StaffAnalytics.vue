@@ -10,14 +10,20 @@
           </button>
           <h1><i class="fas fa-chart-line"></i> My Analytics Dashboard</h1>
         </div>
-        <div class="time-filter">
-          <select v-model="timeFilter" @change="fetchAllData()">
-            <option value="today">Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="year">This Year</option>
-            <option value="all">Overall</option>
-          </select>
+        <div class="header-right">
+          <div class="time-filter">
+            <select v-model="timeFilter" @change="fetchAllData()">
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="year">This Year</option>
+              <option value="all">Overall</option>
+            </select>
+          </div>
+          <button @click="downloadExcel()" class="download-btn" :disabled="loading">
+            <i class="fas fa-download"></i>
+            {{ loading ? 'Generating...' : 'Download Excel' }}
+          </button>
         </div>
       </div>
 
@@ -478,6 +484,60 @@ export default {
       } finally {
         this.showLogoutModal = false;
       }
+    },
+
+    async downloadExcel() {
+      this.loading = true;
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          alert('Authentication required');
+          return;
+        }
+
+        const response = await fetch(`http://localhost:7904/api/staff/analytics/download?timeFilter=${this.timeFilter}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+
+        if (response.ok) {
+          // Create blob from response
+          const blob = await response.blob();
+          
+          // Create download link
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          
+          // Extract filename from response headers or create default
+          const contentDisposition = response.headers.get('Content-Disposition');
+          let filename = 'Staff_Analytics.xlsx';
+          if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+            if (filenameMatch) {
+              filename = filenameMatch[1];
+            }
+          }
+          
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          
+          // Cleanup
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        } else {
+          const errorData = await response.json();
+          alert(`Download failed: ${errorData.message || 'Unknown error'}`);
+        }
+      } catch (error) {
+        console.error('Error downloading Excel:', error);
+        alert('Failed to download Excel report. Please try again.');
+      } finally {
+        this.loading = false;
+      }
     }
   },
 
@@ -522,6 +582,39 @@ export default {
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.download-btn {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.download-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.download-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .back-btn {
