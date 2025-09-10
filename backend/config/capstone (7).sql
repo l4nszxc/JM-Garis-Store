@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Sep 08, 2025 at 07:14 PM
+-- Generation Time: Sep 09, 2025 at 06:46 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -71,8 +71,7 @@ INSERT INTO `cart` (`id`, `user_id`, `product_id`, `quantity`, `created_at`, `ch
 (2491818, 1000, 33, 1, '2025-07-04 06:21:34', NULL),
 (2491819, 1000, 36, 6, '2025-07-04 06:21:34', NULL),
 (2491821, 1000, 32, 1, '2025-07-04 06:21:52', NULL),
-(2491885, 58, 33, 1, '2025-08-07 14:15:34', NULL),
-(2491886, 58, 34, 3, '2025-08-13 17:05:34', 258);
+(2491889, 58, 32, 1, '2025-09-09 18:37:54', NULL);
 
 -- --------------------------------------------------------
 
@@ -155,6 +154,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_
 ('3091563', 58, 1851.00, 'cancelled', 'pending', '2025-08-06 03:16:48', '2025-08-07 00:31:21', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'hatid'),
 ('3121203', 58, 649.00, 'cancelled', 'pending', '2025-08-06 23:23:14', '2025-08-07 00:31:31', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'gcash'),
 ('3187364', 58, 649.00, 'cancelled', 'pending', '2025-08-05 14:30:20', '2025-08-07 00:31:34', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
+('3192204', 58, 301.00, 'ready for pickup', 'pending', '2025-09-09 18:33:54', '2025-09-09 18:35:35', NULL, 23, '2025-09-10 02:35:10', NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
 ('3243922', 58, 555.00, 'paid using gcash', 'pending', '2025-08-06 23:37:31', '2025-08-06 23:37:55', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
 ('3409484', 1000, 141.00, 'paid', 'pending', '2025-07-03 17:42:12', '2025-08-05 14:54:27', NULL, 23, '2025-07-04 01:42:15', 150.00, 9.00, NULL, 0, 'eco', NULL, 'cash'),
 ('3496818', 58, 189.00, 'paid using gcash', 'pending', '2025-08-07 00:17:56', '2025-08-07 00:17:56', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'gcash'),
@@ -172,6 +172,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_
 ('4913745', 58, 649.00, 'paid using gcash', 'pending', '2025-07-03 23:11:33', '2025-07-03 23:11:33', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
 ('5050655', 58, 185.00, 'pending_delivery', 'pending', '2025-08-07 00:19:18', '2025-08-07 00:19:18', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'hatid'),
 ('5110833', 58, 649.00, 'cancelled', 'pending', '2025-07-04 06:18:37', '2025-07-04 06:18:46', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
+('5196060', 58, 234.00, 'pending_delivery', 'pending', '2025-09-09 18:37:47', '2025-09-09 18:37:47', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'hatid'),
 ('5269886', 58, 1863.00, 'cancelled', 'pending', '2025-08-05 12:16:55', '2025-08-05 12:17:04', 'Customer cancelled', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
 ('5369343', 58, 705.00, 'paid', 'pending', '2025-07-03 16:30:59', '2025-07-03 16:32:37', NULL, 23, '2025-07-04 00:32:24', 10000.00, 9295.00, NULL, 0, 'eco', NULL, 'cash'),
 ('5608042', 58, 20.00, 'cancelled', 'pending', '2025-07-03 16:31:48', '2025-07-03 16:46:59', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
@@ -442,10 +443,10 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_
 ('TO00035', 1, 1464.00, 'paid', 'pending', '2025-07-01 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('TO00036', 1, 300.00, 'paid', 'pending', '2025-06-29 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('TO00037', 1, 2392.00, 'paid', 'pending', '2025-05-20 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
-('TO00038', 1, 0.00, 'paid', 'pending', '2025-07-01 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
-('TO00039', 1, 125.00, 'paid', 'pending', '2025-06-02 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
-('TO00040', 1, 350.00, 'paid', 'pending', '2025-05-06 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash');
+('TO00038', 1, 0.00, 'paid', 'pending', '2025-07-01 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash');
 INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_status`, `created_at`, `updated_at`, `cancel_reason`, `accepted_by`, `accepted_at`, `cash_amount`, `change_amount`, `customer_name`, `is_physical_order`, `packaging_preference`, `payment_intent_id`, `payment_method`) VALUES
+('TO00039', 1, 125.00, 'paid', 'pending', '2025-06-02 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
+('TO00040', 1, 350.00, 'paid', 'pending', '2025-05-06 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('TO00041', 1, 8685.00, 'paid', 'pending', '2025-05-29 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('TO00042', 1, 2172.00, 'paid', 'pending', '2025-05-15 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('TO00043', 1, 0.00, 'paid', 'pending', '2025-06-09 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
@@ -2977,7 +2978,9 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (4244, '2291875', 33, 1, 649.00, NULL),
 (4245, '4632579', 33, 2, 649.00, NULL),
 (4246, '4783669', 31, 5, 301.00, NULL),
-(4247, '4265510', 33, 1, 649.00, NULL);
+(4247, '4265510', 33, 1, 649.00, NULL),
+(4248, '3192204', 31, 1, 301.00, NULL),
+(4249, '5196060', 32, 1, 234.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -3107,6 +3110,33 @@ INSERT INTO `payment_intents` (`id`, `order_id`, `source_id`, `amount`, `status`
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `payment_settings`
+--
+
+CREATE TABLE `payment_settings` (
+  `id` int NOT NULL,
+  `gcash_enabled` tinyint(1) DEFAULT '1',
+  `gcash_public_key` varchar(255) DEFAULT NULL,
+  `gcash_secret_key` varchar(255) DEFAULT NULL,
+  `gcash_environment` enum('test','live') DEFAULT 'test',
+  `downpayment_enabled` tinyint(1) DEFAULT '1',
+  `downpayment_percentage` decimal(5,2) DEFAULT '25.00',
+  `min_order_amount` decimal(10,2) DEFAULT '500.00',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_by` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `payment_settings`
+--
+
+INSERT INTO `payment_settings` (`id`, `gcash_enabled`, `gcash_public_key`, `gcash_secret_key`, `gcash_environment`, `downpayment_enabled`, `downpayment_percentage`, `min_order_amount`, `created_at`, `updated_at`, `updated_by`) VALUES
+(1, 1, NULL, NULL, 'test', 1, 25.00, 500.00, '2025-09-09 17:29:41', '2025-09-09 18:37:04', 20);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `products`
 --
 
@@ -3127,8 +3157,8 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_quantity`, `category`, `image`, `created_at`, `updated_at`) VALUES
-(31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 990, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-03-31 23:21:29', '2025-08-07 12:40:37'),
-(32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 984, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-03-31 23:22:15', '2025-08-07 12:00:16'),
+(31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 989, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-03-31 23:21:29', '2025-09-09 18:33:54'),
+(32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 983, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-03-31 23:22:15', '2025-09-09 18:37:47'),
 (33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 943, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-03-31 23:22:59', '2025-08-07 13:13:26'),
 (34, 'GSM Mojito', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 0.00, 72, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-03-31 23:28:23', '2025-07-03 18:59:39'),
 (36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 72, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-03-31 23:34:49', '2025-08-07 00:31:09'),
@@ -3693,7 +3723,7 @@ CREATE TABLE `user_loyalty_status` (
 --
 
 INSERT INTO `user_loyalty_status` (`id`, `user_id`, `loyalty_tier_id`, `current_month_spend`, `last_month_spend`, `two_months_ago_spend`, `tier_start_date`, `tier_end_date`, `last_updated`) VALUES
-(4, 58, 3, 84411.75, 0.00, 0.00, '2025-07-04', '2025-10-03', '2025-08-07 13:13:26'),
+(4, 58, 3, 84946.75, 0.00, 0.00, '2025-07-04', '2025-10-03', '2025-09-09 18:37:47'),
 (5, 1000, NULL, 141.00, 0.00, 0.00, NULL, NULL, '2025-07-03 17:42:12');
 
 -- --------------------------------------------------------
@@ -3860,7 +3890,9 @@ INSERT INTO `user_rewards` (`id`, `user_id`, `order_id`, `points`, `description`
 (567, 58, '4783669', 15, 'Earned points from order #4783669 (₱1505.00)', '2025-08-07 12:40:37'),
 (568, 58, '4783669', 2, 'Gold loyalty bonus (+15.00%)', '2025-08-07 12:40:37'),
 (569, 58, NULL, -50, 'Redeemed for Gold Reward - ₱25.00 discount', '2025-08-07 13:12:55'),
-(570, 58, '4265510', 5, 'Earned points from order #4265510 (₱599.00)', '2025-08-07 13:13:26');
+(570, 58, '4265510', 5, 'Earned points from order #4265510 (₱599.00)', '2025-08-07 13:13:26'),
+(571, 58, '3192204', 3, 'Earned points from order #3192204 (₱301.00)', '2025-09-09 18:33:54'),
+(572, 58, '5196060', 2, 'Earned points from order #5196060 (₱234.00)', '2025-09-09 18:37:47');
 
 --
 -- Indexes for dumped tables
@@ -3930,6 +3962,12 @@ ALTER TABLE `payment_intents`
   ADD KEY `idx_payment_link_id` (`payment_link_id`),
   ADD KEY `idx_reference_number` (`reference_number`),
   ADD KEY `idx_paymongo_link_id` (`paymongo_link_id`);
+
+--
+-- Indexes for table `payment_settings`
+--
+ALTER TABLE `payment_settings`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `products`
@@ -4016,7 +4054,7 @@ ALTER TABLE `available_discounts`
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491887;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491890;
 
 --
 -- AUTO_INCREMENT for table `loyalty_tiers`
@@ -4028,7 +4066,7 @@ ALTER TABLE `loyalty_tiers`
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4248;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4250;
 
 --
 -- AUTO_INCREMENT for table `order_reports`
@@ -4047,6 +4085,12 @@ ALTER TABLE `order_reviews`
 --
 ALTER TABLE `payment_intents`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
+
+--
+-- AUTO_INCREMENT for table `payment_settings`
+--
+ALTER TABLE `payment_settings`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -4100,7 +4144,7 @@ ALTER TABLE `user_loyalty_status`
 -- AUTO_INCREMENT for table `user_rewards`
 --
 ALTER TABLE `user_rewards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=571;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=573;
 
 --
 -- Constraints for dumped tables

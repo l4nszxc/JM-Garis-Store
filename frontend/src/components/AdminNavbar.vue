@@ -119,6 +119,14 @@
           </div>
           <span>Settings</span>
         </router-link>
+
+        <!-- Payment Settings -->
+        <router-link to="/admin/payment-settings" class="menu-item" active-class="active">
+          <div class="icon-container payment-settings-icon">
+            <i class="fas fa-credit-card"></i>
+          </div>
+          <span>Payment Settings</span>
+        </router-link>
       </div>
       
 
@@ -404,6 +412,12 @@ export default {
 /* Settings icon style */
 .settings-icon {
   background-color: #607d8b;
+  color: white;
+}
+
+/* Payment Settings icon style */
+.payment-settings-icon {
+  background-color: #3498db;
   color: white;
 }
 

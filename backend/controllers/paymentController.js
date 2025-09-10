@@ -41,9 +41,8 @@ exports.createGCashDownpayment = async (req, res) => {
                 user_id,
                 payment_type,
                 total_amount,
-                remaining_amount,
-                created_at
-            ) VALUES (?, ?, ?, ?, 'pending', ?, ?, 'downpayment', ?, ?, NOW())`,
+                remaining_amount
+            ) VALUES (?, ?, ?, ?, 'pending', ?, ?, 'downpayment', ?, ?)`,
             [
                 paymentLink.id, 
                 paymentLink.id,
@@ -146,15 +145,17 @@ exports.createGCashPaymentOnly = async (req, res) => {
                 status,
                 order_data,
                 user_id,
-                created_at
-            ) VALUES (?, ?, ?, ?, 'pending', ?, ?, NOW())`,
+                payment_type,
+                total_amount
+            ) VALUES (?, ?, ?, ?, 'pending', ?, ?, 'full_payment', ?)`,
             [
                 paymentLink.id, 
                 paymentLink.id,
                 paymentLink.attributes.reference_number,
                 amount,
                 JSON.stringify({ items, discountId, packagingPreference, paymentMethod }),
-                userId
+                userId,
+                amount
             ]
         );
         

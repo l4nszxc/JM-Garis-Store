@@ -29,21 +29,24 @@
                         <div class="payment-card">
                             <i class="fas fa-money-bill-wave"></i>
                             <span>Cash on Pickup</span>
-                            <small>Downpayment required via GCash (25% of order)</small>
+                            <small v-if="paymentSettings.downpayment_enabled">Downpayment required via GCash ({{ downpaymentPercentage }}% of order)</small>
+                            <small v-else>Pay full amount on pickup</small>
                         </div>
                     </label>
                     
-                    <label class="payment-option">
+                    <label class="payment-option" :class="{ 'disabled': !paymentSettings.gcash_enabled }">
                         <input 
                             type="radio" 
                             value="gcash" 
                             v-model="selectedPaymentMethod"
                             name="paymentMethod"
+                            :disabled="!paymentSettings.gcash_enabled"
                         >
-                        <div class="payment-card gcash-card">
+                        <div class="payment-card gcash-card" :class="{ 'disabled': !paymentSettings.gcash_enabled }">
                             <i class="fab fa-google-pay"></i>
                             <span>GCash</span>
-                            <small>Pay now with GCash</small>
+                            <small v-if="paymentSettings.gcash_enabled">Pay now with GCash</small>
+                            <small v-else>GCash is currently disabled</small>
                         </div>
                     </label>
                     
@@ -63,27 +66,31 @@
                 </div>
             </div>
 
-            <!-- Cash on Pickup Downpayment Info -->
+            <!-- Cash on Pickup Info -->
             <div v-if="selectedPaymentMethod === 'cash'" class="downpayment-info-section">
                 <div class="downpayment-info">
                     <div class="downpayment-icon">
                         <i class="fas fa-shield-alt"></i>
                     </div>
                     <div class="downpayment-details">
-                        <h5>Downpayment Required</h5>
-                        <p>To prevent un-claimed orders, a downpayment is required for cash on pickup orders.</p>
+                        <h5 v-if="paymentSettings.downpayment_enabled">Downpayment Required</h5>
+                        <p v-if="paymentSettings.downpayment_enabled">To prevent un-claimed orders, a downpayment is required for cash on pickup orders.</p>
                         <div class="payment-breakdown">
                             <div class="breakdown-header">
                                 <i class="fas fa-calculator"></i>
                                 <span>Payment Breakdown</span>
                             </div>
-                            <div class="breakdown-row">
+                            <div v-if="paymentSettings.downpayment_enabled" class="breakdown-row">
                                 <span>Downpayment ({{ downpaymentPercentage }}%):</span>
                                 <span class="amount primary">{{ formatPrice(downpaymentAmount) }}</span>
                             </div>
-                            <div class="breakdown-row">
+                            <div v-if="paymentSettings.downpayment_enabled" class="breakdown-row">
                                 <span>Remaining (Pay on pickup):</span>
                                 <span class="amount">{{ formatPrice(remainingAmount) }}</span>
+                            </div>
+                            <div v-if="!paymentSettings.downpayment_enabled" class="breakdown-row">
+                                <span>Pay on pickup:</span>
+                                <span class="amount">{{ formatPrice(calculateTotal) }}</span>
                             </div>
                             <div class="breakdown-divider"></div>
                             <div class="breakdown-row total">
@@ -464,6 +471,12 @@ export default {
                 storeName: 'JM Garis Store',
                 storeAddress: 'Barcenaga, Naujan City, Oriental Mindoro',
                 contactNumber: ''
+            },
+            paymentSettings: {
+                gcash_enabled: true,
+                downpayment_enabled: true,
+                downpayment_percentage: 25.00,
+                min_order_amount: 500.00
             }
         }
     },
@@ -478,8 +491,15 @@ export default {
                 this.specialInstructions = '';
                 this.showHatidModal = false;
                 this.copySuccess = false;
-                // Fetch store settings when modal is shown
+                // Fetch store settings and payment settings when modal is shown
                 this.fetchStoreSettings();
+                this.fetchPaymentSettings();
+            }
+        },
+        selectedPaymentMethod(newMethod) {
+            // If GCash is selected but disabled, switch to cash
+            if (newMethod === 'gcash' && !this.paymentSettings.gcash_enabled) {
+                this.selectedPaymentMethod = 'cash';
             }
         },
         selectedItems: {
@@ -508,24 +528,24 @@ export default {
             return Math.max(0, this.subtotal - this.discountAmount);
         },
         downpaymentAmount() {
-            if (this.selectedPaymentMethod === 'cash') {
-                const calculatedDownpayment = this.calculateTotal * 0.25;
-                // 25% of order total
+            if (this.selectedPaymentMethod === 'cash' && this.paymentSettings.downpayment_enabled) {
+                const percentage = this.downpaymentPercentage / 100;
+                const calculatedDownpayment = this.calculateTotal * percentage;
                 return Math.round(calculatedDownpayment * 100) / 100;
             }
             return 0;
         },
         remainingAmount() {
-            if (this.selectedPaymentMethod === 'cash') {
+            if (this.selectedPaymentMethod === 'cash' && this.paymentSettings.downpayment_enabled) {
                 return this.calculateTotal - this.downpaymentAmount;
             }
             return 0;
         },
         downpaymentPercentage() {
             if (this.selectedPaymentMethod === 'cash' && this.calculateTotal > 0) {
-                return Math.round((this.downpaymentAmount / this.calculateTotal) * 100);
+                return this.paymentSettings.downpayment_percentage || 25;
             }
-            return 25;
+            return this.paymentSettings.downpayment_percentage || 25;
         },
         hatidMessage() {
             const address = this.deliveryAddress || 'Address not provided';
@@ -574,6 +594,11 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 return false;
             }
             
+            // Prevent GCash selection when disabled
+            if (this.selectedPaymentMethod === 'gcash' && !this.paymentSettings.gcash_enabled) {
+                return false;
+            }
+            
             // Additional validation for HATID delivery
             if (this.selectedPaymentMethod === 'hatid' && !this.deliveryAddress.trim()) {
                 return false;
@@ -609,6 +634,37 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 // Keep default values if fetch fails
             }
         },
+
+        async fetchPaymentSettings() {
+            try {
+                // Use the public payment settings endpoint that doesn't require authentication
+                const response = await this.$fetch('/api/admin/payment-settings/public');
+                
+                // Parse the response if it's not already parsed
+                const data = response.json ? await response.json() : response;
+                
+                console.log('Payment settings response:', data); // Debug log
+                
+                if (data && data.success && data.settings) {
+                    this.paymentSettings = {
+                        ...this.paymentSettings,
+                        ...data.settings
+                    };
+                    
+                    console.log('Updated payment settings:', this.paymentSettings); // Debug log
+                    
+                    // If GCash is currently selected but becomes disabled, switch to cash
+                    if (this.selectedPaymentMethod === 'gcash' && !this.paymentSettings.gcash_enabled) {
+                        this.selectedPaymentMethod = 'cash';
+                    }
+                } else {
+                    console.log('Failed to fetch payment settings, using defaults');
+                }
+            } catch (error) {
+                console.error('Error fetching payment settings:', error);
+                // Keep default values if fetch fails
+            }
+        },
         formatPrice(price) {
             return new Intl.NumberFormat('en-PH', {
                 style: 'currency',
@@ -638,7 +694,11 @@ Special Instructions: ${this.specialInstructions || ''}`;
             } else if (this.selectedPaymentMethod === 'hatid') {
                 return 'Order via HATID';
             } else if (this.selectedPaymentMethod === 'cash') {
-                return `Pay Downpayment (${this.formatPrice(this.downpaymentAmount)})`;
+                if (this.paymentSettings.downpayment_enabled) {
+                    return `Pay Downpayment (${this.formatPrice(this.downpaymentAmount)})`;
+                } else {
+                    return 'Pay';
+                }
             }
             return 'Confirm Order';
         },
@@ -684,7 +744,13 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 } else if (this.selectedPaymentMethod === 'hatid') {
                     await this.processHatidOrder(orderData);
                 } else if (this.selectedPaymentMethod === 'cash') {
-                    await this.processCashWithDownpayment(orderData);
+                    // Check if downpayment is enabled
+                    if (this.paymentSettings.downpayment_enabled) {
+                        await this.processCashWithDownpayment(orderData);
+                    } else {
+                        // Process as regular cash order without downpayment
+                        this.$emit('place-order', orderData);
+                    }
                 } else {
                     this.$emit('place-order', orderData);
                 }
@@ -1256,6 +1322,8 @@ Special Instructions: ${this.specialInstructions || ''}`;
     mounted() {
         // Fetch store settings when component is mounted
         this.fetchStoreSettings();
+        // Fetch payment settings when component is mounted
+        this.fetchPaymentSettings();
     }
 }
 </script>
@@ -1467,6 +1535,40 @@ Special Instructions: ${this.specialInstructions || ''}`;
 .payment-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Disabled Payment Option Styles */
+.payment-option.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.payment-option.disabled .payment-card {
+    cursor: not-allowed;
+    opacity: 0.6;
+    background-color: #f5f5f5;
+    border-color: #ddd;
+}
+
+.payment-option.disabled .payment-card:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.payment-option.disabled .payment-card.disabled {
+    opacity: 0.5;
+}
+
+.payment-option.disabled .payment-card.disabled i {
+    color: #999;
+}
+
+.payment-option.disabled .payment-card.disabled span {
+    color: #999;
+}
+
+.payment-option.disabled .payment-card.disabled small {
+    color: #999;
 }
 
 /* Delivery Address Section */

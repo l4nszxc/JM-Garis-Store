@@ -21,6 +21,7 @@ import CreateOrder from '../views/staff/CreateOrder.vue'
 import Notifications from '../views/user/Notifications.vue'
 import SalesForecast from '../views/admin/SalesForecast.vue'
 import AdminReceiptSettings from '../views/admin/ReceiptSettings.vue'
+import PaymentSettings from '../views/admin/PaymentSettings.vue'
 import ProductDetail from '../views/user/ProductDetail.vue';
 import AdminReports from '../views/admin/AdminReports.vue'
 import DigitalReceipt from '../views/user/DigitalReceipt.vue'
@@ -241,6 +242,12 @@ const routes = [
     path: '/admin/settings',
     name: 'AdminSettings',
     component: () => import('../views/admin/AdminSettings.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/payment-settings',
+    name: 'PaymentSettings',
+    component: PaymentSettings,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {

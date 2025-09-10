@@ -10,6 +10,7 @@ const staffRoutes = require('./routes/staffRoutes');
 const rewardRoutes = require('./routes/rewardRoutes');
 const sharedCartRoutes = require('./routes/sharedCartRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const paymentSettingsRoutes = require('./routes/paymentSettingsRoutes');
 const path = require('path');
 require('dotenv').config();
 
@@ -97,6 +98,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/rewards', rewardRoutes);
 app.use('/api/shared-cart', sharedCartRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/admin/payment-settings', paymentSettingsRoutes);
 
 const PORT = process.env.PORT || 7904;
 app.listen(PORT, () => {
