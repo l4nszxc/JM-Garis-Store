@@ -44,39 +44,6 @@
       </div>
     </section>
 
-    <section class="featured-products" v-motion-slide-visible-once-bottom>
-      <div class="section-header">
-        <h2>Featured Products</h2>
-        <router-link to="/products" class="view-all">View All <i class="fas fa-arrow-right"></i></router-link>
-      </div>
-      <div class="products-slider">
-        <div 
-          v-for="(product, index) in featuredProducts" 
-          :key="index" 
-          class="product-card"
-          @click="navigateToProduct(product)"
-        >
-          <div class="product-badge">Featured</div>
-          <div class="product-image">
-            <img :src="product.image" :alt="product.name" />
-          </div>
-          <div class="product-info">
-            <h3>{{ product.name }}</h3>
-            <div class="product-details">
-              <p class="product-price">₱{{ product.price }}</p>
-              <div class="product-rating">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star-half-alt"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <footer class="footer">
       <div class="footer-content">
         <div class="footer-section about">
@@ -109,7 +76,7 @@
             <h3>Store Hours</h3>
             <p><i class="far fa-clock"></i> Monday - Saturday: 8:00 AM - 9:00 PM</p>
             <p><i class="far fa-clock"></i> Sunday: 9:00 AM - 7:00 PM</p>
-            <p class="pickup-info"><i class="fas fa-shopping-bag"></i> In-store pickup only</p>
+            <p class="pickup-info"><i class="fas fa-shopping-bag"></i> In-store pickup and Hatid delivery</p>
             </div>
       </div>
       <div class="footer-bottom">
@@ -157,28 +124,6 @@ export default {
         { name: 'Canned Goods', icon: 'fas fa-shopping-basket', link: '/products?category=Canned Goods' },
         { name: 'Condiments', icon: 'fas fa-pepper-hot', link: '/products?category=Condiments' },
         { name: 'Milk & Chocolate', icon: 'fas fa-mug-hot', link: '/products?category=Milk and Chocolate Drink' }
-      ],
-      featuredProducts: [
-        {
-          name: 'GSM Blue 700mL',
-          price: '141.00',
-          image: 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png'
-        },
-        {
-          name: 'Alfonso 1 1Liter',
-          price: '301.00',
-          image: 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png'
-        },
-        {
-          name: 'Primera Light 750mL',
-          price: '140.00',
-          image: 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png'
-        },
-        {
-          name: 'Emperador 750mL',
-          price: '142.00',
-          image: 'https://i.ibb.co/mrbVVg4L/daf1bf6947ad.png'
-        }
       ]
     }
   },
@@ -234,10 +179,6 @@ export default {
         top: 0,
         behavior: 'smooth'
       });
-    },
-    // Navigate to product page when clicking a featured product
-    navigateToProduct(product) {
-      this.$router.push('/products');
     }
   },
   async mounted() {
@@ -839,15 +780,44 @@ export default {
 
 @media (max-width: 768px) {
   .hero {
-    padding: 3rem 1rem;
+    padding: 2rem 1rem;
   }
   
   .hero-text h1 {
-    font-size: 2rem;
+    font-size: 1.8rem;
+  }
+  
+  .hero-text p {
+    font-size: 1rem;
+  }
+  
+  .hero-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .btn {
+    width: 100%;
+    max-width: 250px;
+    justify-content: center;
   }
   
   .categories, .featured-products {
     padding: 2rem 1rem;
+  }
+  
+  .categories-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .products-slider {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .product-card {
+    max-width: 100%;
   }
   
   .footer-content {
@@ -880,6 +850,44 @@ export default {
   
   .links li {
     margin-bottom: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-text h1 {
+    font-size: 1.5rem;
+  }
+  
+  .hero-text p {
+    font-size: 0.9rem;
+  }
+  
+  .hero-image img {
+    max-height: 250px;
+  }
+  
+  .categories-grid {
+    gap: 0.5rem;
+  }
+  
+  .category-card {
+    padding: 1.5rem;
+  }
+  
+  .products-slider {
+    gap: 0.5rem;
+  }
+  
+  .product-card {
+    padding: 1rem;
+  }
+  
+  .product-image {
+    height: 200px;
+  }
+  
+  .footer {
+    padding: 2rem 1rem 1rem;
   }
 }
 </style>
