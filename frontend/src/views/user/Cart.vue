@@ -25,7 +25,7 @@
                 <div v-if="syncStatus" class="cart-sharing-info">
                     <div v-if="syncStatus.role === 'owner'" class="sharing-badge owner-badge">
                         <i class="fas fa-share-alt"></i>
-                        <span>Sharing with: <strong>{{ partnerUsername || 'another user' }}</strong></span>
+                        <span>Sharing with: <strong>{{ partnerUsername }}</strong></span>
                         <button @click="stopSharing" class="action-btn stop-btn">
                             <i class="fas fa-times"></i>
                             Stop Sharing
@@ -33,7 +33,7 @@
                     </div>
                     <div v-else class="sharing-badge receiver-badge">
                         <i class="fas fa-user-friends"></i>
-                        <span>Using: <strong>{{ partnerUsername || 'another user' }}'s</strong> cart</span>
+                        <span>Using: <strong>{{ partnerUsername }}'s</strong> cart</span>
                         <button @click="leaveSharing" class="action-btn leave-btn">
                             <i class="fas fa-sign-out-alt"></i>
                             Leave Cart
@@ -396,8 +396,10 @@ export default {
         },
         
         async fetchPartnerUsername() {
-            if (!this.syncStatus || !this.syncStatus.partnerId) return;
-            
+            if (!this.syncStatus || !this.syncStatus.partnerId) {
+                this.partnerUsername = 'another user';
+                return;
+            }
             try {
                 const token = localStorage.getItem('token');
                 const response = await this.$fetch(`/api/users/username/${this.syncStatus.partnerId}`, {
@@ -405,10 +407,13 @@ export default {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                
                 if (response.ok) {
                     const data = await response.json();
-                    this.partnerUsername = data.username || 'another user';
+                    if (data && typeof data.username === 'string' && data.username.trim() !== '') {
+                        this.partnerUsername = data.username;
+                    } else {
+                        this.partnerUsername = 'another user';
+                    }
                 } else {
                     this.partnerUsername = 'another user';
                 }

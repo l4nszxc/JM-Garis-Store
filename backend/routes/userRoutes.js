@@ -36,7 +36,7 @@ router.use(authenticate);
 router.get('/profile', userController.getProfile);
 router.put('/profile', userController.updateProfile);
 router.get('/getUsername', userController.getUsername);
-router.get('/getUsernameById/:id', userController.getUsernameById); 
+router.get('/getUsernameById/:userId', userController.getUsernameById); 
 router.put('/change-password', userController.changePassword);
 
 // Profile picture routes

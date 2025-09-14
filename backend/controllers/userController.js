@@ -432,15 +432,18 @@ exports.removeProfilePicture = async (req, res) => {
 };
 exports.getUsernameById = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { userId } = req.params;
+        console.log('getUsernameById called with userId:', userId);
         
-        // Validate id
-        if (!id || isNaN(parseInt(id))) {
+        // Validate userId
+        if (!userId || isNaN(parseInt(userId))) {
+            console.log('Invalid user ID:', userId);
             return res.status(400).json({ message: 'Invalid user ID' });
         }
         
         // Find user by ID
-        const user = await User.findById(id);
+        const user = await User.findById(userId);
+        console.log('User found:', user ? 'Yes' : 'No', user ? user.username : 'N/A');
         
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
