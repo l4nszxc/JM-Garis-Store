@@ -82,7 +82,7 @@
           v-for="notification in filteredNotifications" 
           :key="notification.id"
           class="notification-card"
-          :class="{ unread: !notification.read, selected: selectedNotificationIds.has(notification.id) }"
+          :class="{ unread: !notification.is_read, selected: selectedNotificationIds.has(notification.id) }"
           @click="viewNotificationDetails(notification)"
         >
           <div v-if="showCheckboxes" class="notification-checkbox" @click.stop>
@@ -99,7 +99,7 @@
             <div class="notification-header">
               <h3>{{ getNotificationTitle(notification) }}</h3>
               <div class="notification-controls">
-                <span class="notification-time">{{ formatNotificationTime(notification.timestamp) }}</span>
+                <span class="notification-time">{{ formatNotificationTime(notification.created_at) }}</span>
                 <div class="notification-menu">
                   <button class="notification-menu-trigger" @click.stop="toggleNotificationMenu(notification.id)">
                     <i class="fas fa-ellipsis-v"></i>
@@ -180,7 +180,7 @@ export default {
   },
   computed: {
     unreadNotificationsCount() {
-      const count = this.notifications.filter(notification => !notification.read).length;
+      const count = this.notifications.filter(notification => !notification.is_read).length;
       return count > 99 ? 99 : count;
     },
     allSelected() {
@@ -195,7 +195,7 @@ export default {
     filteredNotifications() {
       // Return filtered notifications based on current filter type
       if (this.filterType === 'unread') {
-        return this.notifications.filter(notification => !notification.read);
+        return this.notifications.filter(notification => !notification.is_read);
       }
       return this.notifications;
     }
@@ -236,14 +236,8 @@ export default {
     },
     
     markAsUnread(notification) {
-      notification.read = false;
-      this.saveNotifications();
+      this.markNotificationAsUnread(notification.id);
       this.activeNotificationMenu = null;
-      
-      // Dispatch event to update other components
-      window.dispatchEvent(new CustomEvent('notifications-updated', {
-        detail: { notifications: this.notifications }
-      }));
     },
     
     deleteNotification(notification) {
@@ -259,10 +253,11 @@ export default {
     },
     
     getNotificationIcon(notification) {
+      if (notification.icon) return notification.icon;
       if (notification.type === 'reward') return 'fas fa-gift';
       if (notification.type !== 'order') return 'fas fa-bell';
       
-      const status = notification.status.toLowerCase();
+      const status = notification.status ? notification.status.toLowerCase() : '';
       if (status === 'pending') return 'fas fa-hourglass-half';
       if (status === 'preparing') return 'fas fa-utensils';
       if (status === 'ready for pickup') return 'fas fa-check-circle';
@@ -274,7 +269,7 @@ export default {
       if (notification.type === 'reward') return 'reward-icon';
       if (notification.type !== 'order') return '';
       
-      const status = notification.status.toLowerCase();
+      const status = notification.status ? notification.status.toLowerCase() : '';
       if (status === 'pending') return 'pending-icon';
       if (status === 'preparing') return 'preparing-icon';
       if (status === 'ready for pickup') return 'ready-icon';
@@ -284,12 +279,12 @@ export default {
 
     getNotificationTitle(notification) {
       if (notification.type === 'order') {
-        return `Order #${notification.orderId}`;
+        return `Order #${notification.related_order_id}`;
       }
       if (notification.type === 'reward') {
         return 'Reward Redeemed';
       }
-      return 'Notification';
+      return notification.title || 'Notification';
     },
     
     formatNotificationTime(timestamp) {
@@ -309,11 +304,11 @@ export default {
       
       // Navigate based on notification type
       if (notification.type === 'order') {
-        this.$router.push(`/order-details/${notification.orderId}`);
+        this.$router.push(`/order-details/${notification.related_order_id}`);
       } else if (notification.type === 'reward') {
         this.$router.push('/rewards');
-      } else if (notification.link) {
-        this.$router.push(notification.link);
+      } else if (notification.action_url) {
+        this.$router.push(notification.action_url);
       }
     },
     
@@ -338,26 +333,89 @@ export default {
     },
     
     markAsRead(notification) {
-      notification.read = true;
-      this.saveNotifications();
-      
-      // Dispatch event to update other components
-      window.dispatchEvent(new CustomEvent('notifications-updated', {
-        detail: { notifications: this.notifications }
-      }));
+      this.markNotificationAsRead(notification.id);
     },
     
-    markAllAsRead() {
-      this.notifications.forEach(notification => {
-        notification.read = true;
-      });
-      this.saveNotifications();
-      this.dropdownOpen = false;
-      
-      // Dispatch event to update other components
-      window.dispatchEvent(new CustomEvent('notifications-updated', {
-        detail: { notifications: this.notifications }
-      }));
+    async markNotificationAsRead(notificationId) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await this.$fetch(`/api/notifications/${notificationId}/read`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          // Update local notification state
+          const notification = this.notifications.find(n => n.id === notificationId);
+          if (notification) {
+            notification.is_read = true;
+          }
+          
+          // Dispatch event to update other components
+          window.dispatchEvent(new CustomEvent('notifications-updated', {
+            detail: { notifications: this.notifications }
+          }));
+        }
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
+      }
+    },
+    
+    async markNotificationAsUnread(notificationId) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await this.$fetch(`/api/notifications/${notificationId}/unread`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          // Update local notification state
+          const notification = this.notifications.find(n => n.id === notificationId);
+          if (notification) {
+            notification.is_read = false;
+          }
+          
+          // Dispatch event to update other components
+          window.dispatchEvent(new CustomEvent('notifications-updated', {
+            detail: { notifications: this.notifications }
+          }));
+        }
+      } catch (error) {
+        console.error('Error marking notification as unread:', error);
+      }
+    },
+    
+    async markAllAsRead() {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await this.$fetch('/api/notifications/mark-all-read', {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          // Update all notifications as read
+          this.notifications.forEach(notification => {
+            notification.is_read = true;
+          });
+          
+          this.dropdownOpen = false;
+          
+          // Dispatch event to update other components
+          window.dispatchEvent(new CustomEvent('notifications-updated', {
+            detail: { notifications: this.notifications }
+          }));
+        }
+      } catch (error) {
+        console.error('Error marking all notifications as read:', error);
+      }
     },
     
     showDeleteConfirmation() {
@@ -383,71 +441,104 @@ export default {
     },
     
     confirmDelete() {
-      let deletedIds = [];
-      
       if (this.deleteTarget) {
         // Delete single notification
-        this.notifications = this.notifications.filter(notification => 
-          notification.id !== this.deleteTarget.id
-        );
-        deletedIds.push(this.deleteTarget.id);
+        this.deleteNotificationById(this.deleteTarget.id);
         this.deleteTarget = null;
       } else {
         // Delete selected notifications
         const selectedIds = Array.from(this.selectedNotificationIds);
-        this.notifications = this.notifications.filter(notification => 
-          !this.selectedNotificationIds.has(notification.id)
-        );
-        deletedIds = selectedIds;
+        this.deleteMultipleNotifications(selectedIds);
         this.selectedNotificationIds.clear();
       }
-      
-      // Save changes
-      this.saveNotifications();
-      
-      // Update deleted notification IDs in localStorage
-      this.saveDeletedNotificationIds(deletedIds);
-      
-      // Notify other components
-      window.dispatchEvent(new CustomEvent('notifications-updated', {
-        detail: { 
-          notifications: this.notifications,
-          deletedIds: deletedIds
-        }
-      }));
       
       // Close modal
       this.showDeleteModal = false;
     },
-    saveDeletedNotificationIds(newDeletedIds) {
+    
+    async deleteNotificationById(notificationId) {
       try {
-        // Get existing deleted IDs
-        const saved = localStorage.getItem('deletedNotificationIds');
-        let deletedIds = saved ? JSON.parse(saved) : [];
+        const token = localStorage.getItem('token');
+        const response = await this.$fetch(`/api/notifications/${notificationId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         
-        // Add new deleted IDs
-        deletedIds = [...deletedIds, ...newDeletedIds];
-        
-        // Save back to localStorage
-        localStorage.setItem('deletedNotificationIds', JSON.stringify(deletedIds));
+        if (response.ok) {
+          // Remove from local notifications array
+          this.notifications = this.notifications.filter(notification => 
+            notification.id !== notificationId
+          );
+          
+          // Dispatch event to update other components
+          window.dispatchEvent(new CustomEvent('notifications-updated', {
+            detail: { 
+              notifications: this.notifications,
+              deletedIds: [notificationId]
+            }
+          }));
+        }
       } catch (error) {
-        console.error('Error saving deleted notification IDs:', error);
-      }
-    },
-        
-    saveNotifications() {
-      try {
-        localStorage.setItem('userNotifications', JSON.stringify(this.notifications));
-      } catch (error) {
-        console.error('Error saving notifications:', error);
+        console.error('Error deleting notification:', error);
       }
     },
     
-    loadNotifications() {
+    async deleteMultipleNotifications(notificationIds) {
       try {
-        const saved = localStorage.getItem('userNotifications');
-        if (saved) {
-          this.notifications = JSON.parse(saved);
+        const token = localStorage.getItem('token');
+        const response = await this.$fetch('/api/notifications', {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ ids: notificationIds })
+        });
+        
+        if (response.ok) {
+          // Remove from local notifications array
+          this.notifications = this.notifications.filter(notification => 
+            !notificationIds.includes(notification.id)
+          );
+          
+          // Dispatch event to update other components
+          window.dispatchEvent(new CustomEvent('notifications-updated', {
+            detail: { 
+              notifications: this.notifications,
+              deletedIds: notificationIds
+            }
+          }));
+        }
+      } catch (error) {
+        console.error('Error deleting multiple notifications:', error);
+      }
+    },
+    saveDeletedNotificationIds(newDeletedIds) {
+      // This method is no longer needed since we're using the database
+      // Keeping it for compatibility but it doesn't do anything
+    },
+        
+    saveNotifications() {
+      // This method is no longer needed since we're using the database
+      // Keeping it for compatibility but it doesn't do anything
+    },
+    
+    async loadNotifications() {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const response = await this.$fetch('/api/notifications', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const notifications = await response.json();
+          this.notifications = notifications;
         }
       } catch (error) {
         console.error('Error loading notifications:', error);

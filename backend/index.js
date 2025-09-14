@@ -11,6 +11,7 @@ const rewardRoutes = require('./routes/rewardRoutes');
 const sharedCartRoutes = require('./routes/sharedCartRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const paymentSettingsRoutes = require('./routes/paymentSettingsRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 const path = require('path');
 require('dotenv').config();
 
@@ -99,6 +100,7 @@ app.use('/api/rewards', rewardRoutes);
 app.use('/api/shared-cart', sharedCartRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/admin/payment-settings', paymentSettingsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 const PORT = process.env.PORT || 7904;
 app.listen(PORT, () => {

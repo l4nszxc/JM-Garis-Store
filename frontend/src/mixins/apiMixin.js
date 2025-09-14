@@ -39,11 +39,15 @@ export const apiMixin = {
       const fullUrl = url.startsWith('http') ? this.$replaceUrl(url) : `${API_BASE_URL}${url}`;
       
       const defaultOptions = {
-        headers: {
-          'Content-Type': 'application/json',
-        },
         credentials: 'include',
       };
+      
+      // Only set Content-Type for requests that have a body
+      if (options.body || options.method === 'POST' || options.method === 'PUT' || options.method === 'PATCH') {
+        defaultOptions.headers = {
+          'Content-Type': 'application/json',
+        };
+      }
       
       const mergedOptions = {
         ...defaultOptions,
