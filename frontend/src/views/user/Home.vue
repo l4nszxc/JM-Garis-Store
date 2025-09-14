@@ -29,9 +29,8 @@
             <h2><i class="fas fa-download"></i> Get the JM Garis Store App</h2>
             <p>Prefer using our app? Download the full JM Garis Store Vue application for a faster, more seamless experience!</p>
             <a
-              href="/downloads/jm-garis-store-app.zip"
+              href="https://www.mediafire.com/file/fmziq7t1kmlczrh/JM_GARIS_STORE.apk/file"
               class="btn download-btn"
-              download
             >
               <i class="fas fa-cloud-download-alt"></i> Download App
             </a>
