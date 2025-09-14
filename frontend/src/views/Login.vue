@@ -2,7 +2,7 @@
     <div class="login-container">
       <div class="login-card">
         <div class="form-header">
-          <i class="fas fa-leaf logo-icon"></i>
+          <img src="/img/icons/app-logo.png" alt="JM Garis Logo" class="logo-image">
           <h2>JM Garis Store</h2>
           <p class="subtitle">Login to your account</p>
         </div>
@@ -211,6 +211,13 @@ export default {
   font-size: 3rem;
   color: #4CAF50;
   margin-bottom: 1rem;
+}
+
+.logo-image {
+  height: 80px;
+  width: auto;
+  margin-bottom: 1rem;
+  border-radius: 8px;
 }
 
 .subtitle {

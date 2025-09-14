@@ -3,7 +3,7 @@
     <!-- Brand/Logo -->
     <div class="navbar-brand">
       <router-link to="/home" class="logo">
-        <i class="fas fa-store"></i>
+        <img src="/img/icons/app-logo.png" alt="JM Garis Logo" class="logo-image">
         <span class="store-name">JM GARIS</span>
       </router-link>
     </div>
@@ -694,6 +694,12 @@ export default {
 
 .logo:hover {
   color: #45a049;
+}
+
+.logo-image {
+  height: 32px;
+  width: auto;
+  border-radius: 4px;
 }
 
 .store-name {
