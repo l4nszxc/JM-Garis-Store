@@ -170,11 +170,9 @@
             <!-- Empty Cart State -->
             <div v-else class="empty-cart">
                 <div class="empty-state">
-                    <i class="fas fa-shopping-cart"></i>
                     <h3>Your cart is empty</h3>
                     <p>Add some products to get started</p>
                     <button class="continue-shopping" @click="$router.push('/products')">
-                        <i class="fas fa-store"></i>
                         Continue Shopping
                     </button>
                 </div>

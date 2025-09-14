@@ -67,30 +67,26 @@
             </div>
 
             <!-- Cash on Pickup Info -->
-            <div v-if="selectedPaymentMethod === 'cash'" class="downpayment-info-section">
+            <div v-if="selectedPaymentMethod === 'cash' && paymentSettings.downpayment_enabled" class="downpayment-info-section">
                 <div class="downpayment-info">
                     <div class="downpayment-icon">
                         <i class="fas fa-shield-alt"></i>
                     </div>
                     <div class="downpayment-details">
-                        <h5 v-if="paymentSettings.downpayment_enabled">Downpayment Required</h5>
-                        <p v-if="paymentSettings.downpayment_enabled">To prevent un-claimed orders, a downpayment is required for cash on pickup orders.</p>
+                        <h5>Downpayment Required</h5>
+                        <p>To prevent un-claimed orders, a downpayment is required for cash on pickup orders.</p>
                         <div class="payment-breakdown">
                             <div class="breakdown-header">
                                 <i class="fas fa-calculator"></i>
                                 <span>Payment Breakdown</span>
                             </div>
-                            <div v-if="paymentSettings.downpayment_enabled" class="breakdown-row">
+                            <div class="breakdown-row">
                                 <span>Downpayment ({{ downpaymentPercentage }}%):</span>
                                 <span class="amount primary">{{ formatPrice(downpaymentAmount) }}</span>
                             </div>
-                            <div v-if="paymentSettings.downpayment_enabled" class="breakdown-row">
+                            <div class="breakdown-row">
                                 <span>Remaining (Pay on pickup):</span>
                                 <span class="amount">{{ formatPrice(remainingAmount) }}</span>
-                            </div>
-                            <div v-if="!paymentSettings.downpayment_enabled" class="breakdown-row">
-                                <span>Pay on pickup:</span>
-                                <span class="amount">{{ formatPrice(calculateTotal) }}</span>
                             </div>
                             <div class="breakdown-divider"></div>
                             <div class="breakdown-row total">
