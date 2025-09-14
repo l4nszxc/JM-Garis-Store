@@ -22,6 +22,26 @@
       </div>
     </section>
 
+      <!-- Download App Section -->
+      <section class="download-app" v-motion-slide-visible-once-bottom>
+        <div class="download-app-content">
+          <div class="download-app-text">
+            <h2><i class="fas fa-download"></i> Get the JM Garis Store App</h2>
+            <p>Prefer using our app? Download the full JM Garis Store Vue application for a faster, more seamless experience!</p>
+            <a
+              href="/downloads/jm-garis-store-app.zip"
+              class="btn download-btn"
+              download
+            >
+              <i class="fas fa-cloud-download-alt"></i> Download App
+            </a>
+          </div>
+          <div class="download-app-image">
+            <img src="/img/icons/app-logo.png" alt="JM Garis Store App" />
+          </div>
+        </div>
+      </section>
+
     <section class="categories" v-motion-slide-visible-once-bottom>
       <div class="section-header">
         <h2>Popular Categories</h2>
@@ -205,6 +225,80 @@ export default {
     width: 100%;
     margin: 0;
     padding: 0;
+}
+
+/* Download App Section */
+.download-app {
+  background-color: #e8f5e9;
+  padding: 3rem 2rem;
+  margin-bottom: 3rem;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.08);
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.download-app-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+.download-app-text {
+  flex: 1;
+}
+.download-app-text h2 {
+  font-size: 2rem;
+  color: #388e3c;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.download-app-text p {
+  font-size: 1.1rem;
+  color: #2c3e50;
+  margin-bottom: 2rem;
+}
+.download-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 1rem 2.5rem;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(76, 175, 80, 0.15);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  transition: background 0.3s, transform 0.3s;
+}
+.download-btn:hover {
+  background-color: #388e3c;
+  transform: translateY(-3px);
+}
+.download-app-image {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.download-app-image img {
+  max-width: 220px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
+}
+
+@media (max-width: 992px) {
+  .download-app-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  .download-app-image {
+    margin-top: 2rem;
+  }
 }
 
 /* Hero Section */
