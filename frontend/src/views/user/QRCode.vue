@@ -8,8 +8,8 @@
         <div class="header-section">
           <div class="header-content">
             <div class="title-section">
-              <h1><i class="fas fa-qrcode"></i> Your Identity QR Code</h1>
-              <p class="subtitle">Your permanent QR code for quick identification and exclusive features</p>
+              <h1><i class="fas fa-qrcode"></i> Points Redemption QR Code</h1>
+              <p class="subtitle">Your secure QR code for redeeming points at our physical store location</p>
             </div>
             
             <div class="qr-stats">
@@ -41,15 +41,11 @@
           <div class="qr-header">
             <h2><i class="fas fa-id-card"></i> Personal Identity QR Code</h2>
             <div class="qr-actions">
-              <button @click="toggleQRVisibility" class="visibility-btn" :class="{ 'hidden': !qrVisible }">
-                <i :class="qrVisible ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                {{ qrVisible ? 'Hide QR' : 'Show QR' }}
-              </button>
               <button @click="clearAndRegenerate" class="refresh-btn">
                 <i class="fas fa-refresh"></i>
                 Regenerate
               </button>
-              <button @click="downloadQR" class="download-btn" :disabled="!qrDataUrl || !qrVisible">
+              <button @click="downloadQR" class="download-btn" :disabled="!qrDataUrl">
                 <i class="fas fa-download"></i>
                 Download
               </button>
@@ -72,104 +68,85 @@
               </div>
               
               <div v-else class="qr-display">
-                <div class="qr-wrapper" :class="{ 'qr-hidden': !qrVisible }">
-                  <canvas ref="qrCanvas" class="qr-canvas" width="300" height="300"></canvas>
-                  <div v-if="!qrVisible" class="qr-hidden-overlay">
-                    <div class="hidden-content">
-                      <i class="fas fa-eye-slash"></i>
-                      <p>QR Code Hidden</p>
-                      <button @click="toggleQRVisibility" class="show-qr-btn">
-                        <i class="fas fa-eye"></i>
-                        Show QR Code
-                      </button>
-                    </div>
+                <div class="qr-secure-message">
+                  <div class="secure-icon">
+                    <i class="fas fa-shield-alt"></i>
                   </div>
+                  <h3>QR Code Ready for Download</h3>
+                  <p>Your secure points redemption QR code has been generated and is ready for download. For security purposes, the QR code is not displayed here.</p>
                 </div>
                 
-                <div class="qr-info" :class="{ 'info-blurred': !qrVisible }">
-                  <div class="qr-timestamp">
-                    <div class="qr-status">
-                      <i class="fas fa-shield-alt"></i> 
-                      <span class="permanent-badge">Permanent Identity QR</span>
-                    </div>
-                    <div class="qr-date">Created: {{ generatedDate }}</div>
-                  </div>
-                </div>
+                <!-- Hidden canvas for QR generation -->
+                <canvas ref="qrCanvas" class="qr-canvas-hidden" width="300" height="300"></canvas>
               </div>
             </div>
         </div>
 
         <!-- QR Code Features Section -->
         <div class="features-section">
-          <h2><i class="fas fa-star"></i> Identity QR Code Features</h2>
+          <h2><i class="fas fa-star"></i> Points Redemption QR Code Features</h2>
           <div class="features-grid">
             <div class="feature-card">
               <div class="feature-icon">
-                <i class="fas fa-fingerprint"></i>
+                <i class="fas fa-coins"></i>
               </div>
-              <h3>Permanent Identity</h3>
-              <p>This QR code is unique to your account and never changes, serving as your digital identity.</p>
+              <h3>Points Redemption</h3>
+              <p>Use this QR code to redeem your earned points when making purchases at our physical store.</p>
             </div>
             
             <div class="feature-card">
               <div class="feature-icon">
-                <i class="fas fa-bolt"></i>
+                <i class="fas fa-store"></i>
               </div>
-              <h3>Quick Identification</h3>
-              <p>Staff can instantly identify your account using this QR code for faster service.</p>
+              <h3>In-Store Only</h3>
+              <p>This QR code is exclusively for use at our physical store location for secure point transactions.</p>
             </div>
             
             <div class="feature-card">
               <div class="feature-icon">
-                <i class="fas fa-gift"></i>
+                <i class="fas fa-user-check"></i>
               </div>
-              <h3>Exclusive Access</h3>
-              <p>Scan your QR code to access exclusive rewards and special member-only offers.</p>
-            </div>
-            
-            <div class="feature-card">
-              <div class="feature-icon">
-                <i class="fas fa-shield-alt"></i>
-              </div>
-              <h3>Secure & Private</h3>
-              <p>Your QR code contains only necessary identification data and is securely encrypted.</p>
+              <h3>Account Verification</h3>
+              <p>Instantly verifies your identity and points balance for quick and accurate redemption.</p>
             </div>
           </div>
         </div>
 
         <!-- Usage Instructions Section -->
         <div class="instructions-section">
-          <h2><i class="fas fa-info-circle"></i> How to Use Your Identity QR Code</h2>
+          <h2><i class="fas fa-info-circle"></i> How to Use Your Points Redemption QR Code</h2>
           <div class="instructions-grid">
             <div class="instruction-step">
               <div class="step-number">1</div>
               <div class="step-content">
-                <h3>Save Once, Use Forever</h3>
-                <p>Download your QR code once and save it to your device. It will never change or expire.</p>
+                <h3>Download & Save</h3>
+                <p>Download your QR code and save it to your phone or print it out. This QR code is permanent and unique to your account.</p>
               </div>
             </div>
             
             <div class="instruction-step">
               <div class="step-number">2</div>
               <div class="step-content">
-                <h3>Present for Service</h3>
-                <p>Show your QR code to store staff for instant account recognition and faster service.</p>
+                <h3>Visit Physical Store</h3>
+                <p>Bring your QR code when shopping at our physical store location to redeem your accumulated points.</p>
               </div>
             </div>
-            
+          </div>
+          
+          <div class="instructions-grid">
             <div class="instruction-step">
               <div class="step-number">3</div>
               <div class="step-content">
-                <h3>Access Member Benefits</h3>
-                <p>Use your identity QR to unlock exclusive rewards and member-only promotional offers.</p>
+                <h3>Show at Checkout</h3>
+                <p>Present your QR code to the cashier during checkout. They will scan it to apply your points discount.</p>
               </div>
             </div>
             
             <div class="instruction-step">
               <div class="step-number">4</div>
               <div class="step-content">
-                <h3>Keep it Secure</h3>
-                <p>Treat this QR code like an ID card. Don't share it publicly as it identifies your account.</p>
+                <h3>Points Applied</h3>
+                <p>Admin will verify your account and apply the points redemption to your purchase total automatically.</p>
               </div>
             </div>
           </div>
@@ -208,7 +185,6 @@ export default {
       qrDataUrl: '',
       generatedDate: '', // Changed from lastGenerated to generatedDate
       memberSince: '',
-      qrVisible: true,
       canvasReady: false
     };
   },
@@ -266,10 +242,6 @@ export default {
       } catch (error) {
         console.error('Error fetching user data:', error);
       }
-    },
-
-    toggleQRVisibility() {
-      this.qrVisible = !this.qrVisible;
     },
 
     async clearAndRegenerate() {
@@ -647,21 +619,16 @@ export default {
         return;
       }
       
-      if (!this.qrVisible) {
-        this.showNotification('Please show the QR code before downloading', 'error');
-        return;
-      }
-      
       try {
         const link = document.createElement('a');
-        link.download = `${this.username}-identity-qr.png`; // Changed filename to reflect permanent identity
+        link.download = `${this.username}-points-redemption-qr.png`; // Updated filename
         link.href = this.qrDataUrl;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         
         // Show success message
-        this.showNotification('Identity QR code downloaded successfully!', 'success');
+        this.showNotification('Points Redemption QR code downloaded successfully!', 'success');
       } catch (error) {
         console.error('Error downloading QR code:', error);
         this.error = 'Failed to download QR code';
@@ -849,7 +816,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 0;
 }
 
 .qr-header h2 {
@@ -865,6 +832,7 @@ export default {
 .qr-actions {
   display: flex;
   gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .refresh-btn, .download-btn, .retry-btn {
@@ -926,7 +894,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 400px;
+  min-height: auto;
   width: 100%;
 }
 
@@ -958,7 +926,6 @@ export default {
 .qr-display {
   text-align: center;
   width: 100%;
-  min-height: 400px;
 }
 
 .qr-wrapper {
@@ -979,68 +946,50 @@ export default {
   max-width: 100%;
   height: auto;
   width: 300px;
-  min-height: 300px;
 }
 
-/* QR Hidden State */
-.qr-wrapper.qr-hidden .qr-canvas {
-  filter: blur(20px);
-  transition: filter 0.3s ease;
+.qr-canvas-hidden {
+  display: none;
 }
 
-.qr-wrapper:not(.qr-hidden) .qr-canvas {
-  filter: none;
+.qr-secure-message {
+  text-align: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 12px;
 }
 
-.qr-hidden-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.95);
+.secure-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  backdrop-filter: blur(5px);
+  font-size: 2rem;
+  margin: 0 auto 1.5rem;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
-.hidden-content {
-  text-align: center;
+.secure-icon i {
+  display: block;
+  line-height: 1;
+}
+
+.qr-secure-message h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 1rem 0;
+}
+
+.qr-secure-message p {
   color: #6c757d;
-}
-
-.hidden-content i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  color: #adb5bd;
-}
-
-.hidden-content p {
-  font-size: 1.1rem;
-  margin: 0 0 1.5rem 0;
-  font-weight: 500;
-}
-
-.show-qr-btn {
-  background: #4CAF50;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  margin: 0 auto;
-}
-
-.show-qr-btn:hover {
-  background: #45a049;
-  transform: translateY(-1px);
+  line-height: 1.6;
+  margin: 0;
+  font-size: 1rem;
 }
 
 .qr-info {
@@ -1116,13 +1065,13 @@ export default {
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
 }
 
 .feature-card {
   background: #f8f9fa;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 12px;
   text-align: center;
   transition: all 0.3s ease;
@@ -1134,29 +1083,30 @@ export default {
 }
 
 .feature-icon {
-  width: 60px;
-  height: 60px;
+  width: 50px;
+  height: 50px;
   background: linear-gradient(135deg, #4CAF50, #45a049);
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   margin: 0 auto 1rem;
 }
 
 .feature-card h3 {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 600;
   color: #2c3e50;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.75rem 0;
 }
 
 .feature-card p {
   color: #6c757d;
-  line-height: 1.6;
+  line-height: 1.5;
   margin: 0;
+  font-size: 0.875rem;
 }
 
 /* Instructions Section */
@@ -1179,19 +1129,27 @@ export default {
 
 .instructions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.instructions-grid:last-child {
+  margin-bottom: 0;
 }
 
 .instruction-step {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
 }
 
 .step-number {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   background: linear-gradient(135deg, #4CAF50, #45a049);
   color: white;
   border-radius: 50%;
@@ -1200,10 +1158,11 @@ export default {
   justify-content: center;
   font-weight: 600;
   flex-shrink: 0;
+  font-size: 0.875rem;
 }
 
 .step-content h3 {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #2c3e50;
   margin: 0 0 0.5rem 0;
@@ -1211,35 +1170,9 @@ export default {
 
 .step-content p {
   color: #6c757d;
-  line-height: 1.6;
+  line-height: 1.5;
   margin: 0;
-}
-
-/* QR Visibility Controls */
-.visibility-btn {
-  background: #6c757d;
-  padding: 0.75rem 1.5rem;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
-}
-
-.visibility-btn:hover {
-  background: #5a6268;
-}
-
-.visibility-btn.hidden {
-  background: #007bff;
-}
-
-.visibility-btn.hidden:hover {
-  background: #0056b3;
+  font-size: 0.875rem;
 }
 
 @keyframes slideIn {
@@ -1265,76 +1198,493 @@ export default {
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+  .container {
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+  
+  .qr-content {
+    padding: 1.5rem 0.75rem;
+  }
+  
+  .header-section,
+  .qr-display-section,
+  .features-section,
+  .instructions-section {
+    padding: 1.75rem;
+  }
+}
+
 @media (max-width: 768px) {
   .qr-content {
-    padding: 1rem;
+    padding: 0.875rem 0.5rem;
+  }
+
+  .header-section,
+  .qr-display-section,
+  .features-section,
+  .instructions-section {
+    padding: 1.25rem;
+    border-radius: 12px;
   }
 
   .header-content {
     flex-direction: column;
     align-items: stretch;
-    gap: 1.5rem;
+    gap: 1rem;
   }
 
   .qr-stats {
     flex-direction: column;
     align-self: stretch;
+    gap: 0.75rem;
   }
 
   .stat-card {
     min-width: auto;
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .stat-icon {
+    font-size: 1.5rem;
+  }
+
+  .stat-value {
+    font-size: 1rem;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
   }
 
   .title-section h1 {
-    font-size: 2rem;
+    font-size: 1.5rem;
+    gap: 0.5rem;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+    line-height: 1.5;
   }
 
   .qr-header {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
+    margin-bottom: 0;
+  }
+
+  .qr-header h2 {
+    font-size: 1.25rem;
   }
 
   .qr-actions {
     justify-content: center;
+    gap: 0.75rem;
   }
 
-  .features-grid,
+  .refresh-btn, .download-btn, .retry-btn {
+    padding: 0.65rem 1rem;
+    font-size: 0.875rem;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .qr-container {
+    min-height: auto;
+  }
+
+  .qr-secure-message {
+    padding: 1.25rem;
+  }
+
+  .secure-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 3px 8px rgba(76, 175, 80, 0.3);
+  }
+
+  .qr-secure-message h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .qr-secure-message p {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .features-section h2,
+  .instructions-section h2 {
+    font-size: 1.4rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .feature-card {
+    padding: 1.25rem;
+  }
+
+  .feature-icon {
+    width: 45px;
+    height: 45px;
+    font-size: 1.125rem;
+  }
+
+  .feature-card h3 {
+    font-size: 1rem;
+  }
+
+  .feature-card p {
+    font-size: 0.85rem;
+  }
+
   .instructions-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
   }
 
   .instruction-step {
-    flex-direction: column;
-    text-align: center;
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .step-number {
+    width: 30px;
+    height: 30px;
+    font-size: 0.85rem;
+  }
+
+  .step-content h3 {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .step-content p {
+    font-size: 0.85rem;
+    line-height: 1.4;
   }
 }
 
 @media (max-width: 480px) {
+  .qr-content {
+    padding: 0.5rem 0.25rem;
+  }
+
   .header-section,
   .qr-display-section,
   .features-section,
   .instructions-section {
-    padding: 1.5rem;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+
+  .container {
+    gap: 1.25rem;
   }
 
   .title-section h1 {
-    font-size: 1.75rem;
+    font-size: 1.25rem;
+    gap: 0.4rem;
+  }
+
+  .title-section h1 i {
+    font-size: 1.125rem;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  .stat-card {
+    padding: 0.875rem;
+    gap: 0.6rem;
+  }
+
+  .stat-icon {
+    font-size: 1.25rem;
+  }
+
+  .stat-value {
+    font-size: 0.9rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+
+  .qr-header h2 {
+    font-size: 1.1rem;
   }
 
   .qr-actions {
     flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .refresh-btn, .download-btn, .retry-btn {
+    padding: 0.625rem;
+    width: 100%;
+    justify-content: center;
+    font-size: 0.8rem;
+  }
+
+  .qr-container {
+    min-height: auto;
+  }
+
+  .qr-secure-message {
+    padding: 1rem;
+  }
+
+  .secure-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+    margin-bottom: 0.875rem;
+    box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+  }
+
+  .qr-secure-message h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .qr-secure-message p {
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+
+  .features-section h2,
+  .instructions-section h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .feature-card {
+    padding: 1rem;
+  }
+
+  .feature-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .feature-card h3 {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-card p {
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+
+  .instruction-step {
+    padding: 0.875rem;
+    gap: 0.6rem;
+  }
+
+  .step-number {
+    width: 26px;
+    height: 26px;
+    font-size: 0.75rem;
+  }
+
+  .step-content h3 {
+    font-size: 0.875rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .step-content p {
+    font-size: 0.75rem;
+    line-height: 1.3;
   }
 
   .qr-canvas {
-    max-width: 90vw;
-    max-height: 90vw;
+    max-width: 85vw;
+    max-height: 85vw;
   }
   
   .qr-wrapper {
     width: 100%;
     display: flex;
     justify-content: center;
+  }
+
+  .spinner {
+    width: 30px;
+    height: 30px;
+    border-width: 3px;
+  }
+
+  .qr-info {
+    padding: 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .permanent-badge {
+    padding: 0.2rem 0.6rem;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .qr-content {
+    padding: 0.375rem 0.125rem;
+  }
+
+  .header-section,
+  .qr-display-section,
+  .features-section,
+  .instructions-section {
+    padding: 0.875rem;
+  }
+
+  .container {
+    gap: 1rem;
+  }
+
+  .title-section h1 {
+    font-size: 1.125rem;
+    gap: 0.3rem;
+  }
+
+  .title-section h1 i {
+    font-size: 1rem;
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+  }
+
+  .stat-card {
+    padding: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .stat-icon {
+    font-size: 1.125rem;
+  }
+
+  .stat-value {
+    font-size: 0.85rem;
+  }
+
+  .stat-label {
+    font-size: 0.65rem;
+  }
+
+  .qr-header h2 {
+    font-size: 1rem;
+  }
+
+  .refresh-btn, .download-btn, .retry-btn {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .qr-secure-message {
+    padding: 0.875rem;
+  }
+
+  .secure-icon {
+    width: 45px;
+    height: 45px;
+    font-size: 1.125rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .qr-secure-message h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .qr-secure-message p {
+    font-size: 0.75rem;
+  }
+
+  .features-section h2,
+  .instructions-section h2 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-card {
+    padding: 0.875rem;
+  }
+
+  .feature-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .feature-card h3 {
+    font-size: 0.875rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .feature-card p {
+    font-size: 0.75rem;
+  }
+
+  .instruction-step {
+    padding: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .step-number {
+    width: 24px;
+    height: 24px;
+    font-size: 0.7rem;
+  }
+
+  .step-content h3 {
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .step-content p {
+    font-size: 0.7rem;
+  }
+
+  .qr-canvas {
+    max-width: 80vw;
+    max-height: 80vw;
+  }
+
+  .spinner {
+    width: 25px;
+    height: 25px;
+    border-width: 2px;
+  }
+
+  .qr-info {
+    padding: 0.625rem;
+    font-size: 0.75rem;
+  }
+
+  .permanent-badge {
+    padding: 0.15rem 0.5rem;
+    font-size: 0.65rem;
+  }
+
+  .qr-date {
+    font-size: 0.7rem;
   }
 }
 </style>

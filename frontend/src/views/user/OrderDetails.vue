@@ -1383,17 +1383,33 @@ textarea.form-input {
 
 @media (max-width: 768px) {
   .order-details-content {
-    padding: 1rem;
+    padding: 0.75rem;
+  }
+  
+  .back-button {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
   }
   
   .order-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+  
+  .order-header h1 {
+    font-size: 1.25rem;
   }
   
   .order-status {
     align-self: flex-start;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+  
+  .order-info {
+    padding: 1rem;
   }
   
   .info-group {
@@ -1401,35 +1417,120 @@ textarea.form-input {
     gap: 1rem;
   }
   
+  .info-item {
+    gap: 0.25rem;
+  }
+  
+  .info-label {
+    font-size: 0.8rem;
+  }
+  
+  .info-value {
+    font-size: 0.9rem;
+  }
+  
+  .order-items-container {
+    padding: 1rem;
+  }
+  
+  .order-items-container h2 {
+    font-size: 1.1rem;
+  }
+  
   .order-item {
-    flex-direction: column;
+    gap: 0.75rem;
+    padding-bottom: 0.75rem;
   }
   
   .item-image-container {
-    width: 100%;
-    height: 200px;
+    width: 70px;
+    height: 70px;
+  }
+  
+  .item-name {
+    font-size: 1rem;
+  }
+  
+  .item-variant {
+    font-size: 0.85rem;
+  }
+  
+  .item-price,
+  .item-subtotal {
+    font-size: 0.9rem;
+  }
+  
+  .order-summary {
+    padding: 1rem;
+  }
+  
+  .order-summary h2 {
+    font-size: 1.1rem;
+  }
+  
+  .summary-item {
+    font-size: 0.9rem;
+  }
+  
+  .summary-item.total {
+    font-size: 1.1rem;
+  }
+  
+  .order-review-section {
+    padding: 1rem;
+  }
+  
+  .order-review-section h2 {
+    font-size: 1.1rem;
+  }
+  
+  .review-comment {
+    font-size: 0.9rem;
   }
   
   .order-actions {
+    padding: 1rem;
     flex-direction: column;
+    gap: 0.75rem;
   }
   
-  .cancel-button, .report-button {
+  .cancel-button,
+  .report-button,
+  .repeat-button {
     width: 100%;
     justify-content: center;
+    padding: 0.75rem;
+    font-size: 0.9rem;
   }
   
   .modal-content {
     width: 95%;
-    padding: 1.5rem;
+    padding: 1.25rem;
+    margin: 1rem;
+  }
+  
+  .modal-content h3 {
+    font-size: 1.25rem;
   }
   
   .modal-actions {
     flex-direction: column;
+    gap: 0.75rem;
   }
   
-  .cancel-action, .confirm-action {
+  .cancel-action,
+  .confirm-action {
     width: 100%;
+    padding: 0.75rem;
+  }
+  
+  .form-input {
+    font-size: 0.9rem;
+    padding: 0.6rem;
+  }
+  
+  .rating-selector i {
+    font-size: 1.25rem;
   }
   
   .notification {
@@ -1437,6 +1538,122 @@ textarea.form-input {
     right: 1rem;
     left: 1rem;
     max-width: none;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .order-details-content {
+    padding: 0.5rem;
+  }
+  
+  .back-button {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+  }
+  
+  .order-header {
+    padding: 0.75rem;
+  }
+  
+  .order-header h1 {
+    font-size: 1.1rem;
+  }
+  
+  .order-status {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+  }
+  
+  .order-info,
+  .order-items-container,
+  .order-summary,
+  .order-review-section {
+    padding: 0.75rem;
+  }
+  
+  .order-items-container h2,
+  .order-summary h2,
+  .order-review-section h2 {
+    font-size: 1rem;
+  }
+  
+  .order-item {
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  .item-image-container {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .item-name {
+    font-size: 0.95rem;
+  }
+  
+  .item-variant {
+    font-size: 0.8rem;
+  }
+  
+  .item-price,
+  .item-subtotal {
+    font-size: 0.85rem;
+  }
+  
+  .summary-item {
+    font-size: 0.85rem;
+  }
+  
+  .summary-item.total {
+    font-size: 1rem;
+  }
+  
+  .order-actions {
+    padding: 0.75rem;
+    gap: 0.5rem;
+  }
+  
+  .cancel-button,
+  .report-button,
+  .repeat-button {
+    padding: 0.6rem;
+    font-size: 0.85rem;
+  }
+  
+  .modal-content {
+    padding: 1rem;
+    margin: 0.5rem;
+  }
+  
+  .modal-content h3 {
+    font-size: 1.1rem;
+  }
+  
+  .form-input {
+    font-size: 0.85rem;
+    padding: 0.5rem;
+  }
+  
+  .rating-selector i {
+    font-size: 1.1rem;
+  }
+  
+  .notification {
+    padding: 0.6rem;
+    font-size: 0.85rem;
+  }
+  
+  .loading-container,
+  .error-container,
+  .not-found-container {
+    padding: 2rem 1rem;
+  }
+  
+  .spinner {
+    width: 40px;
+    height: 40px;
   }
 }
 </style>

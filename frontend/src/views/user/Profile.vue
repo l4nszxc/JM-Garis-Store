@@ -1338,7 +1338,7 @@ export default {
 /* Responsive Design */
 @media (max-width: 1024px) {
   .profile-content {
-    padding: 1.5rem;
+    padding: 1.25rem;
   }
   
   .notification {
@@ -1346,63 +1346,136 @@ export default {
     left: 10px;
     max-width: none;
   }
-}
-
-@media (max-width: 768px) {
-  .profile-content {
-    padding: 1rem;
+  
+  .profile-card {
+    padding: 1.75rem;
   }
   
   .profile-grid,
   .password-grid {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-content {
+    padding: 0.75rem;
+  }
+  
+  .profile-card {
+    padding: 1.25rem;
+    border-radius: 8px;
   }
   
   .card-header {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+  }
+  
+  .card-header h3 {
+    font-size: 1.15rem;
   }
   
   .button-group {
     width: 100%;
     justify-content: flex-start;
+    flex-wrap: wrap;
   }
   
-  .password-actions {
-    justify-content: center;
+  .edit-button,
+  .discard-button {
+    flex: 1;
+    min-width: 140px;
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem;
   }
   
-  .picture-buttons {
-    flex-direction: column;
-    width: 100%;
+  .profile-picture-section {
+    padding: 1rem 0;
+    margin-bottom: 1.5rem;
   }
   
-  .upload-button,
-  .remove-picture-button {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
   .profile-picture-container {
     width: 120px;
     height: 120px;
   }
   
-  .profile-card {
-    padding: 1.5rem;
+  .picture-buttons {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.75rem;
   }
   
-  .card-header h3 {
-    font-size: 1.1rem;
-  }
-  
-  .edit-button,
-  .discard-button,
-  .change-password-btn {
-    padding: 0.625rem 1.25rem;
+  .upload-button,
+  .remove-picture-button {
+    width: 100%;
+    padding: 0.65rem 1rem;
     font-size: 0.9rem;
+  }
+  
+  .profile-grid,
+  .password-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  
+  .info-group {
+    gap: 0.4rem;
+  }
+  
+  .info-group label {
+    font-size: 0.85rem;
+    margin-bottom: 0.4rem;
+  }
+  
+  .info-group input,
+  .select-input {
+    padding: 0.65rem;
+    font-size: 0.95rem;
+  }
+  
+  .password-input {
+    padding: 0.65rem 2.5rem 0.65rem 0.65rem;
+    font-size: 0.95rem;
+  }
+  
+  .password-requirements {
+    margin-top: 0.6rem;
+  }
+  
+  .requirement {
+    font-size: 0.8rem;
+  }
+  
+  .password-actions {
+    justify-content: center;
+    margin-top: 1.25rem;
+  }
+  
+  .change-password-btn {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+  }
+  
+  .modal-content {
+    padding: 1.5rem;
+    width: 95%;
+  }
+  
+  .modal-buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .confirm-btn,
+  .cancel-btn {
+    width: 100%;
+    padding: 0.75rem;
   }
   
   .notification {
@@ -1410,7 +1483,201 @@ export default {
     right: 10px;
     left: 10px;
     max-width: none;
+    padding: 0.875rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-content {
+    padding: 0.5rem;
+  }
+  
+  .profile-card {
     padding: 1rem;
+    border-radius: 6px;
+  }
+  
+  .card-header {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.6rem;
+  }
+  
+  .card-header h3 {
+    font-size: 1.05rem;
+    gap: 0.4rem;
+  }
+  
+  .button-group {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  
+  .edit-button,
+  .discard-button {
+    width: 100%;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    justify-content: center;
+  }
+  
+  .profile-picture-section {
+    padding: 0.75rem 0;
+    margin-bottom: 1.25rem;
+  }
+  
+  .profile-picture-container {
+    width: 100px;
+    height: 100px;
+    border: 3px solid white;
+  }
+  
+  .picture-buttons {
+    gap: 0.6rem;
+  }
+  
+  .upload-button,
+  .remove-picture-button {
+    padding: 0.6rem 0.875rem;
+    font-size: 0.85rem;
+  }
+  
+  .profile-grid,
+  .password-grid {
+    gap: 1rem;
+  }
+  
+  .info-group {
+    gap: 0.35rem;
+  }
+  
+  .info-group label {
+    font-size: 0.8rem;
+    margin-bottom: 0.35rem;
+  }
+  
+  .info-group input,
+  .select-input {
+    padding: 0.6rem;
+    font-size: 0.9rem;
+  }
+  
+  .password-input {
+    padding: 0.6rem 2.25rem 0.6rem 0.6rem;
+    font-size: 0.9rem;
+  }
+  
+  .password-toggle {
+    right: 0.6rem;
+  }
+  
+  .password-requirements {
+    margin-top: 0.5rem;
+    gap: 0.4rem;
+  }
+  
+  .requirement {
+    font-size: 0.75rem;
+  }
+  
+  .password-actions {
+    margin-top: 1rem;
+  }
+  
+  .change-password-btn {
+    padding: 0.7rem;
+    font-size: 0.9rem;
+  }
+  
+  .modal-content {
+    padding: 1.25rem;
+    margin: 1rem;
+  }
+  
+  .modal-content h3 {
+    font-size: 1.1rem;
+  }
+  
+  .modal-content p {
+    font-size: 0.9rem;
+  }
+  
+  .confirm-btn,
+  .cancel-btn {
+    padding: 0.65rem;
+    font-size: 0.9rem;
+  }
+  
+  .notification {
+    bottom: 8px;
+    right: 8px;
+    left: 8px;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+  
+  .notification-content {
+    gap: 0.6rem;
+  }
+  
+  .notification-content i {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .profile-content {
+    padding: 0.375rem;
+  }
+  
+  .profile-card {
+    padding: 0.875rem;
+  }
+  
+  .card-header h3 {
+    font-size: 1rem;
+  }
+  
+  .profile-picture-container {
+    width: 90px;
+    height: 90px;
+  }
+  
+  .upload-button,
+  .remove-picture-button {
+    padding: 0.55rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .info-group label {
+    font-size: 0.75rem;
+  }
+  
+  .info-group input,
+  .select-input,
+  .password-input {
+    padding: 0.55rem;
+    font-size: 0.85rem;
+  }
+  
+  .password-input {
+    padding-right: 2rem;
+  }
+  
+  .requirement {
+    font-size: 0.7rem;
+  }
+  
+  .edit-button,
+  .discard-button,
+  .change-password-btn {
+    padding: 0.55rem 0.875rem;
+    font-size: 0.8rem;
+  }
+  
+  .notification {
+    padding: 0.65rem;
+    font-size: 0.8rem;
   }
 }
 </style>

@@ -1019,27 +1019,28 @@ h1 {
   color: #2e7d32;
 }
 @media (max-width: 768px) {
-    .notification-header {
-    flex-wrap: wrap;
-  }
-  
-  .notification-controls {
-    width: 100%;
-    justify-content: space-between;
-    margin-top: 0.5rem;
-  }
-  
-  .notification-dropdown {
-    right: 0;
-    left: auto;
-  }
-    .dropdown-content {
-    right: -50px;
-  }
   .notifications-content {
-    padding: 1rem;
+    padding: 0.75rem;
   }
+  
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .notifications-actions {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+    padding: 0.75rem;
+  }
+  
+  .select-all-container {
+    order: 2;
+  }
+  
   .filter-buttons {
+    order: 1;
     width: 100%;
     justify-content: center;
   }
@@ -1047,39 +1048,163 @@ h1 {
   .filter-btn {
     flex: 1;
     justify-content: center;
-  }
-  
-  .notifications-actions {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.85rem;
   }
   
   .action-buttons {
+    order: 3;
     flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .dropdown-content {
+    right: 0;
+    min-width: 160px;
   }
   
   .notification-card {
-    flex-direction: column;
+    margin-bottom: 0.75rem;
   }
   
   .notification-checkbox {
-    padding: 1rem 1rem 0 1rem;
+    padding: 0.75rem 1rem 0 1rem;
     justify-content: flex-start;
   }
   
   .notification-icon {
-    width: 100%;
-    padding: 1rem 0;
+    width: 60px;
+    font-size: 1.25rem;
   }
   
-  .notification-actions {
-    justify-content: center;
+  .notification-content {
+    padding: 1rem 0.75rem;
   }
   
-  .read-btn {
+  .notification-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .notification-header h3 {
+    font-size: 1rem;
+  }
+  
+  .notification-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .notification-time {
+    font-size: 0.8rem;
+  }
+  
+  .notification-message {
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .notification-dropdown {
+    right: 0;
+    min-width: 150px;
+  }
+  
+  .notification-dropdown-item {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+  
+  .empty-notifications {
+    padding: 2rem 1rem;
+  }
+  
+  .empty-notifications i {
+    font-size: 2.5rem;
+  }
+  
+  .empty-notifications p {
+    font-size: 1rem;
+  }
+  
+  .modal-content {
+    width: 95%;
+    padding: 1.25rem;
+    margin: 1rem;
+  }
+  
+  .modal-content h3 {
+    font-size: 1.25rem;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .cancel-btn,
+  .delete-confirm-btn,
+  .delete-selected-btn {
     width: 100%;
     justify-content: center;
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .notifications-content {
+    padding: 0.5rem;
+  }
+  
+  h1 {
+    font-size: 1.25rem;
+    gap: 0.5rem;
+  }
+  
+  .notifications-actions {
+    padding: 0.5rem;
+  }
+  
+  .filter-btn {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .filter-badge {
+    min-width: 16px;
+    height: 16px;
+    font-size: 0.7rem;
+  }
+  
+  .notification-card {
+    margin-bottom: 0.5rem;
+  }
+  
+  .notification-content {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .notification-header h3 {
+    font-size: 0.95rem;
+  }
+  
+  .notification-time {
+    font-size: 0.75rem;
+  }
+  
+  .notification-message {
+    font-size: 0.85rem;
+  }
+  
+  .modal-content {
+    padding: 1rem;
+    margin: 0.5rem;
+  }
+  
+  .dropdown-item,
+  .notification-dropdown-item {
+    padding: 6px 10px;
+    font-size: 0.8rem;
   }
 }
 </style>
