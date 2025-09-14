@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Sep 09, 2025 at 06:46 PM
+-- Generation Time: Sep 14, 2025 at 04:23 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -46,7 +46,8 @@ INSERT INTO `available_discounts` (`id`, `user_id`, `amount`, `created_at`, `exp
 (63, 58, 5.00, '2025-07-03 15:17:58', '2025-08-02 15:17:58', 1, '3333057'),
 (64, 58, 5.00, '2025-07-03 15:25:51', '2025-08-02 15:25:51', 1, '3687453'),
 (65, 58, 25.00, '2025-08-06 03:21:06', '2025-09-05 03:21:06', 1, '4265510'),
-(66, 58, 25.00, '2025-08-07 13:12:56', '2025-09-06 13:12:56', 0, NULL);
+(66, 58, 25.00, '2025-08-07 13:12:56', '2025-09-06 13:12:56', 0, NULL),
+(67, 58, 25.00, '2025-09-10 09:07:05', '2025-10-10 09:07:05', 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -71,7 +72,7 @@ INSERT INTO `cart` (`id`, `user_id`, `product_id`, `quantity`, `created_at`, `ch
 (2491818, 1000, 33, 1, '2025-07-04 06:21:34', NULL),
 (2491819, 1000, 36, 6, '2025-07-04 06:21:34', NULL),
 (2491821, 1000, 32, 1, '2025-07-04 06:21:52', NULL),
-(2491889, 58, 32, 1, '2025-09-09 18:37:54', NULL);
+(2491891, 58, 32, 1, '2025-09-10 09:04:45', NULL);
 
 -- --------------------------------------------------------
 
@@ -130,7 +131,7 @@ CREATE TABLE `orders` (
 
 INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_status`, `created_at`, `updated_at`, `cancel_reason`, `accepted_by`, `accepted_at`, `cash_amount`, `change_amount`, `customer_name`, `is_physical_order`, `packaging_preference`, `payment_intent_id`, `payment_method`) VALUES
 ('0200807', 58, 649.00, 'cancelled', 'pending', '2025-07-03 16:39:55', '2025-07-03 16:46:51', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
-('0290453', 58, 741.00, 'ready for pickup', 'pending', '2025-08-07 02:26:40', '2025-08-07 12:40:52', NULL, 23, '2025-08-07 19:37:06', NULL, NULL, NULL, 0, 'eco', NULL, 'hatid'),
+('0290453', 58, 741.00, 'paid', 'pending', '2025-08-07 02:26:40', '2025-09-10 08:45:29', NULL, 23, '2025-08-07 19:37:06', 800.00, 59.00, NULL, 0, 'eco', NULL, 'hatid'),
 ('0469640', 58, 756.00, 'paid using gcash', 'pending', '2025-07-04 01:42:58', '2025-07-04 01:43:06', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', 'pi_jDJrvUjyPG8w6Y58xNENbcmm', 'gcash'),
 ('0505014', 58, 649.00, 'cancelled', 'pending', '2025-08-06 23:23:31', '2025-08-07 00:31:13', 'Ordered by mistake', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'gcash'),
 ('0808688', 58, 141.00, 'paid', 'pending', '2025-07-03 16:25:32', '2025-07-03 16:25:47', NULL, 23, '2025-07-04 00:25:36', 200.00, 59.00, NULL, 0, 'eco', NULL, 'cash'),
@@ -154,7 +155,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_
 ('3091563', 58, 1851.00, 'cancelled', 'pending', '2025-08-06 03:16:48', '2025-08-07 00:31:21', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'hatid'),
 ('3121203', 58, 649.00, 'cancelled', 'pending', '2025-08-06 23:23:14', '2025-08-07 00:31:31', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'gcash'),
 ('3187364', 58, 649.00, 'cancelled', 'pending', '2025-08-05 14:30:20', '2025-08-07 00:31:34', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
-('3192204', 58, 301.00, 'ready for pickup', 'pending', '2025-09-09 18:33:54', '2025-09-09 18:35:35', NULL, 23, '2025-09-10 02:35:10', NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
+('3192204', 58, 301.00, 'paid', 'pending', '2025-09-09 18:33:54', '2025-09-10 08:45:09', NULL, 23, '2025-09-10 02:35:10', 500.00, 199.00, NULL, 0, 'eco', NULL, 'cash'),
 ('3243922', 58, 555.00, 'paid using gcash', 'pending', '2025-08-06 23:37:31', '2025-08-06 23:37:55', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
 ('3409484', 1000, 141.00, 'paid', 'pending', '2025-07-03 17:42:12', '2025-08-05 14:54:27', NULL, 23, '2025-07-04 01:42:15', 150.00, 9.00, NULL, 0, 'eco', NULL, 'cash'),
 ('3496818', 58, 189.00, 'paid using gcash', 'pending', '2025-08-07 00:17:56', '2025-08-07 00:17:56', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'gcash'),
@@ -164,6 +165,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_
 ('4265510', 58, 599.00, 'pending_pickup', 'pending', '2025-08-07 13:13:26', '2025-08-07 13:13:26', 'Downpayment of ₱156.00 paid via GCash. Remaining: ₱468.00', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
 ('4338528', 58, 1554.00, 'paid', 'pending', '2025-08-05 14:35:20', '2025-08-05 14:53:09', NULL, 23, '2025-08-05 22:37:03', 2000.00, 446.00, NULL, 0, 'eco', NULL, 'hatid'),
 ('4377608', 58, 141.00, 'paid using gcash', 'pending', '2025-07-04 01:44:19', '2025-07-04 01:44:25', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', 'pi_wd8byVz2BF9eLfkQtxSW6nYd', 'gcash'),
+('4423914', 58, 649.00, 'paid', 'pending', '2025-09-10 08:54:09', '2025-09-10 08:54:39', NULL, 23, '2025-09-10 16:54:22', 700.00, 51.00, NULL, 0, 'eco', NULL, 'hatid'),
 ('4546156', 58, 883.00, 'cancelled', 'pending', '2025-08-05 14:29:58', '2025-08-07 00:31:36', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
 ('4632579', 58, 1298.00, 'paid', 'pending', '2025-08-07 12:38:39', '2025-08-07 12:39:02', 'Downpayment of ₱324.50 paid via GCash. Remaining: ₱973.50', 23, '2025-08-07 20:38:48', 1000.00, 26.50, NULL, 0, 'eco', NULL, 'cash'),
 ('4686365', 58, 936.00, 'pending_pickup', 'pending', '2025-08-07 12:00:16', '2025-08-07 12:00:16', 'Downpayment of ₱234.00 paid via GCash. Remaining: ₱702.00', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
@@ -179,6 +181,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_
 ('5654298', 58, 185.00, 'cancelled', 'pending', '2025-08-06 22:56:37', '2025-08-06 23:11:33', 'Customer cancelled', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'hatid'),
 ('5880621', 58, 189.00, 'cancelled', 'pending', '2025-07-03 20:15:49', '2025-07-03 20:16:57', 'Ordered by mistake', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
 ('5894232', 58, 945.00, 'paid using gcash', 'pending', '2025-07-04 03:27:15', '2025-07-04 03:27:41', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
+('6021375', 58, 234.00, 'paid', 'pending', '2025-09-10 08:46:55', '2025-09-10 08:49:07', NULL, 23, '2025-09-10 16:47:30', 300.00, 66.00, NULL, 0, 'eco', NULL, 'hatid'),
 ('6064818', 58, 234.00, 'paid using gcash', 'pending', '2025-08-07 00:26:47', '2025-08-07 00:26:47', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'gcash'),
 ('6066228', 58, 1049.75, 'paid using gcash', 'pending', '2025-07-04 06:13:37', '2025-07-04 06:14:04', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
 ('6158636', 58, 834.00, 'paid using gcash', 'pending', '2025-08-07 02:33:00', '2025-08-07 02:33:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'gcash'),
@@ -386,6 +389,7 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_
 ('PO00014', 23, 1298.00, 'paid', 'pending', '2025-08-05 18:18:48', '2025-08-05 18:19:58', NULL, 23, '2025-08-06 02:18:48', 1300.00, 2.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash'),
 ('PO00015', 23, 1947.00, 'paid', 'pending', '2025-08-05 18:21:44', '2025-08-05 18:21:59', NULL, 23, '2025-08-06 02:21:44', 2000.00, 53.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash'),
 ('PO00016', 23, 649.00, 'paid', 'pending', '2025-08-05 18:23:12', '2025-08-05 18:23:20', NULL, 23, '2025-08-06 02:23:12', 700.00, 51.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash'),
+('PO00017', 23, 495.00, 'paid', 'pending', '2025-09-10 09:08:10', '2025-09-10 09:08:41', NULL, 23, '2025-09-10 17:08:10', 500.00, 5.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash'),
 ('SPF001', 58, 28772.00, 'paid', 'paid', '2025-04-29 06:30:00', '2025-07-04 05:51:37', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('SPF002', 58, 31347.00, 'paid', 'paid', '2025-06-23 06:30:00', '2025-07-04 05:51:37', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('SPF003', 58, 27971.00, 'paid', 'paid', '2025-05-23 06:30:00', '2025-07-04 05:51:37', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
@@ -439,12 +443,12 @@ INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_
 ('TO00031', 1, 8954.00, 'paid', 'pending', '2025-05-22 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('TO00032', 1, 174.00, 'paid', 'pending', '2025-05-30 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('TO00033', 1, 138.00, 'paid', 'pending', '2025-05-09 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
-('TO00034', 1, 579.00, 'paid', 'pending', '2025-06-30 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
+('TO00034', 1, 579.00, 'paid', 'pending', '2025-06-30 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash');
+INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_status`, `created_at`, `updated_at`, `cancel_reason`, `accepted_by`, `accepted_at`, `cash_amount`, `change_amount`, `customer_name`, `is_physical_order`, `packaging_preference`, `payment_intent_id`, `payment_method`) VALUES
 ('TO00035', 1, 1464.00, 'paid', 'pending', '2025-07-01 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('TO00036', 1, 300.00, 'paid', 'pending', '2025-06-29 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('TO00037', 1, 2392.00, 'paid', 'pending', '2025-05-20 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
-('TO00038', 1, 0.00, 'paid', 'pending', '2025-07-01 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash');
-INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_status`, `created_at`, `updated_at`, `cancel_reason`, `accepted_by`, `accepted_at`, `cash_amount`, `change_amount`, `customer_name`, `is_physical_order`, `packaging_preference`, `payment_intent_id`, `payment_method`) VALUES
+('TO00038', 1, 0.00, 'paid', 'pending', '2025-07-01 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('TO00039', 1, 125.00, 'paid', 'pending', '2025-06-02 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('TO00040', 1, 350.00, 'paid', 'pending', '2025-05-06 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
 ('TO00041', 1, 8685.00, 'paid', 'pending', '2025-05-29 16:00:00', '2025-07-04 04:01:41', NULL, NULL, NULL, NULL, NULL, NULL, 1, 'eco', NULL, 'cash'),
@@ -2980,7 +2984,10 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, 
 (4246, '4783669', 31, 5, 301.00, NULL),
 (4247, '4265510', 33, 1, 649.00, NULL),
 (4248, '3192204', 31, 1, 301.00, NULL),
-(4249, '5196060', 32, 1, 234.00, NULL);
+(4249, '5196060', 32, 1, 234.00, NULL),
+(4250, '6021375', 32, 1, 234.00, NULL),
+(4251, '4423914', 33, 1, 649.00, NULL),
+(4252, 'PO00017', 84, 5, 99.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -3105,7 +3112,11 @@ INSERT INTO `payment_intents` (`id`, `order_id`, `source_id`, `amount`, `status`
 (59, NULL, NULL, 324.50, 'pending', '2025-08-07 12:37:53', '2025-08-07 12:37:53', 'link_xYf5nNX2FFDd1HNgmdHtdhpe', '3aLbQze', 'link_xYf5nNX2FFDd1HNgmdHtdhpe', NULL, NULL, '{\"items\":[{\"id\":2491881,\"product_id\":33,\"quantity\":2,\"price\":649,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"cash\",\"totalAmount\":1298,\"remainingAmount\":973.5,\"downpaymentAmount\":324.5,\"type\":\"downpayment\"}', 58, 'downpayment', 1298.00, 973.50),
 (60, NULL, NULL, 324.50, 'pending', '2025-08-07 12:37:57', '2025-08-07 12:37:57', 'link_5TZVM8e68eN37dPv9joiXAq3', '4VEzx3b', 'link_5TZVM8e68eN37dPv9joiXAq3', NULL, NULL, '{\"items\":[{\"id\":2491881,\"product_id\":33,\"quantity\":2,\"price\":649,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"cash\",\"totalAmount\":1298,\"remainingAmount\":973.5,\"downpaymentAmount\":324.5,\"type\":\"downpayment\"}', 58, 'downpayment', 1298.00, 973.50),
 (61, '4632579', NULL, 324.50, 'succeeded', '2025-08-07 12:38:20', '2025-08-07 12:38:39', 'link_d5yGpe4sd6kJaEvNX1A3pwop', 'u1SnE86', 'link_d5yGpe4sd6kJaEvNX1A3pwop', NULL, NULL, '{\"items\":[{\"id\":2491881,\"product_id\":33,\"quantity\":2,\"price\":649,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"cash\",\"totalAmount\":1298,\"remainingAmount\":973.5,\"downpaymentAmount\":324.5,\"type\":\"downpayment\"}', 58, 'downpayment', 1298.00, 973.50),
-(62, '4265510', NULL, 156.00, 'succeeded', '2025-08-07 13:13:07', '2025-08-07 13:13:26', 'link_fs5F9HQZDLGtA7vxPLxsZX5s', 'YQHKjbJ', 'link_fs5F9HQZDLGtA7vxPLxsZX5s', NULL, NULL, '{\"items\":[{\"id\":2491884,\"product_id\":33,\"quantity\":1,\"price\":649,\"choice_id\":null}],\"discountId\":65,\"packagingPreference\":\"eco\",\"paymentMethod\":\"cash\",\"totalAmount\":624,\"remainingAmount\":468,\"downpaymentAmount\":156,\"type\":\"downpayment\"}', 58, 'downpayment', 624.00, 468.00);
+(62, '4265510', NULL, 156.00, 'succeeded', '2025-08-07 13:13:07', '2025-08-07 13:13:26', 'link_fs5F9HQZDLGtA7vxPLxsZX5s', 'YQHKjbJ', 'link_fs5F9HQZDLGtA7vxPLxsZX5s', NULL, NULL, '{\"items\":[{\"id\":2491884,\"product_id\":33,\"quantity\":1,\"price\":649,\"choice_id\":null}],\"discountId\":65,\"packagingPreference\":\"eco\",\"paymentMethod\":\"cash\",\"totalAmount\":624,\"remainingAmount\":468,\"downpaymentAmount\":156,\"type\":\"downpayment\"}', 58, 'downpayment', 624.00, 468.00),
+(63, NULL, NULL, 234.00, 'pending', '2025-09-09 19:15:58', '2025-09-09 19:15:58', 'link_QfEKvrpwf4K215574MkNTFJw', 'wVzK5FR', 'link_QfEKvrpwf4K215574MkNTFJw', NULL, NULL, '{\"items\":[{\"id\":2491889,\"product_id\":32,\"quantity\":1,\"price\":234,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 58, 'full_payment', 234.00, NULL),
+(64, NULL, NULL, 234.00, 'pending', '2025-09-09 19:21:13', '2025-09-09 19:21:13', 'link_Sf8cmTG32memaxic1ybNnjxW', 'RVgf9Vd', 'link_Sf8cmTG32memaxic1ybNnjxW', NULL, NULL, '{\"items\":[{\"id\":2491889,\"product_id\":32,\"quantity\":1,\"price\":234,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 58, 'full_payment', 234.00, NULL),
+(65, NULL, NULL, 234.00, 'pending', '2025-09-09 19:22:44', '2025-09-09 19:22:44', 'link_H7SYB4rNpQrQUQ9FEmsHsV91', '81FiD21', 'link_H7SYB4rNpQrQUQ9FEmsHsV91', NULL, NULL, '{\"items\":[{\"id\":2491889,\"product_id\":32,\"quantity\":1,\"price\":234,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 58, 'full_payment', 234.00, NULL),
+(66, NULL, NULL, 234.00, 'pending', '2025-09-09 19:35:57', '2025-09-09 19:35:57', 'link_pP7XtBzkUSFqoXUyfTFqwfJC', 'YU16NBh', 'link_pP7XtBzkUSFqoXUyfTFqwfJC', NULL, NULL, '{\"items\":[{\"id\":2491889,\"product_id\":32,\"quantity\":1,\"price\":234,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 58, 'full_payment', 234.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -3132,7 +3143,7 @@ CREATE TABLE `payment_settings` (
 --
 
 INSERT INTO `payment_settings` (`id`, `gcash_enabled`, `gcash_public_key`, `gcash_secret_key`, `gcash_environment`, `downpayment_enabled`, `downpayment_percentage`, `min_order_amount`, `created_at`, `updated_at`, `updated_by`) VALUES
-(1, 1, NULL, NULL, 'test', 1, 25.00, 500.00, '2025-09-09 17:29:41', '2025-09-09 18:37:04', 20);
+(1, 0, NULL, NULL, 'test', 0, 25.00, 500.00, '2025-09-09 17:29:41', '2025-09-10 09:05:10', 20);
 
 -- --------------------------------------------------------
 
@@ -3158,8 +3169,8 @@ CREATE TABLE `products` (
 
 INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_quantity`, `category`, `image`, `created_at`, `updated_at`) VALUES
 (31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 989, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-03-31 23:21:29', '2025-09-09 18:33:54'),
-(32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 983, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-03-31 23:22:15', '2025-09-09 18:37:47'),
-(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 943, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-03-31 23:22:59', '2025-08-07 13:13:26'),
+(32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 982, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-03-31 23:22:15', '2025-09-10 08:46:55'),
+(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 942, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-03-31 23:22:59', '2025-09-10 08:54:09'),
 (34, 'GSM Mojito', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 0.00, 72, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-03-31 23:28:23', '2025-07-03 18:59:39'),
 (36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 72, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-03-31 23:34:49', '2025-08-07 00:31:09'),
 (37, 'Primera Light 1Liter', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 189.00, 92, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-03-31 23:35:27', '2025-08-07 00:31:10'),
@@ -3202,7 +3213,7 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (81, 'Paminta per Tie', 'whole and ground black pepper', 8.00, 100, 'Condiments', 'https://i.ibb.co/N6RqFRg8/3912cb5cc3e9.png', '2025-04-08 23:10:07', '2025-04-08 23:10:07'),
 (82, 'Laurel per Tie', 'is an evergreen plant used to add flavor to dishes. It is used in cuisines all over the world for flavoring especially stews and broths, marinades, meat and fish dishes, gravies, and game.', 8.00, 30, 'Condiments', 'https://i.ibb.co/1Gg3Rqmt/c68fa580806f.png', '2025-04-08 23:11:30', '2025-06-11 07:32:15'),
 (83, 'Mafran Banana Catsup', 'formulated from choice spices, natural flavor and aroma of banana', 95.00, 12, 'Condiments', 'https://i.ibb.co/jP5X36rq/dc20ac6e0fce.png', '2025-04-08 23:13:42', '2025-04-08 23:13:42'),
-(84, 'Dip Catsup Gallon', 'often used as a dip or a topping for various dishes, characterized by its sweet and tangy flavor', 99.00, 12, 'Condiments', 'https://i.ibb.co/KjDjv9WP/00bb85cf904b.png', '2025-04-08 23:15:01', '2025-04-08 23:15:01'),
+(84, 'Dip Catsup Gallon', 'often used as a dip or a topping for various dishes, characterized by its sweet and tangy flavor', 99.00, 7, 'Condiments', 'https://i.ibb.co/KjDjv9WP/00bb85cf904b.png', '2025-04-08 23:15:01', '2025-09-10 09:08:10'),
 (85, '555 Karne Norte', ' a locally manufactured corned beef, known for its quality and affordability, made with selected beef, hashed, and hygienically processed under international standards, ready to eat. ', 0.00, 30, 'Canned Goods', 'https://i.ibb.co/xtWHP4pc/d786693a1768.png', '2025-04-08 23:17:10', '2025-07-03 18:45:04'),
 (86, '555 Tausi', 'a popular Filipino canned food featuring fried sardines in a savory-sweet sauce with the distinct flavor of fermented black beans (tausi)', 33.00, 10, 'Canned Goods', 'https://i.ibb.co/B5zmwwY5/47dcc1b0cebc.png', '2025-04-08 23:18:12', '2025-04-08 23:18:12'),
 (89, 'Lucky 7 Sardines', ' a budget-friendly, canned sardine option in tomato sauce, known for their savory taste and affordability, making them a popular choice for daily meals. ', 0.00, 45, 'Canned Goods', 'https://i.ibb.co/JRzY9m7R/054a358ac5dc.png', '2025-04-08 23:26:01', '2025-07-03 18:49:40'),
@@ -3723,7 +3734,7 @@ CREATE TABLE `user_loyalty_status` (
 --
 
 INSERT INTO `user_loyalty_status` (`id`, `user_id`, `loyalty_tier_id`, `current_month_spend`, `last_month_spend`, `two_months_ago_spend`, `tier_start_date`, `tier_end_date`, `last_updated`) VALUES
-(4, 58, 3, 84946.75, 0.00, 0.00, '2025-07-04', '2025-10-03', '2025-09-09 18:37:47'),
+(4, 58, 3, 86324.75, 0.00, 0.00, '2025-07-04', '2025-10-03', '2025-09-10 09:10:07'),
 (5, 1000, NULL, 141.00, 0.00, 0.00, NULL, NULL, '2025-07-03 17:42:12');
 
 -- --------------------------------------------------------
@@ -3892,7 +3903,11 @@ INSERT INTO `user_rewards` (`id`, `user_id`, `order_id`, `points`, `description`
 (569, 58, NULL, -50, 'Redeemed for Gold Reward - ₱25.00 discount', '2025-08-07 13:12:55'),
 (570, 58, '4265510', 5, 'Earned points from order #4265510 (₱599.00)', '2025-08-07 13:13:26'),
 (571, 58, '3192204', 3, 'Earned points from order #3192204 (₱301.00)', '2025-09-09 18:33:54'),
-(572, 58, '5196060', 2, 'Earned points from order #5196060 (₱234.00)', '2025-09-09 18:37:47');
+(572, 58, '5196060', 2, 'Earned points from order #5196060 (₱234.00)', '2025-09-09 18:37:47'),
+(573, 58, '6021375', 2, 'Earned points from order #6021375 (₱234.00)', '2025-09-10 08:46:55'),
+(574, 58, '4423914', 6, 'Earned points from order #4423914 (₱649.00)', '2025-09-10 08:54:09'),
+(575, 58, NULL, -50, 'Redeemed for Gold Reward - ₱25.00 discount', '2025-09-10 09:07:05'),
+(576, 58, 'PO00017', 4, 'Earned points from order #PO00017 (₱495.00)', '2025-09-10 09:10:07');
 
 --
 -- Indexes for dumped tables
@@ -4048,13 +4063,13 @@ ALTER TABLE `user_rewards`
 -- AUTO_INCREMENT for table `available_discounts`
 --
 ALTER TABLE `available_discounts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
 
 --
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491890;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491892;
 
 --
 -- AUTO_INCREMENT for table `loyalty_tiers`
@@ -4066,7 +4081,7 @@ ALTER TABLE `loyalty_tiers`
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4250;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4253;
 
 --
 -- AUTO_INCREMENT for table `order_reports`
@@ -4084,7 +4099,7 @@ ALTER TABLE `order_reviews`
 -- AUTO_INCREMENT for table `payment_intents`
 --
 ALTER TABLE `payment_intents`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
 
 --
 -- AUTO_INCREMENT for table `payment_settings`
@@ -4144,7 +4159,7 @@ ALTER TABLE `user_loyalty_status`
 -- AUTO_INCREMENT for table `user_rewards`
 --
 ALTER TABLE `user_rewards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=573;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=577;
 
 --
 -- Constraints for dumped tables
