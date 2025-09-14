@@ -132,7 +132,8 @@
 </template>
 
 <script>
-// ...existing script remains the same...
+import { getAvatarUrl } from '../utils/avatarHandler.js';
+
 export default {
   name: 'Navbar',
   props: {
@@ -167,7 +168,7 @@ export default {
       if (this.profilePicture) {
         return this.profilePicture;
       }
-      return `https://ui-avatars.com/api/?name=${this.username}&background=random`;
+      return getAvatarUrl(this.username);
     },
     unreadNotificationsCount() {
       const count = this.notifications.filter(notification => !notification.read).length;
@@ -220,7 +221,8 @@ export default {
       }
     },
     handleImageError(e) {
-      e.target.src = `https://ui-avatars.com/api/?name=${this.username}&background=random`;
+      e.target.onerror = null; // Prevent infinite loop
+      e.target.src = getAvatarUrl(this.username);
     },
     async fetchActiveOrders() {
       try {
@@ -554,6 +556,16 @@ export default {
     window.addEventListener('cart-updated', this.fetchCart);
     window.addEventListener('orders-updated', this.fetchActiveOrders);
     
+    // Listen for profile picture updates
+    window.addEventListener('profile-updated', (event) => {
+      if (event.detail && event.detail.profilePicture) {
+        this.profilePicture = event.detail.profilePicture;
+      } else {
+        // Refetch profile picture from server
+        this.fetchProfilePicture();
+      }
+    });
+    
     // Listen for notification updates with custom event
    window.addEventListener('notifications-updated', (event) => {
       if (event.detail) {
@@ -588,6 +600,7 @@ export default {
     
     window.removeEventListener('cart-updated', this.fetchCart);
     window.removeEventListener('orders-updated', this.fetchActiveOrders);
+    window.removeEventListener('profile-updated', this.fetchProfilePicture);
     window.removeEventListener('notifications-updated', this.loadNotifications);
     
     if (this.notificationCheckInterval) {

@@ -45,7 +45,6 @@
                     :alt="username"
                     class="profile-picture"
                     @error="handleImageError"
-                    crossorigin="anonymous"
                   />
                 </div>
                 
@@ -359,13 +358,13 @@ export default {
   computed: {
     profileImageUrl() {
       if (!this.profileData.profile_picture) {
-        return this.getDefaultAvatar(this.username);
+        return getAvatarUrl(this.username);
       }
       try {
         new URL(this.profileData.profile_picture);
         return this.profileData.profile_picture;
       } catch (e) {
-        return this.getDefaultAvatar(this.username);
+        return getAvatarUrl(this.username);
       }
     },
     
@@ -390,12 +389,13 @@ export default {
   
   methods: {
     getDefaultAvatar(username) {
-      const encodedName = encodeURIComponent(username || 'User');
-      return `https://ui-avatars.com/api/?name=${encodedName}&background=random&size=200`;
+      // Use the same avatar generation as Navbar for consistency
+      return getAvatarUrl(username);
     },
     
     handleImageError(e) {
       e.target.onerror = null;
+      // Fallback to consistent avatar service
       e.target.src = getAvatarUrl(this.username);
     },
     
@@ -547,12 +547,13 @@ export default {
           this.profileData.profile_picture = null;
           this.$emit('profile-updated');
           
+          // Trigger global profile update event for Navbar
+          window.dispatchEvent(new CustomEvent('profile-updated', {
+            detail: { profilePicture: null }
+          }));
+          
           this.showRemovePhotoModal = false;
           this.showNotification('Profile picture removed successfully', 'success', 'fas fa-trash');
-          
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
         } else {
           throw new Error('Failed to remove profile picture');
         }
@@ -692,12 +693,29 @@ export default {
       const file = event.target.files[0];
       if (!file) return;
 
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        this.showNotification('Please select a valid image file', 'error', 'fas fa-exclamation-triangle');
+        return;
+      }
+
+      // Validate file size (5MB max)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        this.showNotification('File size must be less than 5MB', 'error', 'fas fa-exclamation-triangle');
+        return;
+      }
+
       try {
+        this.showNotification('Uploading profile picture...', 'info', 'fas fa-spinner fa-spin');
+        
         const formData = new FormData();
         formData.append('profilePicture', file);
 
         const token = localStorage.getItem('token');
-        const response = await this.$fetch('/api/users/upload-profile-picture', {
+        
+        // Use fetch directly for better error handling
+        const response = await fetch(`${this.API_BASE_URL}/api/users/upload-profile-picture`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -705,20 +723,49 @@ export default {
           body: formData
         });
 
-        const data = await response.json();
+        // Check if response is OK
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Upload error response:', errorText);
+          
+          // Try to parse as JSON, fallback to text
+          let errorMessage = 'Failed to upload profile picture';
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            // If not JSON, use status text
+            errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
+          }
+          
+          throw new Error(errorMessage);
+        }
 
-        if (response.ok) {
+        const data = await response.json();
+        
+        if (data.imageUrl) {
           this.profileData.profile_picture = data.imageUrl;
           this.$emit('profile-updated');
           this.showNotification('Profile picture updated successfully!', 'success', 'fas fa-camera');
           
-          window.dispatchEvent(new Event('profile-updated'));
+          // Trigger global profile update event for Navbar
+          window.dispatchEvent(new CustomEvent('profile-updated', {
+            detail: { profilePicture: data.imageUrl }
+          }));
         } else {
-          throw new Error(data.message);
+          throw new Error('No image URL received from server');
         }
+        
       } catch (error) {
         console.error('Error uploading profile picture:', error);
-        this.showNotification('Failed to upload profile picture', 'error');
+        this.showNotification(
+          error.message || 'Failed to upload profile picture. Please try again.', 
+          'error', 
+          'fas fa-exclamation-triangle'
+        );
+      } finally {
+        // Clear the file input
+        event.target.value = '';
       }
     }
   },
