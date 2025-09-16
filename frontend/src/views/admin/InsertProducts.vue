@@ -686,12 +686,12 @@ export default {
               }
 
               const token = localStorage.getItem('token');
-              const response = await this.$fetch('/api/products', {
-                  method: 'POST',
-                  headers: {
-                      'Authorization': `Bearer ${token}`
-                  },
-                  body: formData
+              const response = await fetch(`${this.API_BASE_URL}/api/products`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                },
+                body: formData
               });
 
               const data = await response.json();
