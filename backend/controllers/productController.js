@@ -250,6 +250,23 @@ exports.getProductById = async (req, res) => {
     res.status(500).json({ message: 'Server error when retrieving product' });
   }
 };
+
+exports.getProductChoices = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    
+    const [choices] = await db.query(
+      `SELECT choice_id, name, price, stock, image FROM product_choices WHERE product_id = ? AND stock > 0`,
+      [productId]
+    );
+    
+    res.status(200).json(choices);
+  } catch (error) {
+    console.error('Error fetching product choices:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 exports.updateProductChoice = async (req, res) => {
     try {
         const { choiceId } = req.params;

@@ -13,6 +13,7 @@ router.post('/', productController.uploadMiddleware, productController.insertPro
 router.put('/:id', productController.uploadMiddleware, productController.updateProduct);
 router.delete('/:id', productController.deleteProduct);
 router.get('/:id/has-choices', authenticate, productController.hasChoices);
+router.get('/:id/choices', authenticate, productController.getProductChoices);
 router.get('/ratings', productController.getProductRatings);
 router.get('/:id', authenticate, productController.getProductById);
 router.get('/:id/rating', authenticate, productController.getProductRatingById);

@@ -49,11 +49,21 @@
                 </div>
                 <div class="product-info">
                   <h3>{{ product.name }}</h3>
-                  <p class="price">{{ formatPrice(product.price) }}</p>
+                  <p class="price">
+                    <template v-if="hasChoices(product) && getPriceRange(product).min !== getPriceRange(product).max">
+                      {{ formatPrice(getPriceRange(product).min) }} - {{ formatPrice(getPriceRange(product).max) }}
+                    </template>
+                    <template v-else-if="hasChoices(product)">
+                      {{ formatPrice(getPriceRange(product).min) }}
+                    </template>
+                    <template v-else>
+                      {{ formatPrice(product.price) }}
+                    </template>
+                  </p>
                   <div class="product-meta">
                     <p class="category-tag">{{ product.category_name || 'Uncategorized' }}</p>
-                    <p class="stock" :class="{'low-stock': product.stock_quantity < 10}">
-                      <i class="fas fa-cubes"></i> {{ product.stock_quantity }}
+                    <p class="stock" :class="{'low-stock': getTotalStock(product) < 10}">
+                      <i class="fas fa-cubes"></i> {{ getTotalStock(product) }}
                     </p>
                   </div>
                 </div>
@@ -196,7 +206,7 @@
                   >
                     <div class="choice-info">
                       <span class="choice-name">{{ choice.name }}</span>
-                      <span class="choice-price">+{{ formatPrice(choice.price_adjustment) }}</span>
+                      <span class="choice-price">{{ formatPrice(choice.price) }}</span>
                     </div>
                     <span class="choice-stock">{{ choice.stock }} available</span>
                   </div>
@@ -322,7 +332,7 @@
           const categoryMatch = !this.selectedCategory || 
             product.category_id === this.selectedCategory;
           
-          const inStock = product.stock_quantity > 0;
+          const inStock = this.getTotalStock(product) > 0;
           
           return searchMatch && categoryMatch && inStock;
         });
@@ -488,7 +498,7 @@
         let price = this.selectedProduct.price;
         
         if (this.selectedChoice) {
-          price += parseFloat(this.selectedChoice.price_adjustment || 0);
+          price = parseFloat(this.selectedChoice.price || 0);
         }
         
         return price * this.modalQuantity;
@@ -507,7 +517,7 @@
         if (this.selectedChoice) {
           item.choice_id = this.selectedChoice.choice_id;
           item.choice_name = this.selectedChoice.name;
-          item.price += parseFloat(this.selectedChoice.price_adjustment || 0);
+          item.price = parseFloat(this.selectedChoice.price || 0);
         }
         
         this.cart.push(item);
@@ -623,6 +633,44 @@
         } finally {
           this.showLogoutModal = false;
         }
+      },
+      hasChoices(product) {
+        return product.choices && product.choices.length > 0;
+      },
+      getPriceRange(product) {
+        if (!this.hasChoices(product)) {
+          return { min: product.price, max: product.price };
+        }
+        
+        let min = Infinity;
+        let max = 0;
+        
+        product.choices.forEach(choice => {
+          if (choice.price && parseFloat(choice.price) > 0) {
+            min = Math.min(min, parseFloat(choice.price));
+            max = Math.max(max, parseFloat(choice.price));
+          }
+        });
+        
+        if (min === Infinity) min = 0;
+        if (max === 0) max = 0;
+        
+        return { min, max };
+      },
+      getTotalStock(product) {
+        if (!this.hasChoices(product)) {
+          return product.stock_quantity;
+        }
+        
+        let totalStock = product.choices.reduce((sum, choice) => {
+          return sum + (parseInt(choice.stock) || 0);
+        }, 0);
+        
+        if (totalStock === 0 && product.stock_quantity) {
+          return product.stock_quantity;
+        }
+        
+        return totalStock;
       }
     },
     mounted() {
