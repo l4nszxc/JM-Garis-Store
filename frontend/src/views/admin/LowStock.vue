@@ -319,14 +319,14 @@ export default {
         let endpoint, payload;
         
         if (this.itemToUpdate.type === 'choice') {
-          endpoint = `/api/products/choices/${this.itemToUpdate.choice_id}`;
+          endpoint = `${this.API_BASE_URL}/api/products/choices/${this.itemToUpdate.choice_id}`;
           payload = { 
             stock: parseInt(this.editingStock),
             price: this.itemToUpdate.price,
             name: this.itemToUpdate.choice_name
           };
         } else {
-          endpoint = `/api/products/${this.itemToUpdate.id}`;
+          endpoint = `${this.API_BASE_URL}/api/products/${this.itemToUpdate.id}`;
           payload = { 
             stock_quantity: parseInt(this.editingStock),
             price: this.itemToUpdate.price,
@@ -370,8 +370,25 @@ export default {
           
           this.showNotification('Stock updated successfully', 'success', 'fas fa-check-circle');
         } else {
-          const error = await response.json();
-          throw new Error(error.message || 'Failed to update stock');
+          // Handle non-JSON responses (like HTML error pages)
+          let errorMessage = 'Failed to update stock';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            // If response is not JSON, try to get text
+            try {
+              const errorText = await response.text();
+              if (errorText.includes('Not Found')) {
+                errorMessage = 'Product not found. It may have been deleted.';
+              } else if (errorText.includes('Unauthorized')) {
+                errorMessage = 'You are not authorized to update this product.';
+              }
+            } catch (textError) {
+              // Keep default error message
+            }
+          }
+          throw new Error(errorMessage);
         }
       } catch (error) {
         console.error('Error updating stock:', error);
@@ -389,7 +406,7 @@ export default {
     async fetchLowStockItems() {
       try {
         const token = localStorage.getItem('token');
-        const response = await this.$fetch('/api/admin/low-stock', {
+        const response = await fetch(`${this.API_BASE_URL}/api/admin/low-stock`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -407,13 +424,12 @@ export default {
     async handleLogout() {
       try {
         const token = localStorage.getItem('token');
-        const response = await this.$fetch('/api/users/logout', {
+        const response = await fetch(`${this.API_BASE_URL}/api/users/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
-          },
-          credentials: 'include'
+          }
         });
 
         if (response.ok) {
