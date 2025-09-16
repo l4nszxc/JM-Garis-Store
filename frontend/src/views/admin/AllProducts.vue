@@ -804,7 +804,7 @@ export default {
                     });
                 }
 
-                const response = await this.$fetch(`/api/products/${this.editingProduct.products_id}`, {
+                const response = await fetch(`${this.API_BASE_URL}/api/products/${this.editingProduct.products_id}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -812,7 +812,13 @@ export default {
                     body: formData
                 });
 
-                const data = await response.json();
+                let data;
+                let responseText = await response.text();
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    data = { message: responseText };
+                }
 
                 if (!response.ok) {
                     throw new Error(data.message || 'Failed to update product');
@@ -820,7 +826,6 @@ export default {
 
                 this.closeModal();
                 await this.fetchProducts();
-                
                 // Restore the selected category
                 this.selectedCategory = currentCategory;
 
@@ -848,7 +853,7 @@ export default {
                     console.log('Adding choice image to form:', this.newChoiceImage.name);
                 }
 
-                const response = await this.$fetch(`/api/products/choices/${this.editingChoice.choice_id}`, {
+                const response = await fetch(`${this.API_BASE_URL}/api/products/choices/${this.editingChoice.choice_id}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -856,14 +861,20 @@ export default {
                     body: formData
                 });
 
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.message || 'Failed to update product choice');
+                let data;
+                let responseText = await response.text();
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    data = { message: responseText };
                 }
 
-                // Close modal first
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to update product option');
+                }
+
                 this.closeChoiceModal();
+                await this.fetchProducts();
                 
                 // Fetch fresh data
                 await this.fetchProducts();
