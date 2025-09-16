@@ -709,7 +709,7 @@ export default {
     async fetchRewardsSettings() {
       try {
         const token = localStorage.getItem('token');
-        const response = await this.$fetch('/api/admin/rewards/settings', {
+        const response = await fetch(`${this.API_BASE_URL}/api/admin/rewards/settings`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -724,7 +724,7 @@ export default {
     async fetchRewardTiers() {
       try {
         const token = localStorage.getItem('token');
-        const response = await this.$fetch('/api/admin/rewards/tiers', {
+        const response = await fetch(`${this.API_BASE_URL}/api/admin/rewards/tiers`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -739,7 +739,7 @@ export default {
     async fetchLoyaltyTiers() {
       try {
         const token = localStorage.getItem('token');
-        const response = await this.$fetch('/api/admin/loyalty/tiers', {
+        const response = await fetch(`${this.API_BASE_URL}/api/admin/loyalty/tiers`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -754,7 +754,7 @@ export default {
     async fetchRewardStatistics() {
       try {
         const token = localStorage.getItem('token');
-        const response = await this.$fetch('/api/admin/rewards/statistics', {
+        const response = await fetch(`${this.API_BASE_URL}/api/admin/rewards/statistics`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -769,7 +769,7 @@ export default {
     async fetchLoyaltyStatistics() {
       try {
         const token = localStorage.getItem('token');
-        const response = await this.$fetch('/api/admin/loyalty/statistics', {
+        const response = await fetch(`${this.API_BASE_URL}/api/admin/loyalty/statistics`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -834,7 +834,7 @@ export default {
         }
 
         const token = localStorage.getItem('token');
-        const response = await this.$fetch('/api/admin/rewards/settings', {
+        const response = await fetch(`${this.API_BASE_URL}/api/admin/rewards/settings`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -893,8 +893,8 @@ export default {
         
         const token = localStorage.getItem('token');
         const url = this.editingReward 
-          ? `/api/admin/rewards/tiers/${this.editingReward.id}`
-          : '/api/admin/rewards/tiers';
+          ? `${this.API_BASE_URL}/api/admin/rewards/tiers/${this.editingReward.id}`
+          : `${this.API_BASE_URL}/api/admin/rewards/tiers`;
         
         const method = this.editingReward ? 'PUT' : 'POST';
         
@@ -916,8 +916,25 @@ export default {
           this.closeRewardModal();
           this.fetchRewardTiers();
         } else {
-          const error = await response.json();
-          alert(error.message || 'An error occurred');
+          // Handle non-JSON responses (like HTML error pages)
+          let errorMessage = 'An error occurred';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            // If response is not JSON, try to get text
+            try {
+              const errorText = await response.text();
+              if (errorText.includes('Not Found')) {
+                errorMessage = 'Reward tier not found. It may have been deleted.';
+              } else if (errorText.includes('Unauthorized')) {
+                errorMessage = 'You are not authorized to perform this action.';
+              }
+            } catch (textError) {
+              // Keep default error message
+            }
+          }
+          alert(errorMessage);
         }
       } catch (error) {
         console.error('Error saving reward tier:', error);
@@ -963,8 +980,8 @@ export default {
         
         const token = localStorage.getItem('token');
         const url = this.editingLoyalty 
-          ? `/api/admin/loyalty/tiers/${this.editingLoyalty.id}`
-          : '/api/admin/loyalty/tiers';
+          ? `${this.API_BASE_URL}/api/admin/loyalty/tiers/${this.editingLoyalty.id}`
+          : `${this.API_BASE_URL}/api/admin/loyalty/tiers`;
         
         const method = this.editingLoyalty ? 'PUT' : 'POST';
         
@@ -988,8 +1005,25 @@ export default {
           this.fetchLoyaltyTiers();
           this.fetchLoyaltyStatistics();
         } else {
-          const error = await response.json();
-          alert(error.message || 'An error occurred');
+          // Handle non-JSON responses (like HTML error pages)
+          let errorMessage = 'An error occurred';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            // If response is not JSON, try to get text
+            try {
+              const errorText = await response.text();
+              if (errorText.includes('Not Found')) {
+                errorMessage = 'Loyalty tier not found. It may have been deleted.';
+              } else if (errorText.includes('Unauthorized')) {
+                errorMessage = 'You are not authorized to perform this action.';
+              }
+            } catch (textError) {
+              // Keep default error message
+            }
+          }
+          alert(errorMessage);
         }
       } catch (error) {
         console.error('Error saving loyalty tier:', error);
@@ -1015,7 +1049,7 @@ export default {
         const token = localStorage.getItem('token');
         const endpoint = this.deleteType === 'reward tier' ? 'rewards' : 'loyalty';
         
-        const response = await this.$fetch(`/api/admin/${endpoint}/tiers/${this.deleteId}`, {
+        const response = await fetch(`${this.API_BASE_URL}/api/admin/${endpoint}/tiers/${this.deleteId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -1055,7 +1089,7 @@ export default {
     async handleLogout() {
       try {
         const token = localStorage.getItem('token');
-        const response = await this.$fetch('/api/users/logout', {
+        const response = await fetch(`${this.API_BASE_URL}/api/users/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
