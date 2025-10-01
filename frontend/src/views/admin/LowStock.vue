@@ -536,16 +536,19 @@ export default {
 
 .search-box {
   position: relative;
-  flex: 1;
-  min-width: 250px;
-  max-width: 300px;
+  flex: 1 1 100%;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
 }
 
 .search-box input {
-  width: 78%;
+  width: 100%;
   padding: 0.75rem 1rem 0.75rem 2.5rem;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
+  font-size: 1rem;
+  box-sizing: border-box;
 }
 
 .search-box i {
@@ -974,6 +977,42 @@ tr:hover {
   
   th, td {
     padding: 0.75rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .filters-right {
+    width: 100%;
+  }
+  .search-box {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .search-box input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .search-filter {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+  .filters-right {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  .search-box {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .search-box input {
+    width: 100%;
+    font-size: 0.98rem;
   }
 }
 </style>
