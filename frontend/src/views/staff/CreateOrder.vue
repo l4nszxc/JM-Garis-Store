@@ -15,6 +15,7 @@
                   type="text" 
                   v-model="searchQuery" 
                   placeholder="Search products..."
+                  :disabled="isLoadingProducts"
                 >
               </div>
               <div class="category-tabs">
@@ -23,6 +24,7 @@
                     :key="category.id"
                     :class="['category-btn', selectedCategory === category.id ? 'active' : '']"
                     @click="selectCategory(category.id)"
+                    :disabled="isLoadingProducts"
                     >
                     {{ category.name }}
                     </button>
@@ -30,66 +32,82 @@
             </div>
             
             <div class="products-grid">
-              <div 
-                v-for="product in paginatedProducts" 
-                :key="product.products_id" 
-                class="product-card"
-                @click="showProductDetails(product)"
-              >
-                <div class="product-image-wrapper">
-                  <img 
-                    :src="product.image || '/img/placeholder.jpg'" 
-                    :alt="product.name"
-                    class="product-image"
-                    @error="handleImageError"
-                  >
-                  <span v-if="product.has_choices" class="variant-badge">
-                    <i class="fas fa-list-ul"></i> Options
-                  </span>
+              <!-- Loading State -->
+              <div v-if="isLoadingProducts" class="loading-products">
+                <div class="loading-spinner">
+                  <i class="fas fa-spinner fa-spin"></i>
                 </div>
-                <div class="product-info">
-                  <h3>{{ product.name }}</h3>
-                  <p class="price">
-                    <template v-if="hasChoices(product) && getPriceRange(product).min !== getPriceRange(product).max">
-                      {{ formatPrice(getPriceRange(product).min) }} - {{ formatPrice(getPriceRange(product).max) }}
-                    </template>
-                    <template v-else-if="hasChoices(product)">
-                      {{ formatPrice(getPriceRange(product).min) }}
-                    </template>
-                    <template v-else>
-                      {{ formatPrice(product.price) }}
-                    </template>
-                  </p>
-                  <div class="product-meta">
-                    <p class="category-tag">{{ product.category_name || 'Uncategorized' }}</p>
-                    <p class="stock" :class="{'low-stock': getTotalStock(product) < 10}">
-                      <i class="fas fa-cubes"></i> {{ getTotalStock(product) }}
-                    </p>
-                  </div>
-                </div>
+                <p>Loading products...</p>
               </div>
               
-              <div v-if="filteredProducts.length === 0" class="no-products">
-                <i class="fas fa-search"></i>
-                <p>No products found</p>
-              </div>
+              <!-- Products -->
+              <template v-else>
+                <div 
+                  v-for="product in paginatedProducts" 
+                  :key="product.products_id" 
+                  class="product-card"
+                  @click="showProductDetails(product)"
+                >
+                  <div class="product-image-wrapper">
+                    <img 
+                      :src="product.image || '/img/placeholder.jpg'" 
+                      :alt="product.name"
+                      class="product-image"
+                      @error="handleImageError"
+                    >
+                    <span v-if="product.has_choices" class="variant-badge">
+                      <i class="fas fa-list-ul"></i> Options
+                    </span>
+                  </div>
+                  <div class="product-info">
+                    <h3>{{ product.name }}</h3>
+                    <p class="price">
+                      <template v-if="hasChoices(product) && getPriceRange(product).min !== getPriceRange(product).max">
+                        {{ formatPrice(getPriceRange(product).min) }} - {{ formatPrice(getPriceRange(product).max) }}
+                      </template>
+                      <template v-else-if="hasChoices(product)">
+                        {{ formatPrice(getPriceRange(product).min) }}
+                      </template>
+                      <template v-else>
+                        {{ formatPrice(product.price) }}
+                      </template>
+                    </p>
+                    <div class="product-meta">
+                      <p class="category-tag">{{ product.category_name || 'Uncategorized' }}</p>
+                      <p class="stock" :class="{'low-stock': getTotalStock(product) < 10}">
+                        <i class="fas fa-cubes"></i> {{ getTotalStock(product) }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div v-if="!isLoadingProducts && filteredProducts.length === 0" class="no-products">
+                  <i class="fas fa-search"></i>
+                  <p>No products found</p>
+                </div>
+              </template>
             </div>
             
             <!-- Pagination Controls -->
             <div class="pagination-controls">
               <button 
                 @click="prevPage" 
-                :disabled="currentPage === 1"
+                :disabled="isLoadingProducts || currentPage === 1"
                 class="pagination-btn"
               >
                 <i class="fas fa-chevron-left"></i> Previous
               </button>
               <div class="pagination-info">
-                Page {{ currentPage }} of {{ totalPages }}
+                <template v-if="isLoadingProducts">
+                  Loading...
+                </template>
+                <template v-else>
+                  Page {{ currentPage }} of {{ totalPages }}
+                </template>
               </div>
               <button 
                 @click="nextPage" 
-                :disabled="currentPage >= totalPages"
+                :disabled="isLoadingProducts || currentPage >= totalPages"
                 class="pagination-btn"
               >
                 Next <i class="fas fa-chevron-right"></i>
@@ -305,6 +323,7 @@
         modalQuantity: 1,
         showOrderConfirmation: false,
         createdOrderId: '',
+        isLoadingProducts: false,
         // Pagination data
         currentPage: 1,
         itemsPerPage: 12,
@@ -374,6 +393,22 @@
             }
             },
             async fetchProducts() {
+                // Check if products are already cached in sessionStorage
+                const cachedProducts = sessionStorage.getItem('staff_products_cache');
+                const cacheTimestamp = sessionStorage.getItem('staff_products_cache_timestamp');
+                const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+                
+                if (cachedProducts && cacheTimestamp) {
+                    const age = Date.now() - parseInt(cacheTimestamp);
+                    if (age < CACHE_DURATION) {
+                        // Use cached data
+                        this.products = JSON.parse(cachedProducts);
+                        this.categories = [...this.predefinedCategories];
+                        return;
+                    }
+                }
+                
+                this.isLoadingProducts = true;
                 try {
                     const token = localStorage.getItem('token');
                     const response = await this.$fetch('/api/products', {
@@ -427,6 +462,10 @@
                                 category_id: categoryMatch ? categoryMatch.id : null
                                 };
                             });
+                            
+                            // Cache the products data
+                            sessionStorage.setItem('staff_products_cache', JSON.stringify(this.products));
+                            sessionStorage.setItem('staff_products_cache_timestamp', Date.now().toString());
                         } else {
                             console.error('API returned non-JSON response:', await response.text());
                         }
@@ -435,6 +474,8 @@
                     }
                 } catch (error) {
                     console.error('Error fetching products:', error);
+                } finally {
+                    this.isLoadingProducts = false;
                 }
                 },
       async fetchProductChoices(productId) {
@@ -671,6 +712,14 @@
         }
         
         return totalStock;
+      },
+      clearProductsCache() {
+        sessionStorage.removeItem('staff_products_cache');
+        sessionStorage.removeItem('staff_products_cache_timestamp');
+      },
+      refreshProducts() {
+        this.clearProductsCache();
+        this.fetchProducts();
       }
     },
     mounted() {
@@ -997,6 +1046,38 @@
 .no-products p {
   font-size: 1.1rem;
   margin: 0;
+}
+
+.loading-products {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.loading-spinner {
+  margin-bottom: 1.5rem;
+}
+
+.loading-spinner i {
+  font-size: 3rem;
+  color: #3b82f6;
+  animation: spin 1s linear infinite;
+}
+
+.loading-products p {
+  font-size: 1.1rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .order-summary-panel {
