@@ -12,10 +12,11 @@
                             type="text" 
                             v-model="searchQuery" 
                             placeholder="Search by product name..."
+                            :disabled="isLoadingProducts"
                         >
                         </div>
                         <div class="sort-controls">
-                        <select v-model="sortBy" class="sort-select">
+                        <select v-model="sortBy" class="sort-select" :disabled="isLoadingProducts">
                             <option value="name">Name</option>
                             <option value="updated_at">Date Updated</option>
                             <option value="price">Price</option>
@@ -26,11 +27,12 @@
                             class="sort-direction-btn" 
                             @click="toggleSortDirection"
                             :title="sortDirection === 'asc' ? 'Ascending' : 'Descending'"
+                            :disabled="isLoadingProducts"
                         >
                             <i :class="['fas', sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down']"></i>
                         </button>
                         </div>
-                        <button @click="resetSearch" class="reset-btn">
+                        <button @click="resetSearch" class="reset-btn" :disabled="isLoadingProducts">
                         <i class="fas fa-undo"></i> Reset Search
                         </button>
                     </div>
@@ -44,145 +46,157 @@
                         :key="category.value"
                         :class="['category-btn', { active: selectedCategory === category.value }]"
                         @click="selectedCategory = category.value"
+                        :disabled="isLoadingProducts"
                     >
                         {{ category.label }}
                     </button>
                 </div>
             </div>
             <div class="table-container">
-                <table v-if="filteredProducts.length">
-                    <thead>
-                        <tr>
-                            <th>Image</th>
-                            <th>Name</th>
-                            <th>Category</th>
-                            <th>Price</th>
-                            <th>Options</th>
-                            <th>Stock</th>
-                            <th>Total Sold</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template v-for="product in filteredProducts" :key="product.products_id">
-                            <!-- Main product row -->
-                            <tr :class="{'product-row': true}">
-                                <td>
-                                    <img 
-                                        :src="product.image || '/img/placeholder.jpg'"
-                                        :alt="product.name"
-                                        class="product-image"
-                                        @error="handleImageError"
-                                    >
-                                </td>
-                                <td>{{ product.name }}</td>
-                                <td>{{ product.category }}</td>
-                                <td>
-                                    <template v-if="product.choices && product.choices.length > 0 && getPriceRange(product).min !== getPriceRange(product).max">
-                                        {{ formatPrice(getPriceRange(product).min) }} - {{ formatPrice(getPriceRange(product).max) }}
-                                    </template>
-                                    <template v-else-if="product.choices && product.choices.length > 0">
-                                        {{ formatPrice(getPriceRange(product).min) }}
-                                    </template>
-                                    <template v-else>
-                                        {{ formatPrice(product.price) }}
-                                    </template>
-                                </td>
-                                <td>
-                                    <div class="options-count">
-                                        <span v-if="product.choices && product.choices.length">
-                                            {{ product.choices.length }} options
-                                            <button @click="toggleChoices(product)" class="toggle-choices-btn">
-                                                <i :class="['fas', expandedProducts.has(product.products_id) ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
-                                            </button>
-                                        </span>
-                                        <span v-else>No options</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span 
-                                        :class="getStockStatusClass(product.choices && product.choices.length > 0 ? 
-                                            product.choices.reduce((total, choice) => total + (parseInt(choice.stock) || 0), 0) : 
-                                            product.stock_quantity)" 
-                                        class="stock-badge"
-                                    >
-                                        {{ product.choices && product.choices.length > 0 ? 
-                                            product.choices.reduce((total, choice) => total + (parseInt(choice.stock) || 0), 0) : 
-                                            product.stock_quantity }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="sales-badge" :class="getSalesStatusClass(product.total_sold)">
-                                        {{ product.total_sold || 0 }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <button @click="showEditModal(product)" class="edit-btn">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                    <button @click="showDeleteConfirmation(product)" class="delete-btn">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </td>
-                            </tr>
-                            
-                            <!-- Product choices row (conditionally rendered) -->
-                            <tr v-if="expandedProducts.has(product.products_id) && product.choices && product.choices.length > 0"
-                                :key="`choices-${product.products_id}`" 
-                                class="choices-row">
-                                <td colspan="8">
-                                    <div class="choices-container">
-                                        <h4>Product Options for {{ product.name }}</h4>
-                                        <table class="choices-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Image</th>
-                                                    <th>Option Name</th>
-                                                    <th>Price</th>
-                                                    <th>Stock</th>
-                                                    <th>Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr v-for="choice in product.choices" :key="choice.choice_id">
-                                                    <td>
-                                                        <img 
-                                                            :src="choice.image || product.image || '/img/placeholder.jpg'"
-                                                            :alt="choice.name"
-                                                            class="choice-image"
-                                                            @error="handleImageError"
-                                                        >
-                                                    </td>
-                                                    <td>{{ choice.name }}</td>
-                                                    <td>{{ formatPrice(choice.price) }}</td>
-                                                    <td>
-                                                        <span 
-                                                            :class="getStockStatusClass(choice.stock)" 
-                                                            class="stock-badge">
-                                                            {{ choice.stock }}
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <button @click="showEditChoiceModal(choice, product)" class="edit-choice-btn">
-                                                            <i class="fas fa-edit"></i> Edit
-                                                        </button>
-                                                        <button @click="showDeleteChoiceConfirmation(choice, product)" class="delete-choice-btn">
-                                                            <i class="fas fa-trash"></i> Delete
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-                <div v-else class="no-results">
-                    <i class="fas fa-box-open"></i>
-                    No products found
+                <!-- Loading State -->
+                <div v-if="isLoadingProducts" class="loading-products">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <p>Loading products...</p>
                 </div>
+                
+                <!-- Products Table -->
+                <template v-else>
+                    <table v-if="filteredProducts.length">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Options</th>
+                                <th>Stock</th>
+                                <th>Total Sold</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template v-for="product in filteredProducts" :key="product.products_id">
+                                <!-- Main product row -->
+                                <tr :class="{'product-row': true}">
+                                    <td>
+                                        <img 
+                                            :src="product.image || '/img/placeholder.jpg'"
+                                            :alt="product.name"
+                                            class="product-image"
+                                            @error="handleImageError"
+                                        >
+                                    </td>
+                                    <td>{{ product.name }}</td>
+                                    <td>{{ product.category }}</td>
+                                    <td>
+                                        <template v-if="product.choices && product.choices.length > 0 && getPriceRange(product).min !== getPriceRange(product).max">
+                                            {{ formatPrice(getPriceRange(product).min) }} - {{ formatPrice(getPriceRange(product).max) }}
+                                        </template>
+                                        <template v-else-if="product.choices && product.choices.length > 0">
+                                            {{ formatPrice(getPriceRange(product).min) }}
+                                        </template>
+                                        <template v-else>
+                                            {{ formatPrice(product.price) }}
+                                        </template>
+                                    </td>
+                                    <td>
+                                        <div class="options-count">
+                                            <span v-if="product.choices && product.choices.length">
+                                                {{ product.choices.length }} options
+                                                <button @click="toggleChoices(product)" class="toggle-choices-btn">
+                                                    <i :class="['fas', expandedProducts.has(product.products_id) ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
+                                                </button>
+                                            </span>
+                                            <span v-else>No options</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span 
+                                            :class="getStockStatusClass(product.choices && product.choices.length > 0 ? 
+                                                product.choices.reduce((total, choice) => total + (parseInt(choice.stock) || 0), 0) : 
+                                                product.stock_quantity)" 
+                                            class="stock-badge"
+                                        >
+                                            {{ product.choices && product.choices.length > 0 ? 
+                                                product.choices.reduce((total, choice) => total + (parseInt(choice.stock) || 0), 0) : 
+                                                product.stock_quantity }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="sales-badge" :class="getSalesStatusClass(product.total_sold)">
+                                            {{ product.total_sold || 0 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button @click="showEditModal(product)" class="edit-btn">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button @click="showDeleteConfirmation(product)" class="delete-btn">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Product choices row (conditionally rendered) -->
+                                <tr v-if="expandedProducts.has(product.products_id) && product.choices && product.choices.length > 0"
+                                    :key="`choices-${product.products_id}`" 
+                                    class="choices-row">
+                                    <td colspan="8">
+                                        <div class="choices-container">
+                                            <h4>Product Options for {{ product.name }}</h4>
+                                            <table class="choices-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Image</th>
+                                                        <th>Option Name</th>
+                                                        <th>Price</th>
+                                                        <th>Stock</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr v-for="choice in product.choices" :key="choice.choice_id">
+                                                        <td>
+                                                            <img 
+                                                                :src="choice.image || product.image || '/img/placeholder.jpg'"
+                                                                :alt="choice.name"
+                                                                class="choice-image"
+                                                                @error="handleImageError"
+                                                            >
+                                                        </td>
+                                                        <td>{{ choice.name }}</td>
+                                                        <td>{{ formatPrice(choice.price) }}</td>
+                                                        <td>
+                                                            <span 
+                                                                :class="getStockStatusClass(choice.stock)" 
+                                                                class="stock-badge">
+                                                                {{ choice.stock }}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <button @click="showEditChoiceModal(choice, product)" class="edit-choice-btn">
+                                                                <i class="fas fa-edit"></i> Edit
+                                                            </button>
+                                                            <button @click="showDeleteChoiceConfirmation(choice, product)" class="delete-choice-btn">
+                                                                <i class="fas fa-trash"></i> Delete
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                    <div v-if="!isLoadingProducts && !filteredProducts.length" class="no-results">
+                        <i class="fas fa-box-open"></i>
+                        No products found
+                    </div>
+                </template>
             </div>
         </div>
 
@@ -427,6 +441,7 @@ export default {
             choiceProductName: '',
             editingChoices: [],
             newChoiceImages: [],
+            isLoadingProducts: false,
             categories: [
                 { label: 'All', value: '' },
                 { label: 'Beverages', value: 'Beverages' },
@@ -584,7 +599,8 @@ export default {
                     throw new Error(error.message || 'Failed to delete product option');
                 }
                 
-                // Refresh products to get updated data
+                // Clear cache and refresh products to get updated data
+                this.clearProductsCache();
                 await this.fetchProducts();
                 this.closeDeleteChoiceModal();
             } catch (error) {
@@ -652,6 +668,9 @@ export default {
                 // Remove product from local array
                 this.products = this.products.filter(p => p.products_id !== this.productToDelete.products_id);
                 
+                // Clear cache since data has changed
+                this.clearProductsCache();
+                
                 // Close modal and clear selection
                 this.closeDeleteModal();
 
@@ -665,7 +684,32 @@ export default {
             this.searchQuery = '';
         },
         
+        clearProductsCache() {
+            sessionStorage.removeItem('admin_products_cache');
+            sessionStorage.removeItem('admin_products_cache_timestamp');
+        },
+        
+        refreshProducts() {
+            this.clearProductsCache();
+            this.fetchProducts();
+        },
+        
         async fetchProducts() {
+            // Check if products are already cached in sessionStorage
+            const cachedProducts = sessionStorage.getItem('admin_products_cache');
+            const cacheTimestamp = sessionStorage.getItem('admin_products_cache_timestamp');
+            const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+            
+            if (cachedProducts && cacheTimestamp) {
+                const age = Date.now() - parseInt(cacheTimestamp);
+                if (age < CACHE_DURATION) {
+                    // Use cached data
+                    this.products = JSON.parse(cachedProducts);
+                    return;
+                }
+            }
+            
+            this.isLoadingProducts = true;
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
@@ -687,6 +731,11 @@ export default {
                         total_sold: parseInt(product.total_sold) || 0,
                         choices: Array.isArray(product.choices) ? product.choices : []
                     }));
+                    
+                    // Cache the products data
+                    sessionStorage.setItem('admin_products_cache', JSON.stringify(this.products));
+                    sessionStorage.setItem('admin_products_cache_timestamp', Date.now().toString());
+                    
                     // Debug log to verify data
                     console.log("Fetched products:", this.products);
                 } else {
@@ -694,6 +743,8 @@ export default {
                 }
             } catch (error) {
                 console.error('Error fetching products:', error);
+            } finally {
+                this.isLoadingProducts = false;
             }
         },
         
@@ -825,6 +876,7 @@ export default {
                 }
 
                 this.closeModal();
+                this.clearProductsCache();
                 await this.fetchProducts();
                 // Restore the selected category
                 this.selectedCategory = currentCategory;
@@ -874,13 +926,8 @@ export default {
                 }
 
                 this.closeChoiceModal();
+                this.clearProductsCache();
                 await this.fetchProducts();
-                
-                // Fetch fresh data
-                await this.fetchProducts();
-                
-                // Force refresh the page
-                window.location.reload();
 
             } catch (error) {
                 console.error('Error updating product choice:', error);
@@ -1332,6 +1379,37 @@ tbody tr:hover {
     padding: 3rem;
     color: #6b7280;
     font-size: 1rem;
+}
+
+.loading-products {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: #64748b;
+    text-align: center;
+}
+
+.loading-spinner {
+    margin-bottom: 1.5rem;
+}
+
+.loading-spinner i {
+    font-size: 3rem;
+    color: #3b82f6;
+    animation: spin 1s linear infinite;
+}
+
+.loading-products p {
+    font-size: 1.1rem;
+    margin: 0;
+    font-weight: 500;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .delete-btn {
