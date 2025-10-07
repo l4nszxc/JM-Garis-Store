@@ -429,12 +429,17 @@
                     <button 
                         @click="processPayment" 
                         class="accept-btn"
-                        :disabled="isInsufficientCash || !cashAmount"
+                        :disabled="isInsufficientCash || !cashAmount || processingPayment"
                     >
-                        <i class="fas fa-check-circle"></i>
-                        Confirm Payment
+                        <i class="fas fa-spinner fa-spin" v-if="processingPayment"></i>
+                        <i class="fas fa-check-circle" v-else></i>
+                        {{ processingPayment ? 'Processing...' : 'Confirm Payment' }}
                     </button>
-                    <button @click="showPaymentConfirmation = false" class="cancel-btn">
+                    <button 
+                        @click="showPaymentConfirmation = false" 
+                        class="cancel-btn"
+                        :disabled="processingPayment"
+                    >
                         <i class="fas fa-times"></i>
                         Cancel
                     </button>
@@ -783,6 +788,7 @@ export default {
             qrLookupError: '',
             lookingUpUser: false,
             processingRewards: false,
+            processingPayment: false,
             successRewardData: null,
             
             // QR Scanner options
@@ -801,6 +807,10 @@ export default {
                 amount_threshold: 100,
                 point_value: 0.50
             },
+            
+            // Cache receipt settings to avoid repeated API calls
+            cachedReceiptSettings: null,
+            
             // Pagination
             currentPage: 1,
             itemsPerPage: 20
@@ -949,6 +959,8 @@ export default {
             this.changeAmount = parseFloat(this.cashAmount) - amountToPay;
         },
         async processPayment() {
+            this.processingPayment = true;
+            
             try {
                 const token = localStorage.getItem('token');
                 const amountToPay = this.getAmountToPay(this.selectedOrder);
@@ -969,11 +981,13 @@ export default {
                 });
 
                 if (response.ok) {
-                    // Print physical receipt first
-                    this.printReceipt();
-                    
+                    // Update orders and UI immediately
                     await this.fetchOrders();
                     this.showPaymentConfirmation = false;
+                    this.processingPayment = false;
+                    
+                    // Print receipt asynchronously without blocking UI
+                    this.printReceiptAsync();
                     
                     // Show email success modal if customer has email
                     if (this.selectedOrder.email) {
@@ -987,8 +1001,28 @@ export default {
                 }
             } catch (error) {
                 console.error('Error processing payment:', error);
+                this.processingPayment = false;
+                alert('Error processing payment. Please try again.');
             }
         },
+        
+        async printReceiptAsync() {
+            // Print receipt in background without blocking UI
+            setTimeout(async () => {
+                try {
+                    await this.printReceipt();
+                } catch (error) {
+                    console.error('Error printing receipt:', error);
+                    // Silently handle receipt printing errors
+                }
+            }, 100); // Small delay to ensure UI updates first
+        },
+        
+        // Method to refresh receipt settings cache
+        refreshReceiptSettingsCache() {
+            this.cachedReceiptSettings = null;
+        },
+        
         closeEmailSuccessModal() {
             this.showEmailSuccess = false;
             // Close the order details modal
@@ -1022,28 +1056,35 @@ export default {
         },
         async generateReceiptContent() {
             try {
-                // Fetch receipt settings
-                const token = localStorage.getItem('token');
-                const response = await this.$fetch('/api/admin/receipt-settings', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+                // Use cached settings or fetch new ones
+                let receiptSettings = this.cachedReceiptSettings;
                 
-                let receiptSettings = {
-                    storeName: 'JM Garis Store',
-                    storeTagline: 'Official Receipt',
-                    storeAddress: '',
-                    contactNumber: '',
-                    thankyouMessage: 'Thank you for your purchase!\nPlease come again!',
-                    footerText: ''
-                };
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data && Object.keys(data).length > 0) {
-                        receiptSettings = { ...receiptSettings, ...data };
+                if (!receiptSettings) {
+                    const token = localStorage.getItem('token');
+                    const response = await this.$fetch('/api/admin/receipt-settings', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    receiptSettings = {
+                        storeName: 'JM Garis Store',
+                        storeTagline: 'Official Receipt',
+                        storeAddress: '',
+                        contactNumber: '',
+                        thankyouMessage: 'Thank you for your purchase!\nPlease come again!',
+                        footerText: ''
+                    };
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && Object.keys(data).length > 0) {
+                            receiptSettings = { ...receiptSettings, ...data };
+                        }
                     }
+                    
+                    // Cache the settings
+                    this.cachedReceiptSettings = receiptSettings;
                 }
                 
                 const date = new Date().toLocaleString();
@@ -2396,6 +2437,21 @@ tfoot tr td {
 .accept-btn:disabled {
     background-color: #94a3b8;
     cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.accept-btn:disabled:hover {
+    background-color: #94a3b8;
+    transform: none;
+}
+
+.accept-btn .fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .cancel-btn {
@@ -2414,6 +2470,12 @@ tfoot tr td {
 
 .cancel-btn:hover {
     background-color: #5a6268;
+}
+
+.cancel-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .choice-info {
