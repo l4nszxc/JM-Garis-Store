@@ -735,9 +735,6 @@ export default {
                     // Cache the products data
                     sessionStorage.setItem('admin_products_cache', JSON.stringify(this.products));
                     sessionStorage.setItem('admin_products_cache_timestamp', Date.now().toString());
-                    
-                    // Debug log to verify data
-                    console.log("Fetched products:", this.products);
                 } else {
                     console.error('Failed to fetch products:', response.status);
                 }
