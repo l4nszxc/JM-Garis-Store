@@ -312,9 +312,11 @@
                     <button 
                         @click="markAsReady" 
                         class="ready-btn"
-                        :disabled="!allChecked || selectedOrder.status === 'ready for pickup' || selectedOrder.status === 'paid'"
+                        :disabled="!allChecked || selectedOrder.status === 'ready for pickup' || selectedOrder.status === 'paid' || isMarkingReady"
                     >
-                        <i class="fas fa-check"></i> Mark as Ready
+                        <i class="fas fa-spinner fa-spin" v-if="isMarkingReady"></i>
+                        <i class="fas fa-check" v-else></i>
+                        {{ isMarkingReady ? 'Marking Ready...' : 'Mark as Ready' }}
                     </button>
                     <button @click="selectedOrder = null" class="close-btn">
                         <i class="fas fa-times"></i> Close
@@ -351,6 +353,7 @@ export default {
             acceptedOrders: [],
             selectedOrder: null,
             checkedProducts: [],
+            isMarkingReady: false,
             searchQuery: '',
             dateFilter: '',
             sortOption: '',
@@ -504,12 +507,15 @@ export default {
         async markAsReady() {
             if (!this.isAllChecked) return;
             
+            this.isMarkingReady = true;
             try {
                 await this.updateOrderStatus(this.selectedOrder.order_id, 'ready for pickup');
                 this.selectedOrder = null;
                 this.checkedProducts = [];
             } catch (error) {
                 console.error('Error marking order as ready:', error);
+            } finally {
+                this.isMarkingReady = false;
             }
         },
         isOptionDisabled(currentStatus, optionValue) {

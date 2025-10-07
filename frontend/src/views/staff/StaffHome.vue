@@ -310,8 +310,11 @@
                         v-if="['pending', 'pending_pickup', 'pending_delivery', 'paid using gcash'].includes(selectedOrder.status)"
                         @click="acceptOrder(selectedOrder.order_id)" 
                         class="accept-btn"
+                        :disabled="isAcceptingOrder"
                     >
-                        <i class="fas fa-check"></i> Accept Order
+                        <i class="fas fa-spinner fa-spin" v-if="isAcceptingOrder"></i>
+                        <i class="fas fa-check" v-else></i>
+                        {{ isAcceptingOrder ? 'Accepting...' : 'Accept Order' }}
                     </button>
                     <button @click="selectedOrder = null" class="close-btn">
                         <i class="fas fa-times"></i> Close
@@ -364,6 +367,7 @@ export default {
             ],
             selectedOrder: null,
             isLoading: false,
+            isAcceptingOrder: false,
             // Pagination
             currentPage: 1,
             itemsPerPage: 20
@@ -658,8 +662,8 @@ export default {
             return displayMap[status.toLowerCase()] || status;
         },
         async acceptOrder(orderId) {
+            this.isAcceptingOrder = true;
             try {
-                this.isLoading = true;
                 const token = localStorage.getItem('token');
                 const response = await this.$fetch(`/api/staff/orders/${orderId}/accept`, {
                     method: 'POST',
@@ -679,7 +683,7 @@ export default {
                 console.error('Error accepting order:', error);
                 alert('Failed to accept order');
             } finally {
-                this.isLoading = false;
+                this.isAcceptingOrder = false;
             }
         },
         async fetchOrders() {
@@ -1296,6 +1300,13 @@ tfoot tr td {
 
 .accept-btn:hover {
     background-color: #45a049;
+}
+
+.accept-btn:disabled {
+    background-color: #c8e6c9;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 .close-btn {
