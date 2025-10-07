@@ -44,11 +44,16 @@ class Staff {
                     s.username as staff_name,
                     pi.payment_type,
                     pi.total_amount as original_total,
-                    pi.remaining_amount
+                    pi.remaining_amount,
+                    CASE 
+                        WHEN ur.order_id IS NOT NULL THEN 1 
+                        ELSE 0 
+                    END as rewards_applied
                 FROM orders o
                 LEFT JOIN users u ON o.user_id = u.id
                 LEFT JOIN users s ON o.accepted_by = s.id
                 LEFT JOIN payment_intents pi ON o.order_id = pi.order_id
+                LEFT JOIN user_rewards ur ON o.order_id = ur.order_id
                 ORDER BY o.created_at DESC
             `);
             return rows;

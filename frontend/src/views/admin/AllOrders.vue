@@ -133,9 +133,27 @@
                                     <span v-else>-</span>
                                 </td>
                                 <td>
-                                    <button @click="viewOrderDetails(order)" class="view-btn">
-                                        <i class="fas fa-eye"></i> View Details
-                                    </button>
+                                    <div class="action-buttons">
+                                        <button @click="viewOrderDetails(order)" class="view-btn">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </button>
+                                        <button 
+                                            v-if="order.is_physical_order && order.status === 'paid' && !order.rewards_applied"
+                                            @click="openCustomerRewards(order)" 
+                                            class="rewards-btn"
+                                            title="Apply Customer Rewards"
+                                        >
+                                            <i class="fas fa-gift"></i> Customer Rewards
+                                        </button>
+                                        <button 
+                                            v-if="order.is_physical_order && order.status === 'paid' && order.rewards_applied"
+                                            class="rewards-redeemed-btn"
+                                            title="Customer rewards have been applied"
+                                            disabled
+                                        >
+                                            <i class="fas fa-check-circle"></i> Rewards Redeemed
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             <tr v-if="filteredOrders.length === 0">
@@ -957,31 +975,12 @@ export default {
                     await this.fetchOrders();
                     this.showPaymentConfirmation = false;
                     
-                    // Check if this is a walk-in order (physical order) to show rewards modal
-                    if (this.selectedOrder.is_physical_order) {
-                        this.showWalkInRewardsModal = true;
-                        // Reset rewards modal data
-                        this.selectedRewardMethod = '';
-                        this.customerUserId = '';
-                        this.qrCodeData = '';
-                        this.foundUser = null;
-                        this.qrFoundUser = null;
-                        this.userLookupError = '';
-                        this.qrLookupError = '';
-                        await this.fetchRewardsSettings();
-                        
-                        // Show email success modal if customer has email (after walk-in rewards)
-                        if (this.selectedOrder.email) {
-                            this.showEmailSuccess = true;
-                        }
+                    // Show email success modal if customer has email
+                    if (this.selectedOrder.email) {
+                        this.showEmailSuccess = true;
                     } else {
-                        // For non-walk-in orders
-                        if (this.selectedOrder.email) {
-                            this.showEmailSuccess = true;
-                        } else {
-                            // Close the order details modal if no email success modal is shown
-                            this.selectedOrder = null;
-                        }
+                        // Close the order details modal if no email success modal is shown
+                        this.selectedOrder = null;
                     }
                 } else {
                     throw new Error('Failed to process payment');
@@ -992,10 +991,8 @@ export default {
         },
         closeEmailSuccessModal() {
             this.showEmailSuccess = false;
-            // Only close the order details modal if we're not showing walk-in rewards
-            if (!this.showWalkInRewardsModal) {
-                this.selectedOrder = null;
-            }
+            // Close the order details modal
+            this.selectedOrder = null;
         },
         async printReceipt() {
             try {
@@ -1391,6 +1388,31 @@ export default {
             }
         },
         
+        // Customer Rewards method
+        async openCustomerRewards(order) {
+            try {
+                // Set the selected order for the rewards modal
+                this.selectedOrder = order;
+                
+                // Reset rewards modal data
+                this.selectedRewardMethod = '';
+                this.customerUserId = '';
+                this.qrCodeData = '';
+                this.foundUser = null;
+                this.qrFoundUser = null;
+                this.userLookupError = '';
+                this.qrLookupError = '';
+                
+                // Fetch rewards settings
+                await this.fetchRewardsSettings();
+                
+                // Show the rewards modal
+                this.showWalkInRewardsModal = true;
+            } catch (error) {
+                console.error('Error opening customer rewards:', error);
+            }
+        },
+        
         // Walk-in rewards methods
         calculatePointsToAward(totalAmount) {
             if (!totalAmount || !this.rewardsSettings) return 0;
@@ -1704,6 +1726,9 @@ export default {
                     
                     this.showWalkInRewardsModal = false;
                     this.showWalkInRewardsSuccess = true;
+                    
+                    // Refresh orders to update the rewards status
+                    await this.fetchOrders();
                 } else {
                     const error = await response.json();
                     alert(error.message || 'Failed to process rewards');
@@ -2120,6 +2145,56 @@ th {
 .view-btn:hover {
     background-color: #2980b9;
     transform: translateY(-1px);
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.rewards-btn {
+    background-color: #e67e22;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.rewards-btn:hover {
+    background-color: #d35400;
+    transform: translateY(-1px);
+}
+
+.rewards-btn i {
+    font-size: 0.9rem;
+}
+
+.rewards-redeemed-btn {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    cursor: not-allowed;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    opacity: 0.9;
+}
+
+.rewards-redeemed-btn i {
+    font-size: 0.9rem;
 }
 
 .no-data {
@@ -2708,6 +2783,17 @@ tfoot tr td {
     .modal-content {
         width: 95%;
         padding: 1rem;
+    }
+    
+    .action-buttons {
+        flex-direction: row;
+        gap: 0.3rem;
+        flex-wrap: wrap;
+    }
+    
+    .view-btn, .rewards-btn, .rewards-redeemed-btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
     }
 }
 
