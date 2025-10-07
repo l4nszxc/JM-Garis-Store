@@ -3,10 +3,57 @@
         <AdminNavbar :username="username" @logout="showLogoutModal = true" />
         
         <div class="admin-content">
-            <h1><i class="fas fa-credit-card"></i> Payment Settings</h1>
+            <div class="dashboard-header">
+                <h1><i class="fas fa-credit-card"></i> Payment Settings</h1>
+                <div class="header-actions">
+                    <span class="status-badge">Configuration Panel</span>
+                </div>
+            </div>
 
-            <!-- GCash Integration Section -->
-            <div class="settings-section">
+            <!-- Payment Settings Grid -->
+            <div class="settings-grid">
+                <!-- Payment Methods Status Cards -->
+                <div class="status-cards-grid">
+                    <div class="status-card gcash-card">
+                        <div class="status-icon">
+                            <i class="fab fa-cc-mastercard"></i>
+                        </div>
+                        <div class="status-content">
+                            <h3>GCash Payment</h3>
+                            <p class="status-value" :class="{ active: paymentSettings.gcash_enabled, inactive: !paymentSettings.gcash_enabled }">
+                                {{ paymentSettings.gcash_enabled ? 'Active' : 'Inactive' }}
+                            </p>
+                            <p class="status-description">Online payment integration</p>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card downpayment-card">
+                        <div class="status-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="status-content">
+                            <h3>Downpayment</h3>
+                            <p class="status-value" :class="{ active: paymentSettings.downpayment_enabled, inactive: !paymentSettings.downpayment_enabled }">
+                                {{ paymentSettings.downpayment_enabled ? paymentSettings.downpayment_percentage + '%' : 'Disabled' }}
+                            </p>
+                            <p class="status-description">Partial payment option</p>
+                        </div>
+                    </div>
+                    
+                    <div class="status-card cash-card">
+                        <div class="status-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="status-content">
+                            <h3>Cash on Delivery</h3>
+                            <p class="status-value active">Always Active</p>
+                            <p class="status-description">Traditional payment method</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GCash Integration Section -->
+                <div class="settings-section">
                 <div class="section-header">
                     <div class="section-title">
                         <h2><i class="fab fa-cc-mastercard"></i> GCash Integration</h2>
@@ -157,7 +204,7 @@
                     </div>
                 </div>
             </div>
-
+            
             <!-- Save Changes -->
             <div class="save-section">
                 <button 
@@ -238,6 +285,7 @@
             {{ message }}
         </div>
     </div>
+</div>
 </template>
 
 <script>
@@ -455,47 +503,184 @@ export default {
 </script>
 
 <style scoped>
-/* Base Container */
+/* Base Layout */
 .admin-container {
+    font-family: 'Inter', Arial, sans-serif;
     min-height: 100vh;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background-color: #f8fafc;
+    padding-left: 250px; /* Match sidebar width */
 }
 
 .admin-content {
     padding: 2rem;
-    max-width: 1200px;
     margin: 0 auto;
 }
 
-/* Page Header */
-h1 {
-    color: #2d3748;
-    font-size: 2rem;
-    font-weight: 700;
+/* Dashboard Header */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 2rem;
+}
+
+.dashboard-header h1 {
+    font-size: 1.75rem;
+    color: #111827;
+    font-weight: 600;
+    margin: 0;
     display: flex;
     align-items: center;
     gap: 0.75rem;
 }
 
-h1 i {
+.dashboard-header h1 i {
     color: #4CAF50;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.status-badge {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+/* Settings Grid */
+.settings-grid {
+    display: grid;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Status Cards Grid */
+.status-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.status-card {
+    display: flex;
+    align-items: flex-start;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-left: 4px solid #e2e8f0;
+}
+
+.status-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.status-card.gcash-card {
+    border-left-color: #007bff;
+}
+
+.status-card.downpayment-card {
+    border-left-color: #4CAF50;
+}
+
+.status-card.cash-card {
+    border-left-color: #16a34a;
+}
+
+.status-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 54px;
+    height: 54px;
+    border-radius: 12px;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.gcash-card .status-icon {
+    background-color: #eff6ff;
+    color: #007bff;
+}
+
+.downpayment-card .status-icon {
+    background-color: #f0f9ff;
+    color: #4CAF50;
+}
+
+.cash-card .status-icon {
+    background-color: #f0fdf4;
+    color: #16a34a;
+}
+
+.status-icon i {
+    font-size: 1.5rem;
+}
+
+.status-content {
+    flex: 1;
+}
+
+.status-content h3 {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-content .status-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0.5rem 0 0.25rem;
+    line-height: 1.2;
+}
+
+.status-value.active {
+    color: #16a34a;
+}
+
+.status-value.inactive {
+    color: #dc2626;
+}
+
+.status-content .status-description {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0.5rem 0 0;
 }
 
 /* Settings Sections */
 .settings-section {
     background: white;
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     overflow: hidden;
-    border-left: 4px solid #4CAF50;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.settings-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
 }
 
 .section-header {
     background: linear-gradient(135deg, #f8fffe 0%, #f1f9f1 100%);
     padding: 1.5rem 2rem;
     border-bottom: 1px solid #e2e8f0;
+    border-left: 4px solid #4CAF50;
 }
 
 .section-title h2 {
@@ -529,6 +714,11 @@ h1 i {
     align-items: center;
     padding: 1.5rem 2rem;
     border-bottom: 1px solid #f1f5f9;
+    transition: background-color 0.2s;
+}
+
+.setting-row:hover {
+    background-color: #f8fafc;
 }
 
 .setting-row:last-child {
@@ -556,7 +746,7 @@ h1 i {
     font-size: 0.85rem;
 }
 
-/* Toggle Switch */
+/* Toggle Switch - Modern Design */
 .toggle-switch {
     position: relative;
     display: inline-block;
@@ -577,9 +767,10 @@ h1 i {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
+    background-color: #cbd5e0;
     transition: 0.4s;
     border-radius: 34px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .slider:before {
@@ -592,17 +783,18 @@ h1 i {
     background-color: white;
     transition: 0.4s;
     border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 input:checked + .slider {
-    background-color: #4CAF50;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
 }
 
 input:checked + .slider:before {
     transform: translateX(26px);
 }
 
-/* Input Groups */
+/* Input Groups - Enhanced */
 .percentage-input-group,
 .amount-input-group {
     display: flex;
@@ -611,12 +803,14 @@ input:checked + .slider:before {
     border: 2px solid #e2e8f0;
     border-radius: 8px;
     overflow: hidden;
-    transition: border-color 0.3s ease;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .percentage-input-group:focus-within,
 .amount-input-group:focus-within {
     border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
 .percentage-input,
@@ -627,13 +821,14 @@ input:checked + .slider:before {
     font-size: 1rem;
     width: 80px;
     text-align: center;
+    font-weight: 500;
 }
 
 .percentage-symbol,
 .currency-symbol {
     background: #f8fafc;
     padding: 0.75rem;
-    color: #64748b;
+    color: #4a5568;
     font-weight: 600;
 }
 
@@ -645,30 +840,30 @@ input:checked + .slider:before {
     border-left: 1px solid #e2e8f0;
 }
 
-/* Config Button */
+/* Config Button - Enhanced */
 .config-btn {
-    background: #4CAF50;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
 }
 
 .config-btn:hover {
-    background: #45a049;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
-/* Preview Card */
+/* Preview Card - Enhanced */
 .preview-card {
-    background: #f8fafc;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     margin: 2rem;
     padding: 2rem;
     border-radius: 12px;
@@ -680,6 +875,9 @@ input:checked + .slider:before {
     margin: 0 0 1.5rem 0;
     font-size: 1.1rem;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .payment-methods-preview {
@@ -692,10 +890,16 @@ input:checked + .slider:before {
 .payment-option-preview {
     background: white;
     padding: 1.5rem;
-    border-radius: 8px;
+    border-radius: 12px;
     text-align: center;
     border: 2px solid #e2e8f0;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.payment-option-preview:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .payment-option-preview.disabled {
@@ -711,6 +915,14 @@ input:checked + .slider:before {
 
 .payment-option-preview.gcash i {
     color: #007bff;
+}
+
+.payment-option-preview.cash i {
+    color: #16a34a;
+}
+
+.payment-option-preview.hatid i {
+    color: #f59e0b;
 }
 
 .payment-option-preview.disabled i {
@@ -732,8 +944,9 @@ input:checked + .slider:before {
 .downpayment-preview {
     background: white;
     padding: 1.5rem;
-    border-radius: 8px;
+    border-radius: 12px;
     border-left: 4px solid #4CAF50;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .downpayment-preview h4 {
@@ -742,6 +955,7 @@ input:checked + .slider:before {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-weight: 600;
 }
 
 .downpayment-preview h4 i {
@@ -751,12 +965,17 @@ input:checked + .slider:before {
 .downpayment-info p {
     margin: 0.5rem 0;
     color: #4a5568;
+    font-size: 0.9rem;
 }
 
-/* Save Section */
+/* Save Section - Enhanced */
 .save-section {
     text-align: center;
     margin-top: 3rem;
+    padding: 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .save-btn {
@@ -774,6 +993,7 @@ input:checked + .slider:before {
     gap: 0.5rem;
     min-width: 200px;
     justify-content: center;
+    box-shadow: 0 4px 6px rgba(76, 175, 80, 0.25);
 }
 
 .save-btn:hover:not(:disabled) {
@@ -788,10 +1008,10 @@ input:checked + .slider:before {
 }
 
 .save-btn.saving {
-    background: #94a3b8;
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
 }
 
-/* Modal Styles */
+/* Modal Styles - Enhanced */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -803,6 +1023,7 @@ input:checked + .slider:before {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    backdrop-filter: blur(4px);
 }
 
 .modal-content {
@@ -813,6 +1034,18 @@ input:checked + .slider:before {
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 25px rgba(0, 0, 0, 0.2);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .modal-header {
@@ -821,7 +1054,7 @@ input:checked + .slider:before {
     align-items: center;
     padding: 1.5rem 2rem;
     border-bottom: 1px solid #e2e8f0;
-    background: #f8fafc;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 .modal-header h3 {
@@ -830,6 +1063,7 @@ input:checked + .slider:before {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-weight: 600;
 }
 
 .close-btn {
@@ -870,15 +1104,17 @@ input:checked + .slider:before {
     width: 100%;
     padding: 0.75rem;
     border: 2px solid #e2e8f0;
-    border-radius: 6px;
-    transition: border-color 0.3s ease;
+    border-radius: 8px;
+    transition: all 0.3s ease;
     font-size: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .form-input:focus,
 .form-select:focus {
     outline: none;
     border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
 .modal-actions {
@@ -886,19 +1122,19 @@ input:checked + .slider:before {
     gap: 1rem;
     padding: 1.5rem 2rem;
     border-top: 1px solid #e2e8f0;
-    background: #f8fafc;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 .cancel-btn {
     flex: 1;
-    background: #6b7280;
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
     color: white;
     border: none;
     padding: 0.75rem;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-    transition: background 0.3s ease;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -906,7 +1142,8 @@ input:checked + .slider:before {
 }
 
 .cancel-btn:hover {
-    background: #4b5563;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
 }
 
 .modal-actions .save-btn {
@@ -914,7 +1151,7 @@ input:checked + .slider:before {
     min-width: auto;
 }
 
-/* Message Toast */
+/* Message Toast - Enhanced */
 .message-toast {
     position: fixed;
     top: 2rem;
@@ -928,14 +1165,15 @@ input:checked + .slider:before {
     align-items: center;
     gap: 0.5rem;
     animation: slideIn 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .message-toast.success {
-    background: #10b981;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 }
 
 .message-toast.error {
-    background: #ef4444;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
 }
 
 @keyframes slideIn {
@@ -950,9 +1188,25 @@ input:checked + .slider:before {
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+    .admin-container {
+        padding-left: 0;
+    }
+    
     .admin-content {
         padding: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .status-cards-grid {
+        grid-template-columns: 1fr;
     }
     
     .setting-row {
@@ -989,7 +1243,7 @@ input:checked + .slider:before {
 }
 
 @media (max-width: 480px) {
-    h1 {
+    .dashboard-header h1 {
         font-size: 1.5rem;
     }
     
@@ -998,6 +1252,11 @@ input:checked + .slider:before {
     }
     
     .setting-row {
+        padding: 1rem;
+    }
+    
+    .preview-card {
+        margin: 1rem;
         padding: 1rem;
     }
 }
