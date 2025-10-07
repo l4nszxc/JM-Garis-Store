@@ -25,21 +25,32 @@
           <div class="form-group">
             <label for="password">Password</label>
             <div class="input-group">
-              <i class="fas fa-lock input-icon"></i>
-              <input
-                type="password"
-                id="password"
-                v-model="formData.password"
-                required
-                placeholder="Enter your password"
-              />
+              <div class="password-input-container">
+                <i class="fas fa-lock input-icon"></i>
+                <input
+                  :type="showPassword ? 'text' : 'password'"
+                  id="password"
+                  v-model="formData.password"
+                  required
+                  placeholder="Enter your password"
+                  class="password-input"
+                />
+                <button 
+                  type="button" 
+                  @click="showPassword = !showPassword"
+                  class="password-toggle"
+                >
+                  <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                </button>
+              </div>
             </div>
           </div>
           
   
-          <button type="submit" class="login-btn">
-            <i class="fas fa-sign-in-alt"></i>
-            Login
+          <button type="submit" class="login-btn" :disabled="isLoading">
+            <i class="fas fa-spinner fa-spin" v-if="isLoading"></i>
+            <i class="fas fa-sign-in-alt" v-else></i>
+            {{ isLoading ? 'Logging in...' : 'Login' }}
           </button>
         </form>
   
@@ -88,12 +99,17 @@ export default {
             },
             error: '',
             showVerificationDialog: false,
-            unverifiedEmail: ''
+            unverifiedEmail: '',
+            isLoading: false,
+            showPassword: false
         }
     },
     methods: {
         
       async handleLogin() {
+        this.isLoading = true;
+        this.error = '';
+        
         try {
             const response = await apiPost('/api/users/login', this.formData);
 
@@ -144,6 +160,8 @@ export default {
             }
         } catch (err) {
             this.error = err.message;
+        } finally {
+            this.isLoading = false;
         }
     },
     cancelVerification() {
@@ -154,6 +172,9 @@ export default {
     
 
     async resendVerification() {
+        this.isLoading = true;
+        this.error = '';
+        
         try {
             const response = await apiPost('/api/users/resend-otp', { email: this.unverifiedEmail });
 
@@ -173,8 +194,9 @@ export default {
             });
         } catch (err) {
             this.error = err.message;
+        } finally {
+            this.isLoading = false;
         }
-        
     }
     
     
@@ -253,6 +275,47 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
+/* Password Input Specific Styles */
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input {
+  width: 100%;
+  padding: 1rem 3rem 1rem 3rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.password-input:focus {
+  border-color: #4CAF50;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: color 0.2s ease;
+  z-index: 2;
+}
+
+.password-toggle:hover {
+  color: #4CAF50;
+}
+
 .login-btn {
   width: 100%;
   background: linear-gradient(45deg, #4CAF50, #45a049);
@@ -274,6 +337,13 @@ input:focus {
   background: linear-gradient(45deg, #45a049, #3d8b40);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+}
+
+.login-btn:disabled {
+  background: #c8e6c9;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .error-message {

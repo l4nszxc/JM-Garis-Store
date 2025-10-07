@@ -253,9 +253,10 @@
       </div>
     </div>
 
-    <button type="submit" class="register-btn" :disabled="!isFormValid">
-      <i class="fas fa-user-plus"></i>
-      Create Account
+    <button type="submit" class="register-btn" :disabled="!isFormValid || isLoading">
+      <i class="fas fa-spinner fa-spin" v-if="isLoading"></i>
+      <i class="fas fa-user-plus" v-else></i>
+      {{ isLoading ? 'Creating Account...' : 'Create Account' }}
     </button>
   </form>
 
@@ -296,6 +297,7 @@ export default {
         confirmPassword: ''
       },
       error: '',
+      isLoading: false,
       
       // Password visibility toggles
       showPassword: false,
@@ -375,6 +377,9 @@ export default {
     },
     
     async handleRegister() {
+      this.isLoading = true;
+      this.error = '';
+      
       try {
         // Check if passwords match
         if (this.formData.password !== this.formData.confirmPassword) {
@@ -412,6 +417,8 @@ export default {
         });
       } catch (err) {
         this.error = err.message;
+      } finally {
+        this.isLoading = false;
       }
     }
   }
