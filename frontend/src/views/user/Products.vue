@@ -145,6 +145,7 @@
 
         <LogoutModal :show="showLogoutModal" @confirm="handleLogout" @cancel="showLogoutModal = false" />
         <QuantityModal 
+            ref="quantityModal"
             :show="showModal" 
             :productStock="selectedProduct ? selectedProduct.stock_quantity : 0"
             :product="selectedProduct"
@@ -346,6 +347,10 @@ export default {
                 console.error('Error adding product to cart:', error);
                 this.showNotification('Error adding product to cart', 'error', 'fas fa-times-circle');
             } finally {
+                // Reset loading state in modal
+                if (this.$refs.quantityModal) {
+                    this.$refs.quantityModal.resetLoading();
+                }
                 this.showModal = false;
                 this.selectedProduct = null;
             }

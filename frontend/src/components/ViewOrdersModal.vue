@@ -373,9 +373,10 @@
                 </div>
                 
                 <div class="payment-status-actions">
-                    <button @click="goToOrders" class="primary-btn">
-                        <i class="fas fa-list"></i>
-                        View Orders
+                    <button @click="goToOrders" class="primary-btn" :disabled="isGoingToOrders">
+                        <i class="fas fa-spinner fa-spin" v-if="isGoingToOrders"></i>
+                        <i class="fas fa-list" v-else></i>
+                        {{ isGoingToOrders ? 'Loading...' : 'View Orders' }}
                     </button>
                     <button @click="closePaymentSuccessModal" class="secondary-btn">
                         <i class="fas fa-times"></i>
@@ -406,9 +407,10 @@
                 </div>
                 
                 <div class="payment-status-actions">
-                    <button @click="retryPayment" class="primary-btn">
-                        <i class="fas fa-redo"></i>
-                        Try Again
+                    <button @click="retryPayment" class="primary-btn" :disabled="isRetryingPayment">
+                        <i class="fas fa-spinner fa-spin" v-if="isRetryingPayment"></i>
+                        <i class="fas fa-redo" v-else></i>
+                        {{ isRetryingPayment ? 'Please wait...' : 'Try Again' }}
                     </button>
                     <button @click="closePaymentFailedModal" class="secondary-btn">
                         <i class="fas fa-times"></i>
@@ -473,7 +475,9 @@ export default {
                 downpayment_enabled: true,
                 downpayment_percentage: 25.00,
                 min_order_amount: 500.00
-            }
+            },
+            isGoingToOrders: false,
+            isRetryingPayment: false
         }
     },
     watch: {
@@ -483,6 +487,8 @@ export default {
                 this.selectedPaymentMethod = 'cash'; // Reset to default
                 this.processingPayment = false;
                 this.verifyingPayment = false;
+                this.isGoingToOrders = false;
+                this.isRetryingPayment = false;
                 this.deliveryAddress = this.userAddress || '';
                 this.specialInstructions = '';
                 this.showHatidModal = false;
@@ -1305,14 +1311,30 @@ Special Instructions: ${this.specialInstructions || ''}`;
             this.paymentFailedMessage = '';
         },
 
-        goToOrders() {
-            this.closePaymentSuccessModal();
-            this.$router.push('/track-orders');
+        async goToOrders() {
+            this.isGoingToOrders = true;
+            try {
+                this.closePaymentSuccessModal();
+                await this.$router.push('/track-orders');
+            } catch (error) {
+                console.error('Error navigating to orders:', error);
+            } finally {
+                this.isGoingToOrders = false;
+            }
         },
 
-        retryPayment() {
-            this.closePaymentFailedModal();
-            // The modal will remain closed, user can try payment again
+        async retryPayment() {
+            this.isRetryingPayment = true;
+            try {
+                // Small delay to show loading state
+                await new Promise(resolve => setTimeout(resolve, 500));
+                this.closePaymentFailedModal();
+                // The modal will remain closed, user can try payment again
+            } catch (error) {
+                console.error('Error during retry payment:', error);
+            } finally {
+                this.isRetryingPayment = false;
+            }
         }
     },
     mounted() {

@@ -187,16 +187,20 @@
               <button 
                 @click="addToCart" 
                 class="add-to-cart-btn"
-                :disabled="isOutOfStock"
+                :disabled="isOutOfStock || isAddingToCart"
               >
-                <i class="fas fa-shopping-cart"></i> Add to Cart
+                <i v-if="isAddingToCart" class="fas fa-spinner fa-spin"></i>
+                <i v-else class="fas fa-shopping-cart"></i>
+                {{ isAddingToCart ? 'Adding...' : 'Add to Cart' }}
               </button>
               <button 
                 @click="buyNow" 
                 class="buy-now-btn"
-                :disabled="isOutOfStock"
+                :disabled="isOutOfStock || isBuyingNow || isAddingToCart"
               >
-                <i class="fas fa-bolt"></i> Buy Now
+                <i v-if="isBuyingNow" class="fas fa-spinner fa-spin"></i>
+                <i v-else class="fas fa-bolt"></i>
+                {{ isBuyingNow ? 'Processing...' : 'Buy Now' }}
               </button>
               <button 
                 @click="reportProduct" 
@@ -290,8 +294,12 @@
             ></textarea>
           </div>
           <div class="modal-buttons">
-            <button @click="submitReport" class="submit-btn">Submit Report</button>
-            <button @click="cancelReport" class="cancel-btn">Cancel</button>
+            <button @click="submitReport" class="submit-btn" :disabled="isSubmittingReport">
+              <i v-if="isSubmittingReport" class="fas fa-spinner fa-spin"></i>
+              <i v-else class="fas fa-paper-plane"></i>
+              {{ isSubmittingReport ? 'Submitting...' : 'Submit Report' }}
+            </button>
+            <button @click="cancelReport" class="cancel-btn" :disabled="isSubmittingReport">Cancel</button>
           </div>
         </div>
       </div>
@@ -343,6 +351,9 @@ export default {
         type: 'inaccurate-info',
         description: ''
       },
+      isAddingToCart: false,
+      isBuyingNow: false,
+      isSubmittingReport: false,
       notification: {
         show: false,
         message: '',
@@ -632,8 +643,9 @@ export default {
       this.$router.push(`/product/${productId}`);
     },
     async addToCart() {
-      if (this.isOutOfStock) return;
+      if (this.isOutOfStock || this.isAddingToCart) return;
       
+      this.isAddingToCart = true;
       try {
         const token = localStorage.getItem('token');
         const payload = {
@@ -671,13 +683,22 @@ export default {
       } catch (error) {
         console.error('Error adding to cart:', error);
         this.showNotification('Error adding product to cart', 'error', 'fas fa-times-circle');
+      } finally {
+        this.isAddingToCart = false;
       }
     },
     async buyNow() {
-      // First add to cart
-      await this.addToCart();
-      // Then navigate to cart page
-      this.$router.push('/cart');
+      if (this.isOutOfStock || this.isBuyingNow) return;
+      
+      this.isBuyingNow = true;
+      try {
+        // First add to cart
+        await this.addToCart();
+        // Then navigate to cart page
+        this.$router.push('/cart');
+      } finally {
+        this.isBuyingNow = false;
+      }
     },
     reportProduct() {
       this.showReportModal = true;
@@ -690,11 +711,14 @@ export default {
       };
     },
     async submitReport() {
-      if (!this.reportData.description) {
-        this.showNotification('Please describe the issue', 'warning', 'fas fa-exclamation-triangle');
+      if (!this.reportData.description || this.isSubmittingReport) {
+        if (!this.reportData.description) {
+          this.showNotification('Please describe the issue', 'warning', 'fas fa-exclamation-triangle');
+        }
         return;
       }
       
+      this.isSubmittingReport = true;
       try {
         const token = localStorage.getItem('token');
         const response = await this.$fetch(`/api/products/${this.product.products_id}/report`, {
@@ -727,6 +751,8 @@ export default {
       } catch (error) {
         console.error('Error submitting report:', error);
         this.showNotification('Error submitting report: ' + error.message, 'error', 'fas fa-times-circle');
+      } finally {
+        this.isSubmittingReport = false;
       }
     },
     showNotification(message, type, icon) {
@@ -1471,6 +1497,27 @@ export default {
     transform: translateX(0);
     opacity: 1;
   }
+}
+
+/* Spinner Animation */
+.fa-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Loading Button States */
+.add-to-cart-btn:disabled,
+.buy-now-btn:disabled,
+.submit-btn:disabled,
+.cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Responsive Design */

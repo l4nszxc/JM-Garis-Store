@@ -188,12 +188,13 @@
                 <button 
                     @click="confirm" 
                     class="confirm-btn"
-                    :disabled="!isValidQuantity || (hasChoices && !selectedChoice) || getMaxStock() === 0"
+                    :disabled="!isValidQuantity || (hasChoices && !selectedChoice) || getMaxStock() === 0 || loading"
                 >
-                    <i class="fas fa-shopping-cart"></i>
-                    Add to Cart
+                    <i v-if="loading" class="fas fa-spinner fa-spin"></i>
+                    <i v-else class="fas fa-shopping-cart"></i>
+                    {{ loading ? 'Adding...' : 'Add to Cart' }}
                 </button>
-                <button @click="cancel" class="cancel-btn">
+                <button @click="cancel" class="cancel-btn" :disabled="loading">
                     <i class="fas fa-times"></i>
                     Cancel
                 </button>
@@ -219,7 +220,8 @@ export default {
     data() {
         return {
             quantity: 1,
-            selectedChoice: null
+            selectedChoice: null,
+            loading: false
         }
     },
     computed: {
@@ -316,7 +318,8 @@ export default {
             }
         },
         confirm() {
-            if (this.isValidQuantity) {
+            if (this.isValidQuantity && !this.loading) {
+                this.loading = true;
                 this.$emit('confirm', {
                     quantity: this.quantity,
                     choice: this.selectedChoice
@@ -325,6 +328,9 @@ export default {
         },
         cancel() {
             this.$emit('cancel');
+        },
+        resetLoading() {
+            this.loading = false;
         }
     },
     watch: {
@@ -332,6 +338,7 @@ export default {
             if (newVal) {
                 this.quantity = 1;
                 this.selectedChoice = null;
+                this.loading = false;
                 
                 // Auto-select the first available choice if there's only one option
                 if (this.hasChoices && this.product.choices.length === 1 && this.product.choices[0].stock > 0) {
@@ -963,6 +970,16 @@ export default {
 
 .modal-content::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
+}
+
+/* Loading Animation */
+.fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 </style>
 

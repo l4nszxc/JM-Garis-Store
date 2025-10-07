@@ -42,7 +42,17 @@
                 </div>
             </div>
 
-            <div v-if="cartItems.length > 0" class="cart-main">
+            <!-- Loading State -->
+            <div v-if="isLoadingCart" class="loading-container">
+                <div class="loading-content">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <p class="loading-text">Loading your cart...</p>
+                </div>
+            </div>
+
+            <div v-else-if="cartItems.length > 0" class="cart-main">
                 <!-- Select All Section -->
                 <div class="select-all-section">
                     <label class="select-all-checkbox">
@@ -168,7 +178,7 @@
             </div>
 
             <!-- Empty Cart State -->
-            <div v-else class="empty-cart">
+            <div v-else-if="!isLoadingCart && cartItems.length === 0" class="empty-cart">
                 <div class="empty-state">
                     <h3>Your cart is empty</h3>
                     <p>Add some products to get started</p>
@@ -265,6 +275,7 @@ export default {
             cartItems: [],
             checkedItems: new Set(),
             loading: false,
+            isLoadingCart: true,
             error: null,
             availableDiscounts: [],
             showShareModal: false,
@@ -382,7 +393,11 @@ export default {
                     this.syncStatus = null;
                     this.partnerUsername = '';
                     this.showNotification('You have left the shared cart. The sharing has ended for both users.');
+                    // Don't show loading state for sync updates
+                    const wasLoading = this.isLoadingCart;
+                    this.isLoadingCart = false;
                     await this.fetchCart();
+                    this.isLoadingCart = wasLoading;
                 } else {
                     const error = await response.json();
                     throw new Error(error.message || 'Failed to leave shared cart');
@@ -663,6 +678,7 @@ export default {
         
         async fetchCart() {
             try {
+                this.isLoadingCart = true;
                 const token = localStorage.getItem('token');
                 if (!token) {
                     this.$router.push('/login');
@@ -685,6 +701,8 @@ export default {
             } catch (error) {
                 console.error('Error fetching cart:', error);
                 this.cartItems = [];
+            } finally {
+                this.isLoadingCart = false;
             }
         },
         
@@ -725,7 +743,11 @@ export default {
                 });
                 
                 if (response.ok) {
+                    // Don't show loading state for quantity updates
+                    const wasLoading = this.isLoadingCart;
+                    this.isLoadingCart = false;
                     await this.fetchCart();
+                    this.isLoadingCart = wasLoading;
                     window.dispatchEvent(new CustomEvent('cart-updated'));
                 }
             } catch (error) {
@@ -743,7 +765,11 @@ export default {
         this.syncInterval = setInterval(async () => {
             await this.checkSyncStatus();
             if (this.syncStatus) {
+                // Don't show loading state for sync updates
+                const wasLoading = this.isLoadingCart;
+                this.isLoadingCart = false;
                 await this.fetchCart();
+                this.isLoadingCart = wasLoading;
             }
         }, 1000);
     },
@@ -844,6 +870,51 @@ export default {
 .leave-btn:hover {
     background-color: #6b7280;
     color: white;
+}
+
+/* Loading State */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-top: 1.5rem;
+}
+
+.loading-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 3rem 2rem;
+}
+
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-spinner i {
+    font-size: 3rem;
+    color: #4CAF50;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    margin: 0;
+    color: #64748b;
+    font-size: 1.1rem;
+    font-weight: 500;
 }
 
 /* Main Cart Section */
@@ -1514,6 +1585,23 @@ export default {
     .action-btn {
         font-size: 0.75rem;
         padding: 0.375rem 0.5rem;
+    }
+    
+    .loading-container {
+        min-height: 300px;
+        margin-top: 1rem;
+    }
+    
+    .loading-content {
+        padding: 2rem 1rem;
+    }
+    
+    .loading-spinner i {
+        font-size: 2.5rem;
+    }
+    
+    .loading-text {
+        font-size: 1rem;
     }
 }
 
