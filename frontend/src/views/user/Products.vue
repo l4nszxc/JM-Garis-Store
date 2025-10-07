@@ -7,16 +7,16 @@
                 <div class="search-filter">
                     <div class="input-with-icon">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="search" v-model="searchQuery" @input="fetchProducts"
+                        <input type="text" id="search" v-model="searchQuery"
                             placeholder="Search products..." />
                     </div>
                 </div>
 
                 <div class="price-filter">
                     <div class="price-range-inputs">
-                        <input type="number" id="minPrice" v-model="minPrice" @input="fetchProducts" placeholder="Min" />
+                        <input type="number" id="minPrice" v-model="minPrice" placeholder="Min" />
                         <div class="price-divider"></div>
-                        <input type="number" id="maxPrice" v-model="maxPrice" @input="fetchProducts" placeholder="Max" />
+                        <input type="number" id="maxPrice" v-model="maxPrice" placeholder="Max" />
                     </div>
                     <span class="price-label">Price Range</span>
                 </div>
@@ -34,7 +34,7 @@
                         v-for="category in categories" 
                         :key="category.value"
                         :class="['category-btn', { active: selectedCategory === category.value }]"
-                        @click="selectedCategory = category.value; fetchProducts()"
+                        @click="selectedCategory = category.value"
                     >
                         {{ category.label }}
                     </button>
@@ -48,13 +48,11 @@
             </div>
 
             <transition name="fade" mode="out-in">
-                <div v-if="loading" class="loading-message" key="loading">
-                    <div class="loader">
-                        <div class="loader-circle"></div>
-                        <div class="loader-circle"></div>
-                        <div class="loader-circle"></div>
+                <div v-if="isLoadingProducts" class="loading-message" key="loading">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
                     </div>
-                    <span>Finding products for you...</span>
+                    <span>Loading products...</span>
                 </div>
                 <div v-else-if="filteredProducts.length === 0" class="no-products-message" key="no-products">
                     <i class="fas fa-box-open"></i>
@@ -185,6 +183,7 @@ export default {
             showLogoutModal: false,
             products: [],
             loading: false,
+            isLoadingProducts: false,
             selectedCategory: '',
             searchQuery: '',
             minPrice: null,
@@ -219,6 +218,13 @@ export default {
                 ...product,
                 total_sold: parseInt(product.total_sold) || 0
             }));
+
+            // Filter by category
+            if (this.selectedCategory) {
+                filtered = filtered.filter(product => 
+                    product.category === this.selectedCategory
+                );
+            }
 
             if (this.searchQuery) {
                 const searchTerm = this.searchQuery.toLowerCase();
@@ -422,13 +428,26 @@ export default {
             }
         },
         async fetchProducts() {
-            this.loading = true;
+            // Check cache first
+            const cacheKey = 'user_products_cache';
+            const cacheTimestampKey = 'user_products_cache_timestamp';
+            const cached = sessionStorage.getItem(cacheKey);
+            const cacheTimestamp = sessionStorage.getItem(cacheTimestampKey);
+            
+            // Cache for 5 minutes
+            const cacheExpiry = 5 * 60 * 1000;
+            const now = Date.now();
+            
+            if (cached && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheExpiry) {
+                this.products = JSON.parse(cached);
+                return;
+            }
+
+            this.isLoadingProducts = true;
             try {
                 const token = localStorage.getItem('token');
-                let url = '/api/products';
-                if (this.selectedCategory) {
-                    url = `/api/products/category/${this.selectedCategory}`;
-                }
+                // Always fetch all products for client-side filtering
+                const url = '/api/products';
 
                 const response = await this.$fetch(url, {
                     headers: {
@@ -445,6 +464,10 @@ export default {
                     
                     await this.fetchProductRatings();
                     
+                    // Cache the products
+                    sessionStorage.setItem(cacheKey, JSON.stringify(this.products));
+                    sessionStorage.setItem(cacheTimestampKey, now.toString());
+                    
                 } else {
                     if (response.status === 401) {
                         this.$router.push('/login');
@@ -455,7 +478,7 @@ export default {
                 console.error('Error fetching products:', error);
                 this.products = [];
             } finally {
-                this.loading = false;
+                this.isLoadingProducts = false;
             }
         },
         async fetchProductRatings() {
@@ -491,7 +514,6 @@ export default {
             this.minPrice = null;
             this.maxPrice = null;
             this.selectedCategory = '';
-            this.fetchProducts();
         },
         checkCategoryScroll() {
             if (!this.$refs.categoryScroller) return;
@@ -1048,6 +1070,21 @@ export default {
     color: #4CAF50; /* Green text */
     font-size: 1rem;
     padding: 3rem;
+}
+
+.loading-spinner {
+    margin-bottom: 1rem;
+}
+
+.loading-spinner i {
+    font-size: 3rem;
+    color: #4CAF50;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .loader {
