@@ -177,9 +177,11 @@
               <button 
                 @click="createOrder" 
                 class="primary-btn"
-                :disabled="cart.length === 0"
+                :disabled="cart.length === 0 || isCreatingOrder"
               >
-                <i class="fas fa-check-circle"></i> Create Order
+                <i v-if="!isCreatingOrder" class="fas fa-check-circle"></i>
+                <i v-else class="fas fa-spinner fa-spin"></i>
+                {{ isCreatingOrder ? 'Processing...' : 'Create Order' }}
               </button>
             </div>
           </div>
@@ -324,6 +326,7 @@
         showOrderConfirmation: false,
         createdOrderId: '',
         isLoadingProducts: false,
+        isCreatingOrder: false,
         // Pagination data
         currentPage: 1,
         itemsPerPage: 12,
@@ -579,8 +582,9 @@
         this.cart = [];
       },
       async createOrder() {
-        if (this.cart.length === 0) return;
+        if (this.cart.length === 0 || this.isCreatingOrder) return;
         
+        this.isCreatingOrder = true;
         try {
           const token = localStorage.getItem('token');
           const orderData = {
@@ -625,6 +629,8 @@
         } catch (error) {
           console.error('Error creating order:', error);
           alert('Error creating order. Please try again.');
+        } finally {
+          this.isCreatingOrder = false;
         }
       },
       startNewOrder() {
