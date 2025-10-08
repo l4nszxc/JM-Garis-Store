@@ -717,6 +717,63 @@
             </div>
         </div>
 
+        <!-- Payment Success Modal -->
+        <div v-if="showPaymentSuccessModal" class="modal-overlay">
+            <div class="modal-content payment-success-modal">
+                <div class="success-header">
+                    <div class="success-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2>Payment Processed Successfully!</h2>
+                    <p class="success-subtitle">Order has been completed</p>
+                </div>
+                
+                <div class="success-body">
+                    <div class="order-summary-success">
+                        <h3><i class="fas fa-receipt"></i> Order Summary</h3>
+                        <div class="order-info-success">
+                            <div class="info-row">
+                                <span class="label"><i class="fas fa-hashtag"></i> Order ID:</span>
+                                <span class="value">{{ processedOrder?.order_id }}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label"><i class="fas fa-user"></i> Customer:</span>
+                                <span class="value">{{ processedOrder?.customer_name }}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label"><i class="fas fa-calendar"></i> Date:</span>
+                                <span class="value">{{ formatDate(processedOrder?.created_at) }}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label"><i class="fas fa-credit-card"></i> Payment Method:</span>
+                                <span class="value">{{ getPaymentMethodLabel(processedOrder?.payment_method) }}</span>
+                            </div>
+                            <div class="info-row total-row">
+                                <span class="label"><i class="fas fa-dollar-sign"></i> Total Amount:</span>
+                                <span class="value total-amount">{{ formatPrice(processedOrder?.total_amount) }}</span>
+                            </div>
+                            <div v-if="processedOrder?.payment_method === 'cash'" class="payment-details">
+                                <div class="info-row">
+                                    <span class="label">Cash Received:</span>
+                                    <span class="value">{{ formatPrice(paymentDetails?.cashAmount) }}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Change Given:</span>
+                                    <span class="value">{{ formatPrice(paymentDetails?.changeAmount) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="success-actions">
+                    <button @click="closeSuccessModal" class="done-btn">
+                        <i class="fas fa-check"></i> Done
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Logout Modal -->
         <LogoutModal 
             :show="showLogoutModal"
@@ -776,6 +833,11 @@ export default {
             processingRewards: false,
             processingPayment: false,
             successRewardData: null,
+            
+            // Payment success modal
+            showPaymentSuccessModal: false,
+            processedOrder: null,
+            paymentDetails: null,
             
             // QR Scanner options
             qrScanMethod: 'manual', // 'camera', 'upload', 'manual'
@@ -967,15 +1029,54 @@ export default {
                 });
 
                 if (response.ok) {
+                    // Add detailed logging before storing the order
+                    console.log('Before storing - selectedOrder:', this.selectedOrder);
+                    console.log('Before storing - selectedOrder.items:', this.selectedOrder?.items);
+                    console.log('Before storing - selectedOrder keys:', Object.keys(this.selectedOrder || {}));
+                    
+                    // Store the processed order data and payment details for the success modal BEFORE anything else
+                    // Create a deep copy to ensure data integrity
+                    try {
+                        this.processedOrder = JSON.parse(JSON.stringify({
+                            ...this.selectedOrder,
+                            items: this.selectedOrder.items || [],
+                            payment_status: 'paid',
+                            processed_at: new Date().toISOString(),
+                            cash_amount: parseFloat(this.cashAmount),
+                            change_amount: this.changeAmount,
+                            amount_paid: amountToPay
+                        }));
+                        
+                        this.paymentDetails = {
+                            cashAmount: parseFloat(this.cashAmount),
+                            changeAmount: this.changeAmount,
+                            amountToPay: amountToPay
+                        };
+                        
+                        console.log('Successfully stored processedOrder:', this.processedOrder);
+                        console.log('Items count in processedOrder:', this.processedOrder.items?.length || 0);
+                        console.log('Sample item:', this.processedOrder.items?.[0] || 'No items');
+                        
+                    } catch (copyError) {
+                        console.error('Error creating order copy:', copyError);
+                        // Fallback to simple copy
+                        this.processedOrder = {
+                            ...this.selectedOrder,
+                            items: Array.isArray(this.selectedOrder.items) ? [...this.selectedOrder.items] : [],
+                            payment_status: 'paid',
+                            processed_at: new Date().toISOString()
+                        };
+                    }
+                    
                     // Update orders and UI immediately
                     await this.fetchOrders();
                     this.showPaymentConfirmation = false;
                     this.processingPayment = false;
                     
-                    // Print receipt asynchronously without blocking UI
-                    this.printReceiptAsync();
+                    // Show success modal instead of printing receipt immediately
+                    this.showPaymentSuccessModal = true;
                     
-                    // Close the order details modal
+                    // Close the order details modal AFTER storing the data
                     this.selectedOrder = null;
                 } else {
                     throw new Error('Failed to process payment');
@@ -992,11 +1093,28 @@ export default {
             setTimeout(async () => {
                 try {
                     await this.printReceipt();
+                    
+                    // Clear the processed order data AFTER printing is complete
+                    this.processedOrder = null;
+                    this.paymentDetails = null;
                 } catch (error) {
                     console.error('Error printing receipt:', error);
-                    // Silently handle receipt printing errors
+                    // Still clear the data even if printing fails
+                    this.processedOrder = null;
+                    this.paymentDetails = null;
                 }
             }, 100); // Small delay to ensure UI updates first
+        },
+        
+        closeSuccessModal() {
+            this.showPaymentSuccessModal = false;
+            
+            // Print receipt after closing the success modal
+            this.printReceiptAsync();
+            
+            // Clear the processed order data AFTER printing (moved to printReceiptAsync)
+            // this.processedOrder = null;
+            // this.paymentDetails = null;
         },
         
         // Method to refresh receipt settings cache
@@ -1007,7 +1125,13 @@ export default {
         async printReceipt() {
             try {
                 // Use await to resolve the Promise
-                const receipt = await this.generateReceiptContent();
+                const receipt = await this.generateReceiptContent(this.processedOrder);
+                
+                if (!receipt) {
+                    console.error('Receipt generation failed - no content returned');
+                    alert('Error generating receipt. Please try again.');
+                    return;
+                }
                 
                 const printWindow = window.open('', '', 'width=300,height=600');
                 
@@ -1028,10 +1152,48 @@ export default {
                 };
             } catch (error) {
                 console.error('Error printing receipt:', error);
+                alert('Error printing receipt. Please try again.');
             }
         },
-        async generateReceiptContent() {
+        async generateReceiptContent(orderData = null) {
             try {
+                // Use the provided orderData or fall back to processedOrder or selectedOrder
+                const order = orderData || this.processedOrder || this.selectedOrder;
+                
+                console.log('generateReceiptContent called with:', { orderData, processedOrder: this.processedOrder, selectedOrder: this.selectedOrder });
+                console.log('Using order:', order);
+                
+                if (!order) {
+                    console.error('No order data available for receipt generation');
+                    return `
+                        <html><body style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+                            <h2>Receipt Generation Error</h2>
+                            <p>No order data available</p>
+                            <p>Please try again</p>
+                        </body></html>
+                    `;
+                }
+                
+                if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
+                    console.error('Order items not found or invalid:', order.items);
+                    console.error('Full order object keys:', Object.keys(order));
+                    
+                    // Try to use a fallback receipt with basic order info
+                    const date = new Date().toLocaleString();
+                    return `
+                        <html><body style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+                            <h2>JM Garis Store</h2>
+                            <h3>Official Receipt</h3>
+                            <p>Date: ${date}</p>
+                            <p>Order #: ${order.order_id || 'N/A'}</p>
+                            <p>Customer: ${order.customer_name || 'Walk-in Customer'}</p>
+                            <p>Total: ₱${this.formatPrice(order.total_amount || 0)}</p>
+                            <p><strong>Items details unavailable</strong></p>
+                            <p>Thank you for your purchase!</p>
+                        </body></html>
+                    `;
+                }
+                
                 // Use cached settings or fetch new ones
                 let receiptSettings = this.cachedReceiptSettings;
                 
@@ -1064,7 +1226,7 @@ export default {
                 }
                 
                 const date = new Date().toLocaleString();
-                const items = this.selectedOrder.items
+                const items = order.items
                     .map(item => {
                         const displayName = item.choice_name 
                             ? `${item.original_name || item.name} (${item.choice_name})`
@@ -1213,11 +1375,11 @@ export default {
                         </div>
                         
                         <div class="details">
-                            <p><strong>Order #:</strong> ${this.selectedOrder.order_id}</p>
+                            <p><strong>Order #:</strong> ${order.order_id}</p>
                             <p><strong>Date:</strong> ${date}</p>
-                            <p><strong>Customer:</strong> ${this.selectedOrder.customer_name}</p>
-                            <p><strong>Payment Method:</strong> ${this.getPaymentMethodLabel(this.selectedOrder.payment_method)}</p>
-                            ${this.selectedOrder.payment_type === 'downpayment' ? `
+                            <p><strong>Customer:</strong> ${order.customer_name}</p>
+                            <p><strong>Payment Method:</strong> ${this.getPaymentMethodLabel(order.payment_method)}</p>
+                            ${order.payment_type === 'downpayment' ? `
                             <p><strong>Payment Type:</strong> Remaining Balance Payment</p>
                             ` : ''}
                         </div>
@@ -1232,32 +1394,32 @@ export default {
                         
                         <div class="total-section">
                             <div class="subtotal">
-                                Subtotal: ${this.formatPrice(this.selectedOrder.subtotal)}
+                                Subtotal: ${this.formatPrice(orderData.subtotal)}
                             </div>
-                            ${this.selectedOrder.discount_amount > 0 ? `
+                            ${orderData.discount_amount > 0 ? `
                             <div class="discount">
-                                Discount: -${this.formatPrice(this.selectedOrder.discount_amount)}
+                                Discount: -${this.formatPrice(orderData.discount_amount)}
                             </div>
                             ` : ''}
                             <div class="total">
-                                Total Amount: ${this.formatPrice(this.selectedOrder.total_amount)}
+                                Total Amount: ${this.formatPrice(order.total_amount)}
                             </div>
-                            ${this.selectedOrder.payment_type === 'downpayment' ? `
+                            ${order.payment_type === 'downpayment' ? `
                             <div class="payment-breakdown">
                                 <div style="margin-top: 8px; padding-top: 4px; border-top: 1px dashed black;">
-                                    <div>Downpayment (25%): ${this.formatPrice(this.selectedOrder.total_amount * 0.25)}</div>
-                                    <div>Remaining Amount: ${this.formatPrice(this.getAmountToPay(this.selectedOrder))}</div>
+                                    <div>Downpayment (25%): ${this.formatPrice(order.total_amount * 0.25)}</div>
+                                    <div>Remaining Amount: ${this.formatPrice(this.getAmountToPay(order))}</div>
                                 </div>
                             </div>
                             ` : ''}
                             <div class="payment-details">
-                                ${this.selectedOrder.payment_type === 'downpayment' ? 
-                                    `Amount Due: ${this.formatPrice(this.getAmountToPay(this.selectedOrder))}<br>` : 
-                                    `Amount Due: ${this.formatPrice(this.selectedOrder.total_amount)}<br>`
+                                ${order.payment_type === 'downpayment' ? 
+                                    `Amount Due: ${this.formatPrice(this.getAmountToPay(order))}<br>` : 
+                                    `Amount Due: ${this.formatPrice(order.total_amount)}<br>`
                                 }
-                                Cash Amount: ${this.formatPrice(this.cashAmount)}
+                                Cash Amount: ${this.formatPrice(this.paymentDetails?.cashAmount || this.cashAmount)}
                                 <br>
-                                Change: ${this.formatPrice(this.changeAmount)}
+                                Change: ${this.formatPrice(this.paymentDetails?.changeAmount || this.changeAmount)}
                             </div>
                         </div>
                         
@@ -1286,8 +1448,8 @@ export default {
                     </head>
                     <body>
                         <h2>JM Garis Store</h2>
-                        <p>Order #: ${this.selectedOrder.order_id}</p>
-                        <p>Total: ${this.formatPrice(this.selectedOrder.total_amount)}</p>
+                        <p>Order #: ${order.order_id}</p>
+                        <p>Total: ${this.formatPrice(order.total_amount)}</p>
                         <p>Thank you for your purchase!</p>
                     </body>
                     </html>
@@ -3566,6 +3728,237 @@ tfoot tr td {
     .pagination-info {
         font-size: 0.8rem;
         margin: 0 0.5rem;
+    }
+}
+
+/* Payment Success Modal Styles */
+.payment-success-modal {
+    max-width: 500px;
+    padding: 0;
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.success-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+    position: relative;
+}
+
+.success-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50% 50% 0 0;
+    transform: scale(1.5);
+}
+
+.success-icon {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 1rem;
+}
+
+.success-icon i {
+    font-size: 3rem;
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    padding: 1rem;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.success-header h2 {
+    position: relative;
+    z-index: 1;
+    margin: 0 0 0.5rem 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+}
+
+.success-subtitle {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+.success-body {
+    padding: 2rem;
+}
+
+.order-summary-success h3 {
+    margin: 0 0 1.5rem 0;
+    color: #1f2937;
+    font-size: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.order-summary-success h3 i {
+    color: #10b981;
+}
+
+.order-info-success {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    border: 1px solid #e5e7eb;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.95rem;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row .label {
+    color: #6b7280;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.info-row .label i {
+    color: #9ca3af;
+    width: 16px;
+    text-align: center;
+}
+
+.info-row .value {
+    color: #1f2937;
+    font-weight: 600;
+    text-align: right;
+}
+
+.total-row {
+    background: rgba(16, 185, 129, 0.1);
+    margin: 0.75rem -1.5rem -1.5rem -1.5rem;
+    padding: 1rem 1.5rem;
+    border-top: 2px solid #10b981;
+    border-bottom: none;
+}
+
+.total-row .label {
+    color: #059669;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.total-row .value {
+    color: #059669;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.payment-details {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.success-actions {
+    padding: 1.5rem 2rem;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+}
+
+.done-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    padding: 0.875rem 2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.done-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.done-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.done-btn i {
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .payment-success-modal {
+        margin: 1rem;
+        max-width: calc(100% - 2rem);
+    }
+    
+    .success-header {
+        padding: 1.5rem;
+    }
+    
+    .success-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .success-icon i {
+        font-size: 2.5rem;
+        padding: 0.75rem;
+    }
+    
+    .success-body {
+        padding: 1.5rem;
+    }
+    
+    .order-info-success {
+        padding: 1rem;
+    }
+    
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+        padding: 0.5rem 0;
+    }
+    
+    .info-row .value {
+        text-align: left;
+        font-size: 1rem;
+    }
+    
+    .total-row {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
     }
 }
 </style>
