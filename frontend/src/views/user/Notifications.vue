@@ -40,7 +40,7 @@
 
         <div class="action-buttons">
           <div class="dropdown-menu">
-            <button class="menu-trigger" @click="toggleDropdown">
+            <button class="menu-trigger" @click="toggleDropdown" :disabled="isLoadingNotifications">
               <i class="fas fa-ellipsis-v"></i>
             </button>
             <div class="dropdown-content" v-if="dropdownOpen">
@@ -76,8 +76,17 @@
           </button>
         </div>
       </div>
-      
-      <div v-if="filteredNotifications.length > 0" class="notifications-list">
+
+      <!-- Loading State -->
+      <div v-if="isLoadingNotifications" class="loading-container">
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <p class="loading-text">Loading notifications...</p>
+      </div>
+
+      <!-- Notifications List -->
+      <div v-else-if="filteredNotifications.length > 0" class="notifications-list">
         <div 
           v-for="notification in filteredNotifications" 
           :key="notification.id"
@@ -123,7 +132,8 @@
         </div>
       </div>
       
-      <div v-else class="empty-notifications">
+      <!-- No Notifications -->
+      <div v-else-if="!isLoadingNotifications" class="empty-notifications">
         <i class="fas fa-bell-slash"></i>
         <p>You don't have any notifications</p>
       </div>
@@ -175,7 +185,8 @@ export default {
       showCheckboxes: false,
       dropdownOpen: false,
       activeNotificationMenu: null, 
-      deleteTarget: null 
+      deleteTarget: null,
+      isLoadingNotifications: false
     }
   },
   computed: {
@@ -526,6 +537,7 @@ export default {
     },
     
     async loadNotifications() {
+      this.isLoadingNotifications = true;
       try {
         const token = localStorage.getItem('token');
         if (!token) return;
@@ -542,6 +554,8 @@ export default {
         }
       } catch (error) {
         console.error('Error loading notifications:', error);
+      } finally {
+        this.isLoadingNotifications = false;
       }
     },
     
@@ -836,6 +850,42 @@ h1 {
 .empty-notifications p {
   color: #6c757d;
   font-size: 1.1rem;
+}
+
+/* Loading State */
+.loading-container {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.loading-spinner {
+  margin-bottom: 1.5rem;
+}
+
+.loading-spinner i {
+  font-size: 3rem;
+  color: #3498db;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  color: #6c757d;
+  font-size: 1.1rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.menu-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Modal styles */

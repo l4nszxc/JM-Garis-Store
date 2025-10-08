@@ -11,10 +11,11 @@
                         type="text" 
                         v-model="searchQuery" 
                         placeholder="Search by order number..."
+                        :disabled="isLoadingOrders"
                     >
                 </div>
                 <div class="status-filter">
-                    <select v-model="selectedStatus">
+                    <select v-model="selectedStatus" :disabled="isLoadingOrders">
                         <option value="">All Status</option>
                         <option value="pending">Pending</option>
                         <option value="pending_payment">Pending Payment</option>
@@ -31,7 +32,16 @@
             </div>
             
             <div class="orders-container">
-                <div v-if="orders.length > 0">
+                <!-- Loading State -->
+                <div v-if="isLoadingOrders" class="loading-container">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <p class="loading-text">Loading order history...</p>
+                </div>
+                
+                <!-- Orders List -->
+                <div v-else-if="orders.length > 0">
                     <div v-for="order in filteredOrders" :key="order.order_id" class="order-card">
                         <!-- Order Header -->
                         <div class="order-header">
@@ -135,7 +145,9 @@
                         </div>
                     </div>
                 </div>
-                <div v-else class="no-orders">
+                
+                <!-- No Orders -->
+                <div v-else-if="!isLoadingOrders" class="no-orders">
                     <i class="fas fa-box-open"></i>
                     <p>No orders found</p>
                     <router-link to="/products" class="shop-now-btn">
@@ -197,6 +209,7 @@ export default {
             selectedStatus: '',
             showRepeatModal: false,
             selectedOrderForRepeat: null,
+            isLoadingOrders: false,
             notification: {
                 show: false,
                 message: '',
@@ -376,6 +389,7 @@ export default {
         }
       },
       async fetchOrders() {
+        this.isLoadingOrders = true;
         try {
           const token = localStorage.getItem('token');
           const response = await this.$fetch('/api/orders/user', {
@@ -390,6 +404,8 @@ export default {
           }
         } catch (error) {
           console.error('Error fetching orders:', error);
+        } finally {
+          this.isLoadingOrders = false;
         }
       },
       async handleLogout() {
@@ -840,6 +856,44 @@ export default {
     color: #6c757d;
     margin-bottom: 1.5rem;
     font-size: 1.1rem;
+}
+
+/* Loading State */
+.loading-container {
+    text-align: center;
+    padding: 4rem 1rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.loading-spinner {
+    margin-bottom: 1.5rem;
+}
+
+.loading-spinner i {
+    font-size: 3rem;
+    color: #4CAF50;
+    animation: spin 1s linear infinite;
+}
+
+.loading-text {
+    color: #6c757d;
+    font-size: 1.1rem;
+    margin: 0;
+    font-weight: 500;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.search-bar input:disabled,
+.status-filter select:disabled {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .shop-now-btn {
