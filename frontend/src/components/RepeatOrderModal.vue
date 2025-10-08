@@ -64,6 +64,8 @@
 </template>
 
 <script>
+import { apiCall } from '@/config/api';
+
 export default {
   name: 'RepeatOrderModal',
   props: {
@@ -91,10 +93,9 @@ export default {
       this.loading = true;
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`/api/orders/${this.orderId}/repeat`, {
+        const response = await apiCall(`/api/orders/${this.orderId}/repeat`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
