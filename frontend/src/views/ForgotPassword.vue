@@ -20,12 +20,14 @@
                             required
                             placeholder="Enter your email"
                             class="form-input"
+                            :disabled="isLoading"
                         />
                     </div>
                 </div>
-                <button type="submit" class="submit-btn" :disabled="!email">
-                    <i class="fas fa-paper-plane"></i>
-                    Send Verification Code
+                <button type="submit" class="submit-btn" :disabled="!email || isLoading">
+                    <i v-if="!isLoading" class="fas fa-paper-plane"></i>
+                    <i v-if="isLoading" class="fas fa-spinner fa-spin"></i>
+                    {{ isLoading ? 'Sending...' : 'Send Verification Code' }}
                 </button>
             </form>
             
@@ -63,14 +65,16 @@
                             required
                             placeholder="Enter 6-digit code"
                             class="form-input otp-input"
+                            :disabled="isLoading"
                         />
                     </div>
                 </div>
-                <button type="submit" class="submit-btn" :disabled="otp.length !== 6">
-                    <i class="fas fa-check-circle"></i>
-                    Verify Code
+                <button type="submit" class="submit-btn" :disabled="otp.length !== 6 || isLoading">
+                    <i v-if="!isLoading" class="fas fa-check-circle"></i>
+                    <i v-if="isLoading" class="fas fa-spinner fa-spin"></i>
+                    {{ isLoading ? 'Verifying...' : 'Verify Code' }}
                 </button>
-                <button type="button" @click="resendOTP" class="resend-btn">
+                <button type="button" @click="resendOTP" class="resend-btn" :disabled="isLoading">
                     <i class="fas fa-redo-alt"></i>
                     Resend Code
                 </button>
@@ -109,6 +113,7 @@
                                 placeholder="Enter new password"
                                 class="password-input"
                                 @input="validatePassword"
+                                :disabled="isLoading"
                             />
                             <button 
                                 type="button" 
@@ -163,6 +168,7 @@
                                 required
                                 placeholder="Confirm new password"
                                 class="password-input"
+                                :disabled="isLoading"
                             />
                             <button 
                                 type="button" 
@@ -178,9 +184,10 @@
                     </div>
                 </div>
                 
-                <button type="submit" class="submit-btn" :disabled="!isPasswordValid">
-                    <i class="fas fa-shield-alt"></i>
-                    Reset Password
+                <button type="submit" class="submit-btn" :disabled="!isPasswordValid || isLoading">
+                    <i v-if="!isLoading" class="fas fa-shield-alt"></i>
+                    <i v-if="isLoading" class="fas fa-spinner fa-spin"></i>
+                    {{ isLoading ? 'Resetting...' : 'Reset Password' }}
                 </button>
             </form>
             
@@ -224,6 +231,9 @@ export default {
             confirmPassword: '',
             error: '',
             success: '',
+            
+            // Loading states
+            isLoading: false,
             
             // Password visibility toggles
             showPassword: false,
@@ -296,6 +306,7 @@ export default {
         async handleEmailSubmit() {
             try {
                 this.error = '';
+                this.isLoading = true;
                 const response = await apiPost('/api/users/forgot-password', { email: this.email });
 
                 const data = await response.json();
@@ -307,12 +318,15 @@ export default {
                 this.step = 2;
             } catch (err) {
                 this.error = err.message;
+            } finally {
+                this.isLoading = false;
             }
         },
 
         async handleOTPSubmit() {
             try {
                 this.error = '';
+                this.isLoading = true;
                 const response = await apiPost('/api/users/verify-password-reset', { 
                         email: this.email,
                         otp: this.otp 
@@ -327,12 +341,15 @@ export default {
                 this.step = 3;
             } catch (err) {
                 this.error = err.message;
+            } finally {
+                this.isLoading = false;
             }
         },
 
         async handlePasswordReset() {
             try {
                 this.error = '';
+                this.isLoading = true;
                 
                 if (!this.isPasswordValid) {
                     throw new Error('Please ensure all password requirements are met');
@@ -355,6 +372,8 @@ export default {
                 });
             } catch (err) {
                 this.error = err.message;
+            } finally {
+                this.isLoading = false;
             }
         },
 
@@ -362,6 +381,7 @@ export default {
             try {
                 this.error = '';
                 this.success = '';
+                this.isLoading = true;
                 
                 const response = await apiPost('/api/users/forgot-password', { email: this.email });
 
@@ -377,6 +397,8 @@ export default {
                 }, 5000);
             } catch (err) {
                 this.error = err.message;
+            } finally {
+                this.isLoading = false;
             }
         }
     }
@@ -482,6 +504,13 @@ export default {
     box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
+.form-input:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+    opacity: 0.7;
+    border-color: #d1d5db;
+}
+
 .otp-input {
     text-align: center;
     font-size: 1.25rem;
@@ -511,6 +540,13 @@ export default {
     border-color: #4CAF50;
     outline: none;
     box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.password-input:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+    opacity: 0.7;
+    border-color: #d1d5db;
 }
 
 .password-toggle {
@@ -678,6 +714,14 @@ export default {
     transform: translateY(-1px);
 }
 
+.resend-btn:disabled {
+    background-color: #f5f5f5;
+    color: #9ca3af;
+    border-color: #d1d5db;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .error-message {
     color: #dc3545;
     background-color: #fdecea;
@@ -803,6 +847,19 @@ export default {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.fa-spin {
+    animation: spin 1s linear infinite;
 }
 
 /* Responsive Design */

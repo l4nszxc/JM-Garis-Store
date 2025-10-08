@@ -11,9 +11,14 @@
                         maxlength="6"
                         placeholder="Enter OTP"
                         required
+                        :disabled="isLoading"
                     />
                 </div>
-                <button type="submit" class="verify-btn">Verify OTP</button>
+                <button type="submit" class="verify-btn" :disabled="isLoading">
+                    <i v-if="!isLoading" class="fas fa-check-circle"></i>
+                    <i v-if="isLoading" class="fas fa-spinner fa-spin"></i>
+                    {{ isLoading ? 'Verifying...' : 'Verify OTP' }}
+                </button>
             </form>
             <p v-if="error" class="error-message">{{ error }}</p>
             <p v-if="success" class="success-message">{{ success }}</p>
@@ -32,7 +37,8 @@ export default {
             otp: '',
             error: '',
             success: '',
-            fromLogin: false // Add this to track where user came from
+            fromLogin: false, // Add this to track where user came from
+            isLoading: false // Add loading state
         }
     },
     created() {
@@ -45,6 +51,7 @@ export default {
     methods: {
         async handleVerify() {
             try {
+                this.isLoading = true;
                 const response = await apiPost('/api/users/verify-otp', {
                         email: this.email,
                         otp: this.otp
@@ -95,6 +102,8 @@ export default {
 
             } catch (err) {
                 this.error = err.message;
+            } finally {
+                this.isLoading = false;
             }
         }
     }
@@ -142,6 +151,26 @@ export default {
     font-size: 1rem;
     margin-top: 1rem;
     width: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.verify-btn:disabled {
+    background-color: #c8e6c9;
+    cursor: not-allowed;
+}
+
+.verify-btn:hover:not(:disabled) {
+    background-color: #45a049;
+}
+
+.form-group input:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .error-message {
@@ -151,6 +180,19 @@ export default {
 .success-message {
     color: #4CAF50;
     margin-top: 1rem;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.fa-spin {
+    animation: spin 1s linear infinite;
 }
 </style>
 
