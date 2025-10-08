@@ -447,19 +447,6 @@
             </div>
         </div>
 
-        <div v-if="showEmailSuccess" class="modal-overlay">
-            <div class="modal-content email-success-modal">
-                <div class="email-success-icon">
-                    <i class="fas fa-envelope-circle-check"></i>
-                </div>
-                <h2>Receipt Sent!</h2>
-                <p>A digital receipt has been emailed to <span class="customer-email">{{ selectedOrder?.email }}</span></p>
-                <button @click="closeEmailSuccessModal" class="close-btn">
-                    <i class="fas fa-check"></i> OK
-                </button>
-            </div>
-        </div>
-
         <!-- Walk-in Customer Rewards Modal -->
         <div v-if="showWalkInRewardsModal" class="modal-overlay">
             <div class="modal-content walkin-rewards-modal">
@@ -757,7 +744,6 @@ export default {
             selectedOrder: null,
             searchQuery: '',
             dateFilter: '',
-            showEmailSuccess: false,
             selectedStatus: 'ready for pickup',
             defaultStatusFilter: 'ready for pickup',
             statusFilters: [
@@ -976,7 +962,7 @@ export default {
                         changeAmount: this.changeAmount,
                         amountToPay: amountToPay,
                         isDownpaymentPayment: this.selectedOrder.payment_type === 'downpayment',
-                        sendEmailReceipt: true
+                        sendEmailReceipt: false
                     })
                 });
 
@@ -989,13 +975,8 @@ export default {
                     // Print receipt asynchronously without blocking UI
                     this.printReceiptAsync();
                     
-                    // Show email success modal if customer has email
-                    if (this.selectedOrder.email) {
-                        this.showEmailSuccess = true;
-                    } else {
-                        // Close the order details modal if no email success modal is shown
-                        this.selectedOrder = null;
-                    }
+                    // Close the order details modal
+                    this.selectedOrder = null;
                 } else {
                     throw new Error('Failed to process payment');
                 }
@@ -1023,11 +1004,6 @@ export default {
             this.cachedReceiptSettings = null;
         },
         
-        closeEmailSuccessModal() {
-            this.showEmailSuccess = false;
-            // Close the order details modal
-            this.selectedOrder = null;
-        },
         async printReceipt() {
             try {
                 // Use await to resolve the Promise
@@ -2763,39 +2739,7 @@ tfoot tr td {
     pointer-events: none;
     color: #64748b;
 }
-.email-success-modal {
-    text-align: center;
-    max-width: 400px;
-    padding: 2rem;
-}
 
-.email-success-icon {
-    font-size: 4rem;
-    color: #4CAF50;
-    margin-bottom: 1rem;
-}
-
-.email-success-modal h2 {
-    color: #1e293b;
-    margin: 0 0 1rem 0;
-    font-size: 1.5rem;
-}
-
-.email-success-modal p {
-    color: #64748b;
-    margin-bottom: 1.5rem;
-    font-size: 1rem;
-    line-height: 1.6;
-}
-
-.customer-email {
-    font-weight: 600;
-    color: #3b82f6;
-}
-
-.email-success-modal .close-btn {
-    margin: 0 auto;
-}
 @media (max-width: 768px) {
     .sort-filter {
         width: 100%;
