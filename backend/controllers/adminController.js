@@ -3240,4 +3240,162 @@ exports.downloadStaffReports = async (req, res) => {
     }
 };
 
+// Get staff transaction count for deletion preview
+exports.getStaffTransactionCount = async (req, res) => {
+    try {
+        const { staffId, period, fromDate, toDate } = req.query;
+        
+        if (!staffId || !period) {
+            return res.status(400).json({ message: 'Staff ID and period are required' });
+        }
+        
+        let dateCondition = '';
+        let params = [staffId];
+        
+        // Build date condition based on period
+        switch (period) {
+            case 'today':
+                dateCondition = 'AND DATE(o.created_at) = CURDATE()';
+                break;
+            case 'week':
+                dateCondition = 'AND YEARWEEK(o.created_at, 1) = YEARWEEK(CURDATE(), 1)';
+                break;
+            case 'month':
+                dateCondition = 'AND MONTH(o.created_at) = MONTH(CURDATE()) AND YEAR(o.created_at) = YEAR(CURDATE())';
+                break;
+            case 'year':
+                dateCondition = 'AND YEAR(o.created_at) = YEAR(CURDATE())';
+                break;
+            case 'custom':
+                if (fromDate && toDate) {
+                    dateCondition = 'AND DATE(o.created_at) BETWEEN ? AND ?';
+                    params.push(fromDate, toDate);
+                }
+                break;
+            case 'overall':
+            default:
+                // No date condition for overall
+                break;
+        }
+        
+        const query = `
+            SELECT COUNT(*) as count
+            FROM orders o
+            WHERE o.accepted_by = ? 
+            AND o.status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup')
+            ${dateCondition}
+        `;
+        
+        const [rows] = await db.execute(query, params);
+        const count = rows[0].count;
+        
+        res.json({ count });
+        
+    } catch (error) {
+        console.error('Error getting staff transaction count:', error);
+        res.status(500).json({ message: 'Error getting transaction count' });
+    }
+};
+
+// Delete staff transactions
+exports.deleteStaffTransactions = async (req, res) => {
+    try {
+        const { staffId, period, fromDate, toDate } = req.body;
+        
+        if (!staffId || !period) {
+            return res.status(400).json({ message: 'Staff ID and period are required' });
+        }
+        
+        let dateCondition = '';
+        let params = [staffId];
+        
+        // Build date condition based on period
+        switch (period) {
+            case 'today':
+                dateCondition = 'AND DATE(created_at) = CURDATE()';
+                break;
+            case 'week':
+                dateCondition = 'AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)';
+                break;
+            case 'month':
+                dateCondition = 'AND MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())';
+                break;
+            case 'year':
+                dateCondition = 'AND YEAR(created_at) = YEAR(CURDATE())';
+                break;
+            case 'custom':
+                if (fromDate && toDate) {
+                    dateCondition = 'AND DATE(created_at) BETWEEN ? AND ?';
+                    params.push(fromDate, toDate);
+                }
+                break;
+            case 'overall':
+            default:
+                // No date condition for overall
+                break;
+        }
+        
+        // First, get the orders to be deleted to also clean up related data
+        const selectQuery = `
+            SELECT order_id FROM orders 
+            WHERE accepted_by = ? 
+            AND status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup')
+            ${dateCondition}
+        `;
+        
+        const [ordersToDelete] = await db.execute(selectQuery, params);
+        const orderIds = ordersToDelete.map(order => order.order_id);
+        
+        if (orderIds.length === 0) {
+            return res.json({ message: 'No transactions found to delete', deletedCount: 0 });
+        }
+        
+        // Use a connection from the pool for transaction
+        const connection = await db.getConnection();
+        
+        try {
+            // Start transaction
+            await connection.beginTransaction();
+            
+            // Delete related order items first
+            if (orderIds.length > 0) {
+                const deleteOrderItemsQuery = `
+                    DELETE FROM order_items 
+                    WHERE order_id IN (${orderIds.map(() => '?').join(',')})
+                `;
+                await connection.execute(deleteOrderItemsQuery, orderIds);
+            }
+            
+            // Delete the orders
+            const deleteOrdersQuery = `
+                DELETE FROM orders 
+                WHERE accepted_by = ? 
+                AND status IN ('paid', 'paid using gcash', 'preparing', 'ready for pickup', 'pending_pickup')
+                ${dateCondition}
+            `;
+            
+            const [result] = await connection.execute(deleteOrdersQuery, params);
+            
+            // Commit transaction
+            await connection.commit();
+            
+            res.json({ 
+                message: 'Staff transactions deleted successfully', 
+                deletedCount: result.affectedRows 
+            });
+            
+        } catch (error) {
+            // Rollback transaction on error
+            await connection.rollback();
+            throw error;
+        } finally {
+            // Release connection back to pool
+            connection.release();
+        }
+        
+    } catch (error) {
+        console.error('Error deleting staff transactions:', error);
+        res.status(500).json({ message: 'Error deleting transactions' });
+    }
+};
 

@@ -38,6 +38,11 @@
               <i class="fas fa-download"></i>
               Download Excel
             </button>
+            <!-- Delete Staff Transactions Button -->
+            <button @click="showDeleteTransactionsModal = true" class="delete-transactions-btn" :disabled="loading">
+              <i class="fas fa-trash-alt"></i>
+              Delete Transactions
+            </button>
             <!-- NEW: Create Staff Account Button -->
             <button @click="goToCreateStaff" class="create-staff-btn">
               <i class="fas fa-user-plus"></i>
@@ -219,6 +224,110 @@
           </div>
         </div>
       </div>
+
+      <!-- Delete Staff Transactions Modal -->
+      <div v-if="showDeleteTransactionsModal" class="modal-overlay">
+        <div class="modal-content delete-transactions-modal">
+          <h2>Delete Staff Transactions</h2>
+          <div class="transaction-delete-form">
+            <!-- Staff Selection -->
+            <div class="form-group">
+              <label for="selectedStaffForDeletion">Select Staff Member:</label>
+              <select v-model="selectedStaffForDeletion" id="selectedStaffForDeletion" class="staff-select">
+                <option value="">Choose a staff member...</option>
+                <option v-for="staff in filteredStaffPerformance" :key="staff.user_id" :value="staff.user_id">
+                  {{ staff.fullname }} ({{ staff.position }})
+                </option>
+              </select>
+            </div>
+
+            <!-- Period Selection -->
+            <div class="form-group">
+              <label for="deletionPeriod">Period:</label>
+              <select v-model="deletionPeriod" id="deletionPeriod" class="period-select">
+                <option value="overall">Overall (All Time)</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+                <option value="custom">Custom Period</option>
+              </select>
+            </div>
+
+            <!-- Custom Date Range (if custom period selected) -->
+            <div v-if="deletionPeriod === 'custom'" class="form-group custom-dates">
+              <label>Custom Date Range:</label>
+              <div class="date-range">
+                <input type="date" v-model="deletionFromDate" class="date-input" />
+                <span>to</span>
+                <input type="date" v-model="deletionToDate" class="date-input" />
+              </div>
+            </div>
+
+            <!-- Transaction Count Display -->
+            <div v-if="selectedStaffForDeletion && transactionCount !== null" class="transaction-info">
+              <div class="info-box">
+                <i class="fas fa-info-circle"></i>
+                <span>{{ transactionCount }} transaction(s) will be deleted for the selected period.</span>
+              </div>
+            </div>
+
+            <!-- Warning Message -->
+            <div class="warning-message">
+              <i class="fas fa-exclamation-triangle"></i>
+              <strong>Warning:</strong> This action will permanently delete all accepted orders/transactions for the selected staff member in the specified period. This action cannot be undone.
+            </div>
+          </div>
+
+          <div class="modal-buttons">
+            <button 
+              @click="confirmDeleteTransactions" 
+              class="delete-transactions-confirm-btn"
+              :disabled="!selectedStaffForDeletion || deletionPeriod === '' || loading"
+            >
+              <i class="fas fa-trash-alt"></i>
+              Delete Transactions
+            </button>
+            <button @click="closeDeleteTransactionsModal" class="cancel-btn">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Transactions Confirmation Modal -->
+      <div v-if="showDeleteTransactionsConfirmModal" class="modal-overlay">
+        <div class="modal-content delete-modal">
+          <h2>Confirm Transaction Deletion</h2>
+          <div class="confirmation-content">
+            <i class="fas fa-exclamation-triangle warning-icon"></i>
+            <p>{{ deleteConfirmationMessage }}</p>
+          </div>
+          <div class="modal-buttons">
+            <button @click="executeDeleteTransactions" class="delete-btn">
+              <i class="fas fa-trash-alt"></i>
+              Yes, Delete
+            </button>
+            <button @click="showDeleteTransactionsConfirmModal = false" class="cancel-btn">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Transactions Success Modal -->
+      <div v-if="showDeleteSuccessModal" class="modal-overlay">
+        <div class="modal-content success-modal">
+          <h2>Deletion Successful</h2>
+          <div class="success-content">
+            <i class="fas fa-check-circle success-icon"></i>
+            <p>{{ deleteSuccessMessage }}</p>
+          </div>
+          <div class="modal-buttons">
+            <button @click="handleSuccessModalClose" class="success-btn">
+              <i class="fas fa-check"></i>
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+
       <LogoutModal 
         :show="showLogoutModal"
         @confirm="handleLogout"
@@ -254,6 +363,17 @@
         showEditModal: false,
         showDeleteModal: false,
         selectedStaff: null,
+        // Delete transactions modal data
+        showDeleteTransactionsModal: false,
+        showDeleteTransactionsConfirmModal: false,
+        showDeleteSuccessModal: false,
+        deleteConfirmationMessage: '',
+        deleteSuccessMessage: '',
+        selectedStaffForDeletion: '',
+        deletionPeriod: 'overall',
+        deletionFromDate: '',
+        deletionToDate: '',
+        transactionCount: null,
         editFormData: {
           username: '',
           firstname: '',
@@ -292,6 +412,24 @@
           
           return searchMatch;
         });
+      }
+    },
+    watch: {
+      selectedStaffForDeletion() {
+        this.fetchTransactionCount();
+      },
+      deletionPeriod() {
+        this.fetchTransactionCount();
+      },
+      deletionFromDate() {
+        if (this.deletionPeriod === 'custom') {
+          this.fetchTransactionCount();
+        }
+      },
+      deletionToDate() {
+        if (this.deletionPeriod === 'custom') {
+          this.fetchTransactionCount();
+        }
       }
     },
     methods: {
@@ -496,6 +634,118 @@
         }
       },
 
+      // Delete Transactions Methods
+      closeDeleteTransactionsModal() {
+        this.showDeleteTransactionsModal = false;
+        this.showDeleteTransactionsConfirmModal = false;
+        this.showDeleteSuccessModal = false;
+        this.deleteConfirmationMessage = '';
+        this.deleteSuccessMessage = '';
+        this.selectedStaffForDeletion = '';
+        this.deletionPeriod = 'overall';
+        this.deletionFromDate = '';
+        this.deletionToDate = '';
+        this.transactionCount = null;
+      },
+
+      async fetchTransactionCount() {
+        if (!this.selectedStaffForDeletion || !this.deletionPeriod) {
+          this.transactionCount = null;
+          return;
+        }
+
+        try {
+          const token = localStorage.getItem('token');
+          let params = new URLSearchParams({
+            staffId: this.selectedStaffForDeletion,
+            period: this.deletionPeriod
+          });
+
+          if (this.deletionPeriod === 'custom' && this.deletionFromDate && this.deletionToDate) {
+            params.append('fromDate', this.deletionFromDate);
+            params.append('toDate', this.deletionToDate);
+          }
+
+          const response = await this.$fetch(`/api/admin/staff-transaction-count?${params}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            this.transactionCount = data.count || 0;
+          } else {
+            this.transactionCount = 0;
+          }
+        } catch (error) {
+          console.error('Error fetching transaction count:', error);
+          this.transactionCount = 0;
+        }
+      },
+
+      async confirmDeleteTransactions() {
+        if (!this.selectedStaffForDeletion || !this.deletionPeriod) {
+          alert('Please select a staff member and period.');
+          return;
+        }
+
+        this.deleteConfirmationMessage = this.transactionCount > 0 
+          ? `Are you sure you want to delete ${this.transactionCount} transaction(s) for the selected staff member? This action cannot be undone.`
+          : 'No transactions found for the selected period. Continue anyway?';
+
+        this.showDeleteTransactionsConfirmModal = true;
+      },
+
+      handleSuccessModalClose() {
+        this.showDeleteSuccessModal = false;
+        this.closeDeleteTransactionsModal();
+      },
+
+      async executeDeleteTransactions() {
+        try {
+          this.loading = true;
+          this.showDeleteTransactionsConfirmModal = false;
+          
+          const token = localStorage.getItem('token');
+          
+          let params = {
+            staffId: this.selectedStaffForDeletion,
+            period: this.deletionPeriod
+          };
+
+          if (this.deletionPeriod === 'custom' && this.deletionFromDate && this.deletionToDate) {
+            params.fromDate = this.deletionFromDate;
+            params.toDate = this.deletionToDate;
+          }
+
+          const response = await this.$fetch('/api/admin/delete-staff-transactions', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(params)
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            this.deleteSuccessMessage = `Successfully deleted ${result.deletedCount || 0} transaction(s).`;
+            this.showDeleteSuccessModal = true;
+            // Refresh the staff performance data
+            await this.fetchStaffPerformance();
+          } else {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to delete transactions');
+          }
+        } catch (error) {
+          console.error('Error deleting transactions:', error);
+          alert('Error deleting transactions: ' + error.message);
+        } finally {
+          this.loading = false;
+        }
+      },
+
       // Utility methods
       formatCurrency(value) {
         return new Intl.NumberFormat('en-PH', {
@@ -631,6 +881,208 @@
   gap: 1rem;
   margin-top: 1.5rem;
 }
+
+/* Delete Transactions Modal Styles */
+.delete-transactions-modal {
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.transaction-delete-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.transaction-delete-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.transaction-delete-form label {
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.staff-select, .period-select {
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background-color: white;
+  transition: border-color 0.3s ease;
+}
+
+.staff-select:focus, .period-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.custom-dates {
+  margin-top: 0.5rem;
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.date-range span {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.transaction-info {
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.info-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #0369a1;
+}
+
+.info-box i {
+  font-size: 1.1rem;
+  color: #0284c7;
+}
+
+.warning-message {
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  color: #92400e;
+}
+
+.warning-message i {
+  font-size: 1.1rem;
+  color: #f59e0b;
+  margin-top: 0.1rem;
+}
+
+.delete-transactions-confirm-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.delete-transactions-confirm-btn:hover:not(:disabled) {
+  background-color: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+}
+
+.delete-transactions-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.cancel-btn {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background-color 0.2s;
+}
+
+.cancel-btn:hover {
+  background-color: #5a6268;
+}
+
+/* Delete Transactions Confirmation Modal Styles */
+.confirmation-content {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.warning-icon {
+  font-size: 3rem;
+  color: #f59e0b;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.confirmation-content p {
+  font-size: 1.1rem;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Delete Transactions Success Modal Styles */
+.success-modal {
+  max-width: 450px;
+  text-align: center;
+}
+
+.success-content {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.success-icon {
+  font-size: 3rem;
+  color: #059669;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.success-content p {
+  font-size: 1.1rem;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.success-btn {
+  background-color: #059669;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  margin: 0 auto;
+}
+
+.success-btn:hover {
+  background-color: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+}
   .header {
     background: white;
     padding: 1.5rem;
@@ -695,6 +1147,40 @@
   }
 
   .create-staff-btn i {
+    font-size: 0.9rem;
+  }
+
+  /* Delete Transactions Button Styles */
+  .delete-transactions-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .delete-transactions-btn:hover:not(:disabled) {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+  }
+
+  .delete-transactions-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .delete-transactions-btn i {
     font-size: 0.9rem;
   }
   
@@ -1015,6 +1501,11 @@ td {
     }
 
     .create-staff-btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .delete-transactions-btn {
       width: 100%;
       justify-content: center;
     }

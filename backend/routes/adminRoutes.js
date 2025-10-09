@@ -63,6 +63,8 @@ router.get('/download-low-stock', adminController.downloadLowStockReport);
 // Staff Performance Routes
 router.get('/staff-performance', authenticate, isAdmin, adminController.getStaffPerformance);
 router.get('/download-staff-reports', authenticate, isAdmin, adminController.downloadStaffReports);
+router.get('/staff-transaction-count', authenticate, isAdmin, adminController.getStaffTransactionCount);
+router.delete('/delete-staff-transactions', authenticate, isAdmin, adminController.deleteStaffTransactions);
 
 // Staff Analytics Routes
 router.get('/staff-analytics/summary', authenticate, isAdmin, adminController.getStaffAnalyticsSummary);
