@@ -34,12 +34,12 @@
               <option value="inactive">Inactive</option>
             </select>
             <!-- Download Button -->
-            <button @click="downloadStaffReport" class="download-btn" :disabled="loading">
+            <button @click="downloadStaffReport" class="download-btn" :disabled="loading || loadingPerformance">
               <i class="fas fa-download"></i>
               Download Excel
             </button>
             <!-- Delete Staff Transactions Button -->
-            <button @click="showDeleteTransactionsModal = true" class="delete-transactions-btn" :disabled="loading">
+            <button @click="showDeleteTransactionsModal = true" class="delete-transactions-btn" :disabled="loading || loadingPerformance">
               <i class="fas fa-trash-alt"></i>
               Delete Transactions
             </button>
@@ -52,7 +52,19 @@
         </div>
 
         <!-- Performance Summary Cards -->
-        <div class="summary-cards" v-if="performanceSummary">
+        <div v-if="loadingPerformance" class="summary-cards">
+          <!-- Loading skeleton cards -->
+          <div v-for="n in 4" :key="n" class="summary-card skeleton-card">
+            <div class="card-icon skeleton-icon">
+              <div class="skeleton-circle"></div>
+            </div>
+            <div class="card-content">
+              <div class="skeleton-text skeleton-title"></div>
+              <div class="skeleton-text skeleton-value"></div>
+            </div>
+          </div>
+        </div>
+        <div v-else-if="performanceSummary" class="summary-cards">
           <div class="summary-card">
             <div class="card-icon total-staff">
               <i class="fas fa-users"></i>
@@ -92,7 +104,51 @@
         </div>
   
         <div class="table-container">
-          <table>
+          <!-- Loading skeleton for performance data -->
+          <div v-if="loadingPerformance" class="loading-container">
+            <div class="loading-spinner">
+              <i class="fas fa-spinner fa-spin"></i>
+              <span>Loading staff performance data...</span>
+            </div>
+            <!-- Skeleton table -->
+            <div class="skeleton-table">
+              <div class="skeleton-header">
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+              </div>
+              <div v-for="n in 5" :key="n" class="skeleton-row">
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Actual data table -->
+          <table v-else-if="filteredStaffPerformance.length">
             <thead>
               <tr>
                 <th>Rank</th>
@@ -154,6 +210,13 @@
               </tr>
             </tbody>
           </table>
+          
+          <!-- No data state -->
+          <div v-else-if="!loadingPerformance" class="no-data">
+            <i class="fas fa-users"></i>
+            <p>No staff performance data found</p>
+            <span class="help-text">Try adjusting your filters or check back later</span>
+          </div>
         </div>
       </div>
        <!-- Add Edit Modal -->
@@ -359,6 +422,8 @@
         customFromDate: '',
         customToDate: '',
         loading: false,
+        loadingStaff: false,
+        loadingPerformance: false,
         showLogoutModal: false,
         showEditModal: false,
         showDeleteModal: false,
@@ -510,6 +575,7 @@
       },
         async fetchStaff() {
             try {
+                this.loadingStaff = true;
                 const token = localStorage.getItem('token');
                 const response = await this.$fetch('/api/admin/staff', {
                     headers: {
@@ -526,6 +592,8 @@
                 }
             } catch (error) {
                 console.error('Error fetching staff:', error);
+            } finally {
+                this.loadingStaff = false;
             }
         },
         async handleLogout() {
@@ -556,7 +624,7 @@
       // New methods for staff performance
       async fetchStaffPerformance() {
         try {
-          this.loading = true;
+          this.loadingPerformance = true;
           const token = localStorage.getItem('token');
           
           let params = new URLSearchParams({
@@ -584,7 +652,7 @@
         } catch (error) {
           console.error('Error fetching staff performance:', error);
         } finally {
-          this.loading = false;
+          this.loadingPerformance = false;
         }
       },
 
@@ -1480,6 +1548,159 @@ td {
     text-align: right;
     font-family: 'Monaco', monospace;
     font-weight: 500;
+  }
+
+  /* Loading styles */
+  .loading-container {
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    color: #3b82f6;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .loading-spinner i {
+    font-size: 1.5rem;
+  }
+
+  .skeleton-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .skeleton-header {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .skeleton-row {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .skeleton-cell {
+    height: 1rem;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    border-radius: 4px;
+    animation: skeleton-loading 1.5s infinite;
+  }
+
+  .skeleton-header .skeleton-cell {
+    height: 1.25rem;
+    background: linear-gradient(90deg, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%);
+    background-size: 200% 100%;
+  }
+
+  /* Skeleton cells for different columns */
+  .skeleton-cell:nth-child(1) { flex: 0.5; } /* Rank */
+  .skeleton-cell:nth-child(2) { flex: 1.5; } /* Staff Name */
+  .skeleton-cell:nth-child(3) { flex: 1.5; } /* Email */
+  .skeleton-cell:nth-child(4) { flex: 1; } /* Performance Score */
+  .skeleton-cell:nth-child(5) { flex: 1; } /* Total Sales */
+  .skeleton-cell:nth-child(6) { flex: 1; } /* Orders Accepted */
+  .skeleton-cell:nth-child(7) { flex: 1; } /* Sales Count */
+  .skeleton-cell:nth-child(8) { flex: 1; } /* Today Sales */
+  .skeleton-cell:nth-child(9) { flex: 1; } /* Week Sales */
+  .skeleton-cell:nth-child(10) { flex: 1; } /* Month Sales */
+  .skeleton-cell:nth-child(11) { flex: 1; } /* Year Sales */
+  .skeleton-cell:nth-child(12) { flex: 1; } /* Acceptance Rate */
+  .skeleton-cell:nth-child(13) { flex: 0.8; } /* Status */
+  .skeleton-cell:nth-child(14) { flex: 1.2; } /* Actions */
+
+  /* Summary card skeleton styles */
+  .skeleton-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .skeleton-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f0;
+  }
+
+  .skeleton-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+  }
+
+  .skeleton-text {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    border-radius: 4px;
+    animation: skeleton-loading 1.5s infinite;
+  }
+
+  .skeleton-title {
+    height: 0.875rem;
+    width: 60%;
+    margin-bottom: 0.5rem;
+  }
+
+  .skeleton-value {
+    height: 1.5rem;
+    width: 80%;
+  }
+
+  .no-data {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #64748b;
+    font-size: 1rem;
+  }
+
+  .no-data i {
+    font-size: 3rem;
+    color: #94a3b8;
+    margin-bottom: 1rem;
+  }
+
+  .no-data p {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .help-text {
+    display: block;
+    margin-top: 0.5rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+  }
+
+  @keyframes skeleton-loading {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
   }
   
   @media (max-width: 768px) {

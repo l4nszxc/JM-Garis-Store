@@ -8,7 +8,7 @@
     <div class="admin-content">
       <div class="header-section">
         <h1><i class="fas fa-exclamation-triangle"></i> Low Stock Products</h1>
-        <button @click="downloadExcel" class="download-btn" :disabled="!filteredLowStock.length">
+        <button @click="downloadExcel" class="download-btn" :disabled="!filteredLowStock.length || isLoading">
           <i class="fas fa-download"></i>
           Download Excel
         </button>
@@ -48,7 +48,33 @@
         </div>
         
         <div class="table-container">
-          <table v-if="filteredLowStock.length">
+          <!-- Loading skeleton -->
+          <div v-if="isLoading" class="loading-container">
+            <div class="loading-spinner">
+              <i class="fas fa-spinner fa-spin"></i>
+              <span>Loading low stock data...</span>
+            </div>
+            <!-- Skeleton table -->
+            <div class="skeleton-table">
+              <div class="skeleton-header">
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+              </div>
+              <div v-for="n in 5" :key="n" class="skeleton-row">
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+                <div class="skeleton-cell"></div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Actual data table -->
+          <table v-else-if="filteredLowStock.length">
             <thead>
               <tr>
                 <th>Product Name</th>
@@ -97,7 +123,9 @@
               </tr>
             </tbody>
           </table>
-          <div v-else class="no-data">
+          
+          <!-- No data state -->
+          <div v-else-if="!isLoading" class="no-data">
             <i class="fas fa-check-circle"></i>
             <p>No products with low stock found</p>
             <span v-if="searchQuery" class="help-text">Try changing your search criteria</span>
@@ -171,6 +199,7 @@ export default {
       lowStockItems: [],
       searchQuery: '',
       stockFilter: 'all',
+      isLoading: false,
       stockFilters: [
         { label: 'All Low Stock', value: 'all', class: '' },
         { label: 'Critical (≤ 10)', value: 'critical', class: 'critical' },
@@ -405,6 +434,7 @@ export default {
     
     async fetchLowStockItems() {
       try {
+        this.isLoading = true;
         const token = localStorage.getItem('token');
         const response = await fetch(`${this.API_BASE_URL}/api/admin/low-stock`, {
           headers: {
@@ -418,6 +448,8 @@ export default {
         }
       } catch (error) {
         console.error('Error fetching low stock items:', error);
+      } finally {
+        this.isLoading = false;
       }
     },
     
@@ -920,6 +952,76 @@ tr:hover {
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(100%); }
   to { opacity: 1; transform: translateX(0); }
+}
+
+/* Loading styles */
+.loading-container {
+  text-align: center;
+  padding: 2rem;
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  color: #3b82f6;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.loading-spinner i {
+  font-size: 1.5rem;
+}
+
+.skeleton-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.skeleton-header {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px 8px 0 0;
+}
+
+.skeleton-row {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.skeleton-cell {
+  height: 1rem;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+.skeleton-header .skeleton-cell {
+  height: 1.25rem;
+  background: linear-gradient(90deg, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+}
+
+.skeleton-cell:nth-child(1) { flex: 2; } /* Product name */
+.skeleton-cell:nth-child(2) { flex: 1; } /* Stock */
+.skeleton-cell:nth-child(3) { flex: 1; } /* Price */
+.skeleton-cell:nth-child(4) { flex: 1; } /* Category */
+.skeleton-cell:nth-child(5) { flex: 1; } /* Actions */
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @media (max-width: 768px) {
