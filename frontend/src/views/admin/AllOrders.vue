@@ -179,17 +179,39 @@
                             <i class="fas fa-chevron-left"></i> Previous
                         </button>
                         
+                        <!-- First page -->
                         <button 
-                            v-for="page in totalPages" 
+                            v-if="totalPages > 1"
+                            @click="goToPage(1)"
+                            :class="['pagination-btn', 'page-btn', { 'active': currentPage === 1 }]"
+                        >
+                            1
+                        </button>
+                        
+                        <!-- Left ellipsis -->
+                        <span v-if="currentPage > 4" class="pagination-ellipsis">...</span>
+                        
+                        <!-- Pages around current page -->
+                        <button 
+                            v-for="page in visiblePages" 
                             :key="page"
                             @click="goToPage(page)"
                             :class="['pagination-btn', 'page-btn', { 'active': currentPage === page }]"
-                            v-show="page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2"
                         >
                             {{ page }}
                         </button>
                         
-                        <span v-if="totalPages > 5 && currentPage < totalPages - 2" class="pagination-ellipsis">...</span>
+                        <!-- Right ellipsis -->
+                        <span v-if="currentPage < totalPages - 3" class="pagination-ellipsis">...</span>
+                        
+                        <!-- Last page -->
+                        <button 
+                            v-if="totalPages > 1 && currentPage !== totalPages"
+                            @click="goToPage(totalPages)"
+                            :class="['pagination-btn', 'page-btn', { 'active': currentPage === totalPages }]"
+                        >
+                            {{ totalPages }}
+                        </button>
                         
                         <button 
                             @click="nextPage" 
@@ -929,6 +951,19 @@ export default {
             const startIndex = (this.currentPage - 1) * this.itemsPerPage;
             const endIndex = startIndex + this.itemsPerPage;
             return filtered.slice(startIndex, endIndex);
+        },
+        visiblePages() {
+            const pages = [];
+            const start = Math.max(2, this.currentPage - 2);
+            const end = Math.min(this.totalPages - 1, this.currentPage + 2);
+            
+            for (let page = start; page <= end; page++) {
+                if (page !== 1 && page !== this.totalPages) {
+                    pages.push(page);
+                }
+            }
+            
+            return pages;
         },
         canApplyRewards() {
             return (this.selectedRewardMethod === 'user_id' && this.foundUser) ||
@@ -3728,6 +3763,138 @@ tfoot tr td {
     .pagination-info {
         font-size: 0.8rem;
         margin: 0 0.5rem;
+    }
+}
+
+/* Modern Pagination Styles */
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: 1rem;
+}
+
+.pagination-btn {
+    min-width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    padding: 0 0.75rem;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: #f8fafc;
+    border-color: #3b82f6;
+    color: #3b82f6;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.pagination-btn:disabled {
+    background-color: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.pagination-btn.page-btn {
+    min-width: 40px;
+    padding: 0;
+    font-weight: 600;
+}
+
+.pagination-btn.page-btn.active {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.pagination-btn.page-btn.active:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    transform: translateY(-1px);
+}
+
+.pagination-ellipsis {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    color: #94a3b8;
+    font-weight: 600;
+    pointer-events: none;
+}
+
+/* Responsive Pagination */
+@media (max-width: 768px) {
+    .pagination-container {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem 0.5rem;
+    }
+    
+    .pagination {
+        justify-content: center;
+        margin-left: 0;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    
+    .pagination-btn {
+        min-width: 36px;
+        height: 36px;
+        font-size: 0.8rem;
+        padding: 0 0.5rem;
+    }
+    
+    .pagination-ellipsis {
+        min-width: 36px;
+        height: 36px;
+    }
+    
+    .pagination-info {
+        text-align: center;
+        font-size: 0.8rem;
+        order: -1;
+    }
+}
+
+@media (max-width: 480px) {
+    .pagination-btn {
+        min-width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+        padding: 0 0.25rem;
+    }
+    
+    .pagination-ellipsis {
+        min-width: 32px;
+        height: 32px;
+    }
+    
+    /* Hide some page numbers on very small screens */
+    .pagination-btn.page-btn {
+        display: none;
+    }
+    
+    .pagination-btn.page-btn.active,
+    .pagination-btn.page-btn:first-of-type,
+    .pagination-btn.page-btn:last-of-type {
+        display: flex;
     }
 }
 
