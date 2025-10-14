@@ -160,7 +160,7 @@ export default {
     },
     activeOrdersCount() {
       return this.activeOrders.filter(order => 
-        ['pending', 'preparing', 'ready for pickup'].includes(order.status.toLowerCase())
+        ['pending', 'preparing', 'ready for pickup', 'to verify'].includes(order.status.toLowerCase())
       ).length;
     },
     profileImage() {
@@ -1198,5 +1198,3 @@ export default {
   }
 }
 </style>
-
-

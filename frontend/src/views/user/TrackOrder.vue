@@ -51,11 +51,11 @@
                                         <span class="gcash-reference">{{ order.gcash_reference }}</span>
                                     </div>
                                 </div>
-                                <div v-if="order.payment_status === 'pending_verification'" class="verification-status pending">
+                                <div v-if="order.payment_status === 'pending_verification' || order.status === 'to verify'" class="verification-status pending">
                                     <i class="fas fa-clock"></i>
                                     <span>Payment verification pending</span>
                                 </div>
-                                <div v-else-if="order.payment_status === 'succeeded' || order.status === 'paid using gcash'" class="verification-status verified">
+                                <div v-else-if="order.payment_status === 'succeeded' || order.status === 'paid'" class="verification-status verified">
                                     <i class="fas fa-check-circle"></i>
                                     <span>Payment verified</span>
                                     <small v-if="order.verified_at">{{ formatDate(order.verified_at) }}</small>
@@ -231,11 +231,9 @@ export default {
         activeOrders() {
             return this.orders.map(order => ({
                 ...order,
-                subtotal: order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-                discount_amount: order.discount_amount || 0,
                 total_amount: order.total_amount
             })).filter(order => 
-                ['pending', 'pending_payment', 'pending_pickup', 'pending_delivery', 'preparing', 'ready for pickup'].includes(order.status.toLowerCase())
+                order.status !== 'cancelled' && order.status !== 'paid'
             );
         }
     },
@@ -246,10 +244,11 @@ export default {
                 'pending_payment': 'pending-payment',
                 'pending_pickup': 'pending-pickup',
                 'pending_delivery': 'pending-delivery',
+                'paid using gcash': 'paid-gcash',
                 'preparing': 'preparing',
                 'ready for pickup': 'ready',
                 'paid': 'paid',
-                'paid using gcash': 'paid-gcash',
+                'to verify': 'to-verify',
                 'cancelled': 'cancelled',
                 'completed': 'completed'
             };
@@ -261,10 +260,11 @@ export default {
                 'pending_payment': 'fas fa-credit-card',
                 'pending_pickup': 'fas fa-hand-holding',
                 'pending_delivery': 'fas fa-truck',
+                'paid using gcash': 'fas fa-mobile-alt',
                 'preparing': 'fas fa-utensils',
                 'ready for pickup': 'fas fa-check-circle',
                 'paid': 'fas fa-check-double',
-                'paid using gcash': 'fas fa-mobile-alt',
+                'to verify': 'fas fa-search',
                 'cancelled': 'fas fa-times-circle',
                 'completed': 'fas fa-flag-checkered'
             };
@@ -276,10 +276,11 @@ export default {
                 'pending_payment': 'Pending Payment',
                 'pending_pickup': 'Pending Pickup',
                 'pending_delivery': 'Pending Delivery',
+                'paid using gcash': 'Paid via GCash',
                 'preparing': 'Preparing',
                 'ready for pickup': 'Ready for Pickup',
                 'paid': 'Paid',
-                'paid using gcash': 'Paid via GCash',
+                'to verify': 'To Verify',
                 'cancelled': 'Cancelled',
                 'completed': 'Completed'
             };
@@ -305,7 +306,7 @@ export default {
             const displayMap = {
                 'cash': 'Cash on Pickup',
                 'gcash': 'GCash',
-                'hatid': 'Cash on Delivery'
+                'hatid': 'Deliver with HATID'
             };
             return displayMap[paymentMethod] || paymentMethod;
         },
@@ -646,6 +647,11 @@ export default {
 .paid-gcash {
     background-color: #cff4fc;
     color: #055160;
+}
+
+.to-verify {
+    background-color: #fef3e8;
+    color: #c2410c;
 }
 
 .cancelled {
@@ -1189,4 +1195,3 @@ export default {
     }
 }
 </style>
-

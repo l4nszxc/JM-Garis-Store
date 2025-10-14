@@ -138,7 +138,7 @@ exports.createGCashPaymentOnly = async (req, res) => {
                 }
             }
             
-            // Create order immediately with "pending" status
+            // Create order immediately with "to verify" status for GCash payments
             const Order = require('../models/orderModel');
             
             // Use the same connection for order creation to avoid nested transactions
@@ -149,7 +149,7 @@ exports.createGCashPaymentOnly = async (req, res) => {
                 finalAmount, 
                 packagingPreference, 
                 paymentMethod, 
-                'pending', // Start as pending
+                'to verify', // Set to 'to verify' for GCash payments
                 tempReference
             );
             
@@ -359,7 +359,7 @@ exports.verifyGCashPayment = async (req, res) => {
             if (payment.order_id) {
                 // Update existing order status to paid
                 await db.execute(
-                    'UPDATE orders SET status = "paid using gcash", paid_at = NOW() WHERE order_id = ?',
+                    'UPDATE orders SET status = "paid", paid_at = NOW() WHERE order_id = ?',
                     [payment.order_id]
                 );
                 
@@ -471,8 +471,8 @@ async function createOrderFromPayment(userId, orderData, amount, paymentId, paym
             }
         }
         
-        // Create order with paid status and payment intent reference
-        const orderId = await Order.createWithPaymentIntent(userId, items, finalAmount, packagingPreference, paymentMethod, 'paid using gcash', paymentIntentId);
+        // Create order with "to verify" status for GCash payments requiring verification
+        const orderId = await Order.createWithPaymentIntent(userId, items, finalAmount, packagingPreference, paymentMethod, 'to verify', paymentIntentId);
         
         // Add reward points
         try {

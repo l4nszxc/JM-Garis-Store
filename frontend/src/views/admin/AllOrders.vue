@@ -15,6 +15,7 @@
                             :class="['filter-btn', selectedStatus === status.value ? 'active' : '', status.value]"
                         >
                             {{ status.label }}
+                            <span class="status-count">{{ getStatusCount(status.value) }}</span>
                         </button>
                     </div>
                     
@@ -101,12 +102,13 @@
                                             <i v-else-if="order.status === 'preparing'" class="fas fa-utensils"></i>
                                             <i v-else-if="order.status === 'ready for pickup'" class="fas fa-check-circle"></i>
                                             <i v-else-if="order.status === 'paid'" class="fas fa-check-double"></i>
+                                            <i v-else-if="order.status === 'to verify'" class="fas fa-search"></i>
                                             <i v-else-if="order.status === 'cancelled'" class="fas fa-times-circle"></i>
                                             <i v-else class="fas fa-info-circle"></i>
                                             {{ getStatusDisplay(order.status) }}
                                         </span>
-                                        <!-- GCash Verification Button for pending GCash payments -->
-                                        <div v-if="hasPendingGCashPayment(order)" class="gcash-verification">
+                                        <!-- GCash Verification Button for pending GCash payments (excluding "to verify" status) -->
+                                        <div v-if="hasPendingGCashPayment(order) && order.status !== 'to verify'" class="gcash-verification">
                                             <button @click="showGCashVerification(order)" class="verify-gcash-btn">
                                                 <i class="fab fa-google-pay"></i>
                                                 Verify GCash
@@ -251,6 +253,7 @@
                                 <i v-else-if="selectedOrder.status === 'preparing'" class="fas fa-utensils"></i>
                                 <i v-else-if="selectedOrder.status === 'ready for pickup'" class="fas fa-check-circle"></i>
                                 <i v-else-if="selectedOrder.status === 'paid'" class="fas fa-check-double"></i>
+                                <i v-else-if="selectedOrder.status === 'to verify'" class="fas fa-search"></i>
                                 <i v-else-if="selectedOrder.status === 'cancelled'" class="fas fa-times-circle"></i>
                                 <i v-else class="fas fa-info-circle"></i>
                                 {{ getStatusDisplay(selectedOrder.status) }}
@@ -266,6 +269,55 @@
                                 {{ getPaymentMethodLabel(selectedOrder.payment_method) }}
                             </span>
                         </p>
+                        
+                        <!-- GCash Payment Details for "to verify" status -->
+                        <div v-if="selectedOrder.status === 'to verify' && selectedOrder.payment_method === 'gcash'" class="gcash-payment-details">
+                            <div class="gcash-info-section">
+                                <h4><i class="fab fa-google-pay"></i> GCash Payment Information</h4>
+                                <div class="gcash-details-grid">
+                                    <div class="gcash-detail-item">
+                                        <label>Reference Number:</label>
+                                        <span class="gcash-reference">{{ selectedOrder.gcash_reference || 'Loading...' }}</span>
+                                    </div>
+                                    <div class="gcash-detail-item">
+                                        <label>Payment Amount:</label>
+                                        <span class="gcash-amount">{{ formatPrice(selectedOrder.gcash_amount || selectedOrder.total_amount) }}</span>
+                                    </div>
+                                    <div class="gcash-detail-item">
+                                        <label>Payment Type:</label>
+                                        <span>{{ selectedOrder.payment_type === 'downpayment' ? 'Downpayment (25%)' : 'Full Payment' }}</span>
+                                    </div>
+                                    <div class="gcash-detail-item">
+                                        <label>Submitted Date:</label>
+                                        <span>{{ formatDate(selectedOrder.gcash_submitted_at || selectedOrder.created_at) }}</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Receipt Picture Display -->
+                                <div v-if="selectedOrder.gcash_receipt_url" class="receipt-image-section">
+                                    <label>Receipt Picture:</label>
+                                    <div class="receipt-image-container">
+                                        <img 
+                                            :src="selectedOrder.gcash_receipt_url" 
+                                            alt="GCash Receipt"
+                                            class="receipt-image"
+                                            @error="handleReceiptImageError"
+                                            @click="showReceiptModal = true"
+                                        >
+                                        <div class="receipt-overlay">
+                                            <i class="fas fa-search-plus"></i>
+                                            <span>Click to view full size</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div v-else class="no-receipt-notice">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>No receipt image uploaded</span>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <p v-if="selectedOrder.staff_name">
                             <strong>Staff Assigned:</strong> 
                             <span class="staff-badge">
@@ -354,6 +406,18 @@
                     </div>
                 </div>
                 <div class="modal-actions">
+                    <!-- GCash Verification Button for "to verify" status -->
+                    <button 
+                        v-if="selectedOrder.status === 'to verify' && selectedOrder.payment_method === 'gcash'"
+                        @click="showOrderGCashVerification" 
+                        class="verify-gcash-modal-btn"
+                        :disabled="processingOrderVerification"
+                    >
+                        <i class="fab fa-google-pay" v-if="!processingOrderVerification"></i>
+                        <i class="fas fa-spinner fa-spin" v-else></i>
+                        {{ processingOrderVerification ? 'Verifying...' : 'Verify GCash Payment' }}
+                    </button>
+                    
                     <button 
                         v-if="selectedOrder.status === 'ready for pickup'"
                         @click="showPaymentConfirmation = true" 
@@ -368,511 +432,77 @@
             </div>
         </div>
 
-        <!-- Payment Modal -->
-        <div v-if="showPaymentConfirmation" class="modal-overlay">
-            <div class="modal-content payment-modal">
-                <div class="payment-header">
-                    <h2>Payment Details</h2>
-                    <div class="order-metadata">
-                        <span class="order-id">Order #{{ selectedOrder.order_id }}</span>
-                        <span class="customer-name">{{ selectedOrder.customer_name }}</span>
-                    </div>
-                </div>
-
-                <div class="payment-body">
-                    <div class="payment-summary">
-                        <h3>Order Summary</h3>
-                        <div class="order-items">
-                            <div v-for="item in selectedOrder.items" :key="item.product_id" class="order-item">
-                                <div class="item-details">
-                                    <span class="item-name">{{ item.original_name || item.name }}</span>
-                                    <small v-if="item.choice_name" class="variant-tag">{{ item.choice_name }}</small>
-                                </div>
-                                <div class="item-pricing">
-                                    <span class="quantity">× {{ item.quantity }}</span>
-                                    <span class="amount">{{ formatPrice(item.price * item.quantity) }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="totals-breakdown">
-                            <div class="breakdown-row">
-                                <span>Subtotal</span>
-                                <span>{{ formatPrice(selectedOrder.subtotal || selectedOrder.total_amount) }}</span>
-                            </div>
-                            <div v-if="selectedOrder.discount_amount" class="breakdown-row discount">
-                                <span>Discount Applied</span>
-                                <span>-{{ formatPrice(selectedOrder.discount_amount) }}</span>
-                            </div>
-                            <div class="breakdown-row total">
-                                <span>Total Amount</span>
-                                <span>{{ formatPrice(selectedOrder.total_amount) }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="payment-calculator">
-                        <h3>Payment Calculator</h3>
-                        
-                        <!-- Show payment breakdown for downpayment orders -->
-                        <div v-if="selectedOrder.payment_type === 'downpayment'" class="payment-breakdown-info">
-                            <div class="breakdown-item">
-                                <span>Total Order Amount:</span>
-                                <span>{{ formatPrice(selectedOrder.total_amount) }}</span>
-                            </div>
-                            <div class="breakdown-item">
-                                <span>Downpayment Paid (25%):</span>
-                                <span>{{ formatPrice(selectedOrder.total_amount * 0.25) }}</span>
-                            </div>
-                            <div class="breakdown-item remaining">
-                                <span>Remaining Amount Due:</span>
-                                <span>{{ formatPrice(getRemainingAmount(selectedOrder)) }}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="calculator-input">
-                            <label for="cashAmount">Cash Amount</label>
-                            <div class="input-wrapper">
-                                <span class="currency-symbol">₱</span>
-                                <input 
-                                    type="number" 
-                                    id="cashAmount" 
-                                    v-model="cashAmount"
-                                    @input="calculateChange"
-                                    :min="getAmountToPay(selectedOrder)"
-                                    step="0.01"
-                                    placeholder="Enter amount"
-                                >
-                            </div>
-                            <small class="amount-due-note">
-                                Amount due: {{ formatPrice(getAmountToPay(selectedOrder)) }}
-                            </small>
-                        </div>
-
-                        <div class="calculator-result" :class="{ 'insufficient': isInsufficientCash }">
-                            <span>Change</span>
-                            <span class="change-amount">{{ formatPrice(changeAmount) }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="payment-actions">
-                    <button 
-                        @click="processPayment" 
-                        class="accept-btn"
-                        :disabled="isInsufficientCash || !cashAmount || processingPayment"
-                    >
-                        <i class="fas fa-spinner fa-spin" v-if="processingPayment"></i>
-                        <i class="fas fa-check-circle" v-else></i>
-                        {{ processingPayment ? 'Processing...' : 'Confirm Payment' }}
-                    </button>
-                    <button 
-                        @click="showPaymentConfirmation = false" 
-                        class="cancel-btn"
-                        :disabled="processingPayment"
-                    >
+        <!-- Receipt Image Modal -->
+        <div v-if="showReceiptModal" class="modal-overlay" @click="showReceiptModal = false">
+            <div class="modal-content receipt-modal" @click.stop>
+                <div class="receipt-modal-header">
+                    <h3>GCash Receipt</h3>
+                    <button @click="showReceiptModal = false" class="close-btn">
                         <i class="fas fa-times"></i>
-                        Cancel
                     </button>
                 </div>
-            </div>
-        </div>
-
-        <!-- Walk-in Customer Rewards Modal -->
-        <div v-if="showWalkInRewardsModal" class="modal-overlay">
-            <div class="modal-content walkin-rewards-modal">
-                <div class="modal-header">
-                    <h2>Customer Rewards</h2>
-                    <p>Apply rewards to customer account for this walk-in purchase</p>
-                </div>
-                
-                <div class="modal-body">
-                    <div class="rewards-info">
-                        <div class="order-summary">
-                            <h3>Order Summary</h3>
-                            <p><strong>Order ID:</strong> {{ selectedOrder?.order_id }}</p>
-                            <p><strong>Total Amount:</strong> {{ formatPrice(selectedOrder?.total_amount) }}</p>
-                            <p><strong>Points to Award:</strong> {{ calculatePointsToAward(selectedOrder?.total_amount) }} points</p>
-                        </div>
-                        
-                        <div class="reward-method-selection">
-                            <h3>Select Customer Identification Method</h3>
-                            <div class="method-options">
-                                <label class="method-option">
-                                    <input 
-                                        type="radio" 
-                                        value="user_id" 
-                                        v-model="selectedRewardMethod"
-                                        name="rewardMethod"
-                                    >
-                                    <div class="method-card">
-                                        <i class="fas fa-id-card"></i>
-                                        <span>Enter User ID</span>
-                                        <small>Customer provides their user ID number</small>
-                                    </div>
-                                </label>
-                                
-                                <label class="method-option">
-                                    <input 
-                                        type="radio" 
-                                        value="qr_code" 
-                                        v-model="selectedRewardMethod"
-                                        name="rewardMethod"
-                                    >
-                                    <div class="method-card">
-                                        <i class="fas fa-qrcode"></i>
-                                        <span>Scan QR Code</span>
-                                        <small>Scan customer's QR code from their app</small>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <!-- User ID Input Section -->
-                        <div v-if="selectedRewardMethod === 'user_id'" class="user-id-section">
-                            <div class="input-group">
-                                <label>Customer User ID</label>
-                                <input 
-                                    type="number" 
-                                    v-model="customerUserId"
-                                    placeholder="Enter customer's user ID"
-                                    class="user-id-input"
-                                    @input="validateUserId"
-                                >
-                                <button 
-                                    @click="lookupUser" 
-                                    class="lookup-btn"
-                                    :disabled="!customerUserId || lookingUpUser"
-                                >
-                                    <i class="fas fa-search" v-if="!lookingUpUser"></i>
-                                    <i class="fas fa-spinner fa-spin" v-else></i>
-                                    {{ lookingUpUser ? 'Looking up...' : 'Lookup User' }}
-                                </button>
-                            </div>
-                            
-                            <div v-if="foundUser" class="user-preview">
-                                <div class="user-info">
-                                    <i class="fas fa-user-check"></i>
-                                    <div class="user-details">
-                                        <h4>{{ foundUser.firstname }} {{ foundUser.lastname }}</h4>
-                                        <p>@{{ foundUser.username }}</p>
-                                        <p>{{ foundUser.email }}</p>
-                                        <p>Current Points: {{ foundUser.points || 0 }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div v-if="userLookupError" class="error-message">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                {{ userLookupError }}
-                            </div>
-                        </div>
-                        
-                        <!-- QR Code Section -->
-                        <div v-if="selectedRewardMethod === 'qr_code'" class="qr-code-section">
-                            <div class="qr-scanner-container">
-                                <h4>QR Code Scanner</h4>
-                                <p>Ask the customer to show their QR code from the rewards section in their app</p>
-                                
-                                <!-- QR Scan Method Selection -->
-                                <div class="qr-method-selection">
-                                    <div class="qr-method-tabs">
-                                        <button 
-                                            @click="qrScanMethod = 'camera'"
-                                            :class="['qr-tab', { active: qrScanMethod === 'camera' }]"
-                                        >
-                                            <i class="fas fa-camera"></i>
-                                            Open Camera
-                                        </button>
-                                        <button 
-                                            @click="qrScanMethod = 'upload'"
-                                            :class="['qr-tab', { active: qrScanMethod === 'upload' }]"
-                                        >
-                                            <i class="fas fa-upload"></i>
-                                            Upload QR
-                                        </button>
-                                        <button 
-                                            @click="qrScanMethod = 'manual'"
-                                            :class="['qr-tab', { active: qrScanMethod === 'manual' }]"
-                                        >
-                                            <i class="fas fa-keyboard"></i>
-                                            Manual Input
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Camera Scanner -->
-                                <div v-if="qrScanMethod === 'camera'" class="camera-scanner">
-                                    <div v-if="!scanningQR" class="camera-placeholder">
-                                        <i class="fas fa-camera"></i>
-                                        <p>Click to start camera scanning</p>
-                                        <button @click="startCameraScanning" class="start-camera-btn">
-                                            <i class="fas fa-camera"></i>
-                                            Start Camera
-                                        </button>
-                                    </div>
-                                    <div v-else class="camera-view">
-                                        <video ref="qrVideo" autoplay playsinline class="qr-video"></video>
-                                        <div class="camera-overlay">
-                                            <div class="scan-area"></div>
-                                            <p>Position QR code within the frame</p>
-                                        </div>
-                                        <div class="camera-controls">
-                                            <button @click="stopCameraScanning" class="stop-camera-btn">
-                                                <i class="fas fa-stop"></i>
-                                                Stop Camera
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Upload QR -->
-                                <div v-if="qrScanMethod === 'upload'" class="upload-scanner">
-                                    <div class="upload-area" @click="$refs.qrFileInput.click()" @dragover.prevent @drop.prevent="handleQRDrop">
-                                        <i class="fas fa-cloud-upload-alt"></i>
-                                        <p>Click to upload or drag & drop QR code image</p>
-                                        <p class="upload-hint">Supports: PNG, JPG, JPEG</p>
-                                    </div>
-                                    <input 
-                                        ref="qrFileInput"
-                                        type="file" 
-                                        accept="image/*" 
-                                        @change="handleQRUpload"
-                                        style="display: none"
-                                    >
-                                    <div v-if="qrUploadFile" class="upload-preview">
-                                        <div class="uploaded-image">
-                                            <img :src="qrUploadFile.preview" alt="Uploaded QR Code">
-                                            <div class="upload-info">
-                                                <p>{{ qrUploadFile.name }}</p>
-                                                <button @click="processUploadedQR" class="process-qr-btn">
-                                                    <i class="fas fa-search"></i>
-                                                    Scan QR Code
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Manual Input -->
-                                <div v-if="qrScanMethod === 'manual'" class="manual-scanner">
-                                    <div class="manual-qr-input">
-                                        <label>Manual QR Code Input</label>
-                                        <input 
-                                            type="text" 
-                                            v-model="qrCodeData"
-                                            placeholder="Paste QR JSON data or enter user ID"
-                                            class="qr-input"
-                                            @input="processQRCode"
-                                        >
-                                        <small>Paste the complete JSON from your QR scanner, or enter just a user ID (e.g., 58)</small>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div v-if="qrFoundUser" class="user-preview">
-                                <div class="user-info">
-                                    <i class="fas fa-qrcode"></i>
-                                    <div class="user-details">
-                                        <h4>{{ qrFoundUser.firstname }} {{ qrFoundUser.lastname }}</h4>
-                                        <p>@{{ qrFoundUser.username }}</p>
-                                        <p>{{ qrFoundUser.email }}</p>
-                                        <p>Current Points: {{ qrFoundUser.points || 0 }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div v-if="qrLookupError" class="error-message">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                {{ qrLookupError }}
-                            </div>
-                            
-                            <!-- QR Code Generator for Testing -->
-                            <div class="qr-generator-section">
-                                <h4>QR Code Generator (For Testing)</h4>
-                                <div class="generator-controls">
-                                    <input 
-                                        type="number" 
-                                        v-model="testUserId" 
-                                        placeholder="Enter User ID (default: 58)"
-                                        min="1"
-                                        class="test-user-input"
-                                    >
-                                    <button @click="generateTestQR" class="generate-qr-btn">
-                                        <i class="fas fa-qrcode"></i> Generate QR
-                                    </button>
-                                </div>
-                                <div v-if="generatedQR" class="generated-qr">
-                                    <canvas ref="qrCanvas"></canvas>
-                                    <p>QR Code for User ID: {{ testUserId }}</p>
-                                    <small>Contains JSON: {"type":"user_identification","userId":{{ testUserId }},...}</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="modal-actions">
-                    <button 
-                        @click="processWalkInRewards" 
-                        class="apply-rewards-btn"
-                        :disabled="!canApplyRewards || processingRewards"
+                <div class="receipt-modal-body">
+                    <img 
+                        :src="selectedOrder.gcash_receipt_url" 
+                        alt="GCash Receipt Full Size"
+                        class="full-receipt-image"
+                        @error="handleReceiptImageError"
                     >
-                        <i class="fas fa-gift" v-if="!processingRewards"></i>
-                        <i class="fas fa-spinner fa-spin" v-else></i>
-                        {{ processingRewards ? 'Processing...' : 'Apply Rewards' }}
-                    </button>
-                    <button @click="skipWalkInRewards" class="skip-btn">
-                        <i class="fas fa-times"></i> Skip Rewards
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Walk-in Rewards Success Modal -->
-        <div v-if="showWalkInRewardsSuccess" class="modal-overlay">
-            <div class="modal-content rewards-success-modal">
-                <div class="success-icon">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <h2>Rewards Applied Successfully!</h2>
-                <div class="success-details">
-                    <p><strong>Customer:</strong> {{ successRewardData?.customerName }}</p>
-                    <p><strong>Points Awarded:</strong> {{ successRewardData?.pointsAwarded }}</p>
-                    <p><strong>New Total Points:</strong> {{ successRewardData?.newTotalPoints }}</p>
-                </div>
-                <p class="success-message">The customer has been notified about their new points!</p>
-                <button @click="closeWalkInRewardsSuccess" class="close-btn">
-                    <i class="fas fa-check"></i> Done
-                </button>
-            </div>
-        </div>
-
-        <!-- Payment Success Modal -->
-        <div v-if="showPaymentSuccessModal" class="modal-overlay">
-            <div class="modal-content payment-success-modal">
-                <div class="success-header">
-                    <div class="success-icon">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <h2>Payment Processed Successfully!</h2>
-                    <p class="success-subtitle">Order has been completed</p>
-                </div>
-                
-                <div class="success-body">
-                    <div class="order-summary-success">
-                        <h3><i class="fas fa-receipt"></i> Order Summary</h3>
-                        <div class="order-info-success">
-                            <div class="info-row">
-                                <span class="label"><i class="fas fa-hashtag"></i> Order ID:</span>
-                                <span class="value">{{ processedOrder?.order_id }}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label"><i class="fas fa-user"></i> Customer:</span>
-                                <span class="value">{{ processedOrder?.customer_name }}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label"><i class="fas fa-calendar"></i> Date:</span>
-                                <span class="value">{{ formatDate(processedOrder?.created_at) }}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label"><i class="fas fa-credit-card"></i> Payment Method:</span>
-                                <span class="value">{{ getPaymentMethodLabel(processedOrder?.payment_method) }}</span>
-                            </div>
-                            <div class="info-row total-row">
-                                <span class="label"><i class="fas fa-dollar-sign"></i> Total Amount:</span>
-                                <span class="value total-amount">{{ formatPrice(processedOrder?.total_amount) }}</span>
-                            </div>
-                            <div v-if="processedOrder?.payment_method === 'cash'" class="payment-details">
-                                <div class="info-row">
-                                    <span class="label">Cash Received:</span>
-                                    <span class="value">{{ formatPrice(paymentDetails?.cashAmount) }}</span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="label">Change Given:</span>
-                                    <span class="value">{{ formatPrice(paymentDetails?.changeAmount) }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="success-actions">
-                    <button @click="closeSuccessModal" class="done-btn">
-                        <i class="fas fa-check"></i> Done
-                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- GCash Verification Modal -->
-        <div v-if="showGCashVerificationModal" class="modal-overlay">
-            <div class="modal-content gcash-verification-modal">
+        <!-- Order GCash Verification Confirmation Modal -->
+        <div v-if="showOrderVerificationModal" class="modal-overlay">
+            <div class="modal-content order-verification-modal">
                 <div class="verification-header">
                     <h3>
                         <i class="fab fa-google-pay"></i>
                         Verify GCash Payment
                     </h3>
-                    <button @click="closeGCashVerificationModal" class="close-btn">
-                        <i class="fas fa-times"></i>
-                    </button>
                 </div>
 
-                <div v-if="selectedGCashPayment" class="verification-content">
-                    <div class="payment-info">
-                        <h4>Payment Details</h4>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <label>Order ID:</label>
-                                <span>{{ selectedGCashPayment.order_id || 'N/A' }}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Customer:</label>
-                                <span>{{ selectedGCashPayment.customer_name }}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>GCash Reference:</label>
-                                <span class="gcash-reference">{{ selectedGCashPayment.gcash_reference }}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Amount:</label>
-                                <span class="amount">{{ formatPrice(selectedGCashPayment.amount) }}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Payment Type:</label>
-                                <span>{{ selectedGCashPayment.payment_type === 'downpayment' ? 'Downpayment' : 'Full Payment' }}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Submitted:</label>
-                                <span>{{ formatDate(selectedGCashPayment.created_at) }}</span>
-                            </div>
+                <div class="verification-content">
+                    <div class="verification-info">
+                        <p>Are you sure you want to verify this GCash payment?</p>
+                        <div class="verification-details">
+                            <p><strong>Order ID:</strong> {{ selectedOrder.order_id }}</p>
+                            <p><strong>Reference Number:</strong> {{ selectedOrder.gcash_reference }}</p>
+                            <p><strong>Amount:</strong> {{ formatPrice(selectedOrder.gcash_amount || selectedOrder.total_amount) }}</p>
                         </div>
+                        <p class="verification-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            This action will change the order status from "To Verify" to "Pending" and cannot be undone.
+                        </p>
                     </div>
 
                     <div class="verification-actions">
-                        <h4>Verify Payment</h4>
-                        <p>Please check your GCash account for the payment with reference number: <strong>{{ selectedGCashPayment.gcash_reference }}</strong></p>
-                        
-                        <div class="verification-buttons">
-                            <button 
-                                @click="verifyGCashPayment(true)" 
-                                class="verify-btn approve"
-                                :disabled="processingVerification"
-                            >
-                                <i class="fas fa-check-circle"></i>
-                                <span v-if="processingVerification">Approving...</span>
-                                <span v-else>Approve Payment</span>
-                            </button>
-                            <button 
-                                @click="verifyGCashPayment(false)" 
-                                class="verify-btn reject"
-                                :disabled="processingVerification"
-                            >
-                                <i class="fas fa-times-circle"></i>
-                                <span v-if="processingVerification">Rejecting...</span>
-                                <span v-else>Reject Payment</span>
-                            </button>
-                        </div>
+                        <button 
+                            @click="verifyOrderGCashPayment(true)" 
+                            class="verify-btn approve"
+                            :disabled="processingOrderVerification"
+                        >
+                            <i class="fas fa-check-circle"></i>
+                            <span v-if="processingOrderVerification">Approving...</span>
+                            <span v-else>Approve Payment</span>
+                        </button>
+                        <button 
+                            @click="verifyOrderGCashPayment(false)" 
+                            class="verify-btn reject"
+                            :disabled="processingOrderVerification"
+                        >
+                            <i class="fas fa-times-circle"></i>
+                            <span v-if="processingOrderVerification">Rejecting...</span>
+                            <span v-else>Reject Payment</span>
+                        </button>
+                        <button 
+                            @click="showOrderVerificationModal = false" 
+                            class="verify-btn cancel"
+                            :disabled="processingOrderVerification"
+                        >
+                            <i class="fas fa-ban"></i>
+                            Cancel
+                        </button>
                     </div>
                 </div>
             </div>
@@ -910,9 +540,9 @@ export default {
             statusFilters: [
                 { label: 'All Status', value: '' },
                 { label: 'Pending', value: 'pending' },
+                { label: 'Verify GCash', value: 'verify_gcash' },
                 { label: 'Pending Pickup', value: 'pending_pickup' },
                 { label: 'Pending Delivery', value: 'pending_delivery' },
-                { label: 'Paid via GCash', value: 'paid using gcash' },
                 { label: 'Preparing', value: 'preparing' },
                 { label: 'Ready for Pickup', value: 'ready for pickup' },
                 { label: 'Paid', value: 'paid' },
@@ -960,6 +590,11 @@ export default {
             testUserId: 58,
             generatedQR: false,
             
+            // New data properties for order verification
+            showOrderVerificationModal: false,
+            processingOrderVerification: false,
+            showReceiptModal: false,
+            
             rewardsSettings: {
                 points_per_amount: 1,
                 amount_threshold: 100,
@@ -993,7 +628,15 @@ export default {
                     order.order_id.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
                     order.customer_name.toLowerCase().includes(this.searchQuery.toLowerCase());
                 
-                const statusMatch = !this.selectedStatus || order.status === this.selectedStatus;
+                let statusMatch = true;
+                if (this.selectedStatus) {
+                    if (this.selectedStatus === 'verify_gcash') {
+                        // Filter for orders that have pending GCash payments needing verification
+                        statusMatch = this.hasPendingGCashPayment(order);
+                    } else {
+                        statusMatch = order.status === this.selectedStatus;
+                    }
+                }
                 
                 // Date filter
                 let dateMatch = true;
@@ -1079,6 +722,20 @@ export default {
             this.selectedStatus = this.defaultStatusFilter;
             this.sortOption = this.defaultSortOption;
             this.currentPage = 1; // Reset to first page
+        },
+        getStatusCount(statusValue) {
+            if (!statusValue) {
+                // For "All Status", return total count
+                return this.orders.length;
+            }
+            
+            if (statusValue === 'verify_gcash') {
+                // Count orders that have pending GCash payments
+                return this.orders.filter(order => this.hasPendingGCashPayment(order)).length;
+            }
+            
+            // For regular statuses, count orders with that status
+            return this.orders.filter(order => order.status === statusValue).length;
         },
         // Pagination methods
         goToPage(page) {
@@ -1537,7 +1194,7 @@ export default {
                             ` : ''}
                             <div class="payment-details">
                                 ${order.payment_type === 'downpayment' ? 
-                                    `Amount Due: ${this.formatPrice(this.getAmountToPay(order))}<br>` : 
+                                    `Amount Due: ${this.formatPrice(this.getRemainingAmount(order))}<br>` : 
                                     `Amount Due: ${this.formatPrice(order.total_amount)}<br>`
                                 }
                                 Cash Amount: ${this.formatPrice(this.paymentDetails?.cashAmount || this.cashAmount)}
@@ -1617,6 +1274,7 @@ export default {
                 'preparing': 'Preparing',
                 'ready for pickup': 'Ready for Pickup',
                 'paid': 'Paid',
+                'to verify': 'To Verify',
                 'cancelled': 'Cancelled',
                 'completed': 'Completed'
             };
@@ -1676,93 +1334,71 @@ export default {
                 
                 if (response.ok) {
                     const orderData = await response.json();
-                    this.cashAmount = ''; // Reset cash amount when opening modal
-                    this.changeAmount = 0; // Reset change amount
+                    this.cashAmount = '';
+                    this.changeAmount = 0;
                     this.selectedOrder = {
                         ...orderData,
                         subtotal: orderData.subtotal || orderData.total_amount,
                         discount_amount: parseFloat(orderData.discount_amount) || 0,
-                        email: orderData.email // Make sure email is included in the order data
+                        email: orderData.email
                     };
+                    
+                    // Fetch GCash details if order status is "to verify"
+                    if (this.selectedOrder.status === 'to verify' && this.selectedOrder.payment_method === 'gcash') {
+                        await this.fetchOrderGCashDetails();
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching order details:', error);
             }
         },
         
-        // GCash verification methods
-        hasPendingGCashPayment(order) {
-            // Check if this order has pending GCash payments awaiting verification
-            return this.pendingGCashPayments.some(payment => 
-                payment.order_id === order.order_id || 
-                (payment.status === 'pending_verification' && payment.user_id === order.user_id)
-            );
-        },
-        
-        async showGCashVerification(order) {
-            try {
-                // Fetch pending GCash payments for this order
-                await this.fetchPendingGCashPayments();
-                
-                // Find the pending payment for this order
-                const pendingPayment = this.pendingGCashPayments.find(payment => 
-                    payment.order_id === order.order_id || 
-                    (payment.status === 'pending_verification' && payment.user_id === order.user_id)
-                );
-                
-                if (pendingPayment) {
-                    this.selectedGCashPayment = {
-                        ...pendingPayment,
-                        customer_name: order.customer_name,
-                        order_id: order.order_id
-                    };
-                    this.showGCashVerificationModal = true;
-                } else {
-                    alert('No pending GCash payment found for this order.');
-                }
-            } catch (error) {
-                console.error('Error showing GCash verification:', error);
-                alert('Error loading GCash payment details.');
-            }
-        },
-        
-        async fetchPendingGCashPayments() {
+        async fetchOrderGCashDetails() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await this.$fetch('/api/payment/admin/pending', {
+                const response = await this.$fetch(`/api/admin/orders/${this.selectedOrder.order_id}/gcash-details`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
                 
                 if (response.ok) {
-                    this.pendingGCashPayments = await response.json();
-                } else {
-                    console.error('Failed to fetch pending payments');
-                    this.pendingGCashPayments = [];
+                    const gcashDetails = await response.json();
+                    // Update selectedOrder with GCash details
+                    this.selectedOrder = {
+                        ...this.selectedOrder,
+                        gcash_reference: gcashDetails.gcash_reference,
+                        gcash_amount: gcashDetails.amount,
+                        gcash_receipt_url: gcashDetails.receipt_url,
+                        gcash_submitted_at: gcashDetails.created_at,
+                        payment_type: gcashDetails.payment_type || 'full'
+                    };
                 }
             } catch (error) {
-                console.error('Error fetching pending GCash payments:', error);
-                this.pendingGCashPayments = [];
+                console.error('Error fetching GCash details:', error);
             }
         },
         
-        async verifyGCashPayment(isValid) {
-            if (!this.selectedGCashPayment) return;
+        showOrderGCashVerification() {
+            this.showOrderVerificationModal = true;
+        },
+        
+        async verifyOrderGCashPayment(isValid) {
+            if (!this.selectedOrder) return;
             
-            this.processingVerification = true;
+            this.processingOrderVerification = true;
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await this.$fetch('/api/payment/admin/verify', {
+                const response = await this.$fetch(`/api/admin/orders/${this.selectedOrder.order_id}/verify-gcash`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        paymentId: this.selectedGCashPayment.id,
-                        isValid: isValid
+                        isValid: isValid,
+                        gcash_reference: this.selectedOrder.gcash_reference
                     })
                 });
                 
@@ -1771,16 +1407,14 @@ export default {
                     
                     // Show success message
                     alert(isValid ? 
-                        'GCash payment approved successfully! Order has been processed.' : 
-                        'GCash payment has been rejected.'
+                        'GCash payment verified successfully! Order status updated to Pending.' : 
+                        'GCash payment has been rejected. Order status updated accordingly.'
                     );
                     
-                    // Refresh orders and pending payments
+                    // Refresh orders and close modals
                     await this.fetchOrders();
-                    await this.fetchPendingGCashPayments();
-                    
-                    // Close modal
-                    this.closeGCashVerificationModal();
+                    this.showOrderVerificationModal = false;
+                    this.selectedOrder = null;
                 } else {
                     const errorData = await response.json();
                     throw new Error(errorData.message || 'Failed to verify payment');
@@ -1789,434 +1423,72 @@ export default {
                 console.error('Error verifying GCash payment:', error);
                 alert('Error verifying payment: ' + error.message);
             } finally {
-                this.processingVerification = false;
+                this.processingOrderVerification = false;
             }
         },
         
-        closeGCashVerificationModal() {
-            this.showGCashVerificationModal = false;
-            this.selectedGCashPayment = null;
-            this.processingVerification = false;
+        handleReceiptImageError(e) {
+            e.target.src = '/img/no-receipt-placeholder.jpg';
+            e.target.style.filter = 'grayscale(100%)';
         },
         
-        // Customer Rewards method
-        async openCustomerRewards(order) {
-            try {
-                // Set the selected order for the rewards modal
-                this.selectedOrder = order;
-                
-                // Reset rewards modal data
-                this.selectedRewardMethod = '';
-                this.customerUserId = '';
-                this.qrCodeData = '';
-                this.foundUser = null;
-                this.qrFoundUser = null;
-                this.userLookupError = '';
-                this.qrLookupError = '';
-                
-                // Fetch rewards settings
-                await this.fetchRewardsSettings();
-                
-                // Show the rewards modal
-                this.showWalkInRewardsModal = true;
-            } catch (error) {
-                console.error('Error opening customer rewards:', error);
-            }
-        },
-        
-        // Walk-in rewards methods
-        calculatePointsToAward(totalAmount) {
-            if (!totalAmount || !this.rewardsSettings) return 0;
-            return Math.floor(totalAmount / this.rewardsSettings.amount_threshold) * this.rewardsSettings.points_per_amount;
-        },
-        
-        async fetchRewardsSettings() {
+        // Add missing methods
+        async fetchPendingGCashPayments() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await this.$fetch('/api/admin/rewards/settings', {
+                const response = await this.$fetch('/api/admin/gcash-payments/pending', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
                 
                 if (response.ok) {
-                    this.rewardsSettings = await response.json();
-                }
-            } catch (error) {
-                console.error('Error fetching rewards settings:', error);
-            }
-        },
-        
-        validateUserId() {
-            this.userLookupError = '';
-            this.foundUser = null;
-        },
-        
-        async lookupUser() {
-            if (!this.customerUserId) return;
-            
-            this.lookingUpUser = true;
-            this.userLookupError = '';
-            this.foundUser = null;
-            
-            try {
-                const token = localStorage.getItem('token');
-                const response = await this.$fetch(`/api/admin/walk-in/lookup-user/${this.customerUserId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    this.foundUser = await response.json();
+                    this.pendingGCashPayments = await response.json();
                 } else {
-                    const error = await response.json();
-                    this.userLookupError = error.message || 'User not found';
+                    this.pendingGCashPayments = [];
                 }
             } catch (error) {
-                console.error('Error looking up user:', error);
-                this.userLookupError = 'Error looking up user. Please try again.';
-            } finally {
-                this.lookingUpUser = false;
+                console.error('Error fetching pending GCash payments:', error);
+                this.pendingGCashPayments = [];
             }
         },
         
-        async processQRCode() {
-            if (!this.qrCodeData) {
-                this.qrFoundUser = null;
-                this.qrLookupError = '';
-                return;
-            }
+        hasPendingGCashPayment(order) {
+            // Check if the order has a pending GCash payment that needs verification
+            if (order.payment_method !== 'gcash') return false;
             
-            this.qrLookupError = '';
-            this.qrFoundUser = null;
+            // For orders with "to verify" status, they have pending GCash payments
+            if (order.status === 'to verify') return true;
             
-            try {
-                let userId;
-                const qrData = this.qrCodeData.trim();
-                
-                // Try to parse as JSON first (for the actual QR format)
-                try {
-                    const qrJson = JSON.parse(qrData);
-                    if (qrJson.type === 'user_identification' && qrJson.userId) {
-                        userId = parseInt(qrJson.userId);
-                        console.log('Parsed QR JSON:', qrJson);
-                    } else {
-                        throw new Error('Invalid QR JSON format');
-                    }
-                } catch (jsonError) {
-                    // If JSON parsing fails, try other formats
-                    if (qrData.startsWith('JMG-USER-')) {
-                        // Extract user ID from simple format
-                        userId = parseInt(qrData.replace('JMG-USER-', ''));
-                    } else if (!isNaN(parseInt(qrData))) {
-                        // Accept plain user ID for backward compatibility
-                        userId = parseInt(qrData);
-                    } else {
-                        this.qrLookupError = 'Invalid QR code format. Expected JSON with user identification or JMG-USER-{ID} format.';
-                        return;
-                    }
-                }
-                
-                if (isNaN(userId) || userId <= 0) {
-                    this.qrLookupError = 'Invalid user ID in QR code';
-                    return;
-                }
-                
-                console.log('Processing user ID:', userId);
-                
-                const token = localStorage.getItem('token');
-                const response = await this.$fetch(`/api/admin/walk-in/lookup-user/${userId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    this.qrFoundUser = await response.json();
-                    console.log('User found:', this.qrFoundUser);
-                } else {
-                    const error = await response.json();
-                    this.qrLookupError = error.message || 'User not found';
-                    console.error('User lookup error:', error);
-                }
-            } catch (error) {
-                console.error('Error processing QR code:', error);
-                this.qrLookupError = 'Error processing QR code. Please try again.';
-            }
+            // Check if there's a pending GCash payment for this order
+            return this.pendingGCashPayments.some(payment => 
+                payment.order_id === order.order_id && payment.status === 'pending'
+            );
         },
         
-        // Camera scanning methods
-        async startCameraScanning() {
-            try {
-                this.scanningQR = true;
-                this.qrLookupError = '';
-                
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: 'environment', // Use back camera if available
-                        width: { ideal: 300 },
-                        height: { ideal: 300 }
-                    } 
-                });
-                
-                this.cameraStream = stream;
-                this.$nextTick(() => {
-                    if (this.$refs.qrVideo) {
-                        this.$refs.qrVideo.srcObject = stream;
-                        this.$refs.qrVideo.play();
-                        // Start QR code detection
-                        this.startQRDetection();
-                    }
-                });
-            } catch (error) {
-                console.error('Error accessing camera:', error);
-                this.qrLookupError = 'Could not access camera. Please check permissions and try again.';
-                this.scanningQR = false;
-            }
+        showGCashVerification(order) {
+            // Set the selected order and show the verification modal
+            this.selectedGCashPayment = order;
+            this.showGCashVerificationModal = true;
         },
         
-        stopCameraScanning() {
-            if (this.cameraStream) {
-                this.cameraStream.getTracks().forEach(track => track.stop());
-                this.cameraStream = null;
-            }
-            if (this.qrDetectionInterval) {
-                clearInterval(this.qrDetectionInterval);
-                this.qrDetectionInterval = null;
-            }
-            this.scanningQR = false;
+        handleSortChange() {
+            // Reset to first page when sorting changes
+            this.currentPage = 1;
         },
         
-        startQRDetection() {
-            // Import jsQR dynamically
-            import('jsqr').then((jsQRModule) => {
-                const jsQR = jsQRModule.default;
-                
-                const detectQR = () => {
-                    if (!this.scanningQR || !this.$refs.qrVideo) return;
-                    
-                    const video = this.$refs.qrVideo;
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        
-                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        const code = jsQR(imageData.data, imageData.width, imageData.height);
-                        
-                        if (code) {
-                            console.log('QR Code detected:', code.data);
-                            this.qrCodeData = code.data;
-                            this.stopCameraScanning();
-                            this.processQRCode();
-                            return;
-                        }
-                    }
-                };
-                
-                // Check for QR codes every 200ms
-                this.qrDetectionInterval = setInterval(detectQR, 200);
-            }).catch((error) => {
-                console.error('Error loading jsQR:', error);
-                this.qrLookupError = 'Error loading QR scanner library. Please try manual input or upload.';
-                this.stopCameraScanning();
-            });
+        handleDateFilterChange() {
+            // Reset to first page when date filter changes
+            this.currentPage = 1;
         },
         
-        // File upload methods
-        handleQRUpload(event) {
-            const file = event.target.files[0];
-            if (file && file.type.startsWith('image/')) {
-                this.qrUploadFile = {
-                    file: file,
-                    name: file.name,
-                    preview: URL.createObjectURL(file)
-                };
-            } else {
-                this.qrLookupError = 'Please select a valid image file (PNG, JPG, JPEG)';
-            }
+        openCustomerRewards(order) {
+            // Set the selected order for rewards and show the modal
+            this.selectedOrder = order;
+            this.showWalkInRewardsModal = true;
         },
         
-        handleQRDrop(event) {
-            event.preventDefault();
-            const files = event.dataTransfer.files;
-            if (files.length > 0) {
-                const file = files[0];
-                if (file.type.startsWith('image/')) {
-                    this.qrUploadFile = {
-                        file: file,
-                        name: file.name,
-                        preview: URL.createObjectURL(file)
-                    };
-                } else {
-                    this.qrLookupError = 'Please select a valid image file (PNG, JPG, JPEG)';
-                }
-            }
-        },
-        
-        async processUploadedQR() {
-            if (!this.qrUploadFile) return;
-            
-            try {
-                this.qrLookupError = '';
-                
-                // Import jsQR dynamically
-                const jsQRModule = await import('jsqr');
-                const jsQR = jsQRModule.default;
-                
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                const img = new Image();
-                
-                img.onload = () => {
-                    try {
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        ctx.drawImage(img, 0, 0);
-                        
-                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        const code = jsQR(imageData.data, imageData.width, imageData.height);
-                        
-                        if (code) {
-                            console.log('QR Code found in uploaded image:', code.data);
-                            this.qrCodeData = code.data;
-                            this.processQRCode();
-                        } else {
-                            this.qrLookupError = 'No QR code found in the uploaded image. Please upload a clear image with a visible QR code.';
-                        }
-                    } catch (error) {
-                        console.error('Error processing QR image:', error);
-                        this.qrLookupError = 'Error processing the uploaded image. Please try again.';
-                    }
-                };
-                
-                img.onerror = () => {
-                    this.qrLookupError = 'Error loading the uploaded image. Please try a different image.';
-                };
-                
-                img.src = this.qrUploadFile.preview;
-                
-            } catch (error) {
-                console.error('Error processing uploaded QR:', error);
-                this.qrLookupError = 'Error loading QR scanner library. Please try manual input.';
-            }
-        },
-        
-        async processWalkInRewards() {
-            const targetUser = this.selectedRewardMethod === 'user_id' ? this.foundUser : this.qrFoundUser;
-            if (!targetUser || !this.selectedOrder) return;
-            
-            this.processingRewards = true;
-            
-            try {
-                const token = localStorage.getItem('token');
-                const response = await this.$fetch('/api/admin/walk-in/process-rewards', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        userId: targetUser.id,
-                        orderId: this.selectedOrder.order_id,
-                        totalAmount: this.selectedOrder.total_amount
-                    })
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    this.successRewardData = {
-                        customerName: `${targetUser.firstname} ${targetUser.lastname}`,
-                        pointsAwarded: result.pointsAwarded,
-                        newTotalPoints: result.newTotalPoints
-                    };
-                    
-                    this.showWalkInRewardsModal = false;
-                    this.showWalkInRewardsSuccess = true;
-                    
-                    // Refresh orders to update the rewards status
-                    await this.fetchOrders();
-                } else {
-                    const error = await response.json();
-                    alert(error.message || 'Failed to process rewards');
-                }
-            } catch (error) {
-                console.error('Error processing walk-in rewards:', error);
-                alert('Error processing rewards. Please try again.');
-            } finally {
-                this.processingRewards = false;
-            }
-        },
-        
-        skipWalkInRewards() {
-            // Cleanup camera if active
-            this.stopCameraScanning();
-            
-            // Clear upload file and preview
-            if (this.qrUploadFile && this.qrUploadFile.preview) {
-                URL.revokeObjectURL(this.qrUploadFile.preview);
-            }
-            this.qrUploadFile = null;
-            
-            // Reset QR scan method
-            this.qrScanMethod = 'manual';
-            this.qrCodeData = '';
-            this.qrFoundUser = null;
-            this.qrLookupError = '';
-            
-            this.showWalkInRewardsModal = false;
-            this.selectedOrder = null;
-        },
-        
-        closeWalkInRewardsSuccess() {
-            this.showWalkInRewardsSuccess = false;
-            this.selectedOrder = null;
-            this.successRewardData = null;
-        },
-        
-        async generateTestQR() {
-            if (!this.testUserId) return;
-            
-            try {
-                // Import QRCode dynamically
-                const QRCodeModule = await import('qrcode');
-                const QRCode = QRCodeModule.default;
-                
-                // Create QR data that matches the actual format
-                const qrData = JSON.stringify({
-                    type: "user_identification",
-                    userId: parseInt(this.testUserId),
-                    username: `TestUser${this.testUserId}`,
-                    accountId: `jmg-${this.testUserId}-${Date.now()}`,
-                    storeId: "jm-garis-store",
-                    version: "1.0",
-                    createdAt: new Date().toISOString(),
-                    hash: Math.random().toString(36).substring(2, 8)
-                });
-                
-                console.log('Generating QR with data:', qrData);
-                
-                await this.$nextTick();
-                if (this.$refs.qrCanvas) {
-                    await QRCode.toCanvas(this.$refs.qrCanvas, qrData, {
-                        width: 200,
-                        margin: 2,
-                        color: {
-                            dark: '#000000',
-                            light: '#FFFFFF'
-                        }
-                    });
-                    this.generatedQR = true;
-                }
-            } catch (error) {
-                console.error('Error generating QR code:', error);
-                alert('Error generating QR code: ' + error.message);
-            }
-        }
+        // ...existing methods...
     },
     mounted() {
         const token = localStorage.getItem('token');
@@ -2421,9 +1693,38 @@ export default {
     color: white;
 }
 
+.filter-btn.verify_gcash {
+    background-color: #fef3e8;
+    color: #c2410c;
+}
+
+.filter-btn.verify_gcash.active {
+    background-color: #ea580c;
+    color: white;
+}
+
 .filter-btn.active {
     transform: scale(1.05);
     box-shadow: 0 2px 4px rgba(5, 139, 16, 0.1);
+}
+
+.status-count {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #374151;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 8px;
+    min-width: 18px;
+    display: inline-block;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.filter-btn.active .status-count {
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #1f2937;
 }
 
 .table-container {
@@ -2862,1044 +2163,1792 @@ tfoot tr td {
     width: fit-content;
 }
 
-/* Payment Modal Styles */
-.payment-modal {
-    max-width: 480px;
-    padding: 0;
-    background: #ffffff;
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.payment-header {
-    background: #f8fafc;
-    padding: 1.5rem;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.payment-header h2 {
-    margin: 0;
-    color: #1e293b;
-    font-size: 1.5rem;
-    font-weight: 600;
-}
-
-.order-metadata {
-    margin-top: 0.5rem;
-    display: flex;
-    gap: 1rem;
-    color: #64748b;
-    font-size: 0.875rem;
-}
-
-.payment-body {
-    padding: 1.5rem;
-}
-
-.payment-summary h3,
-.payment-calculator h3 {
-    margin: 0 0 1rem 0;
-    color: #334155;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-.order-items {
-    max-height: 200px;
-    overflow-y: auto;
-    margin-bottom: 1.5rem;
-}
-
-.order-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-.item-details {
-    flex: 1;
-    margin-right: 1rem;
-}
-
-.item-name {
-    display: block;
-    color: #334155;
-    font-size: 0.95rem;
-    margin-bottom: 0.25rem;
-}
-
-.variant-tag {
-    display: inline-block;
-    background: #e0f2fe;
-    color: #0369a1;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-}
-
-.item-pricing {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: #64748b;
-    font-size: 0.9rem;
-}
-
-.totals-breakdown {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e2e8f0;
-}
-
-.breakdown-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0;
-    color: #475569;
-    font-size: 0.95rem;
-}
-
-.breakdown-row.discount {
-    color: #16a34a;
-}
-
-.breakdown-row.total {
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid #e2e8f0;
-    font-weight: 600;
-    color: #1e293b;
-    font-size: 1.1rem;
-}
-
-.payment-calculator {
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #e2e8f0;
-}
-
-.payment-breakdown-info {
-    background-color: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.breakdown-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0;
-    font-size: 0.9rem;
-    color: #64748b;
-}
-
-.breakdown-item.remaining {
-    font-weight: 600;
-    color: #1e293b;
-    border-top: 1px solid #e2e8f0;
-    margin-top: 0.5rem;
-    padding-top: 0.75rem;
-}
-
-.downpayment-breakdown {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e2e8f0;
-    background-color: #f0f9ff;
-    padding: 1rem;
-    border-radius: 6px;
-}
-
-.downpayment-info, .remaining-amount {
-    margin: 0.5rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.95rem;
-}
-
-.downpayment-info {
-    color: #0369a1;
-    font-weight: 500;
-}
-
-.remaining-amount {
-    color: #dc2626;
-    font-weight: 600;
-}
-
-.amount-due-note {
-    color: #64748b;
-    font-size: 0.85rem;
-    margin-top: 0.5rem;
-    display: block;
-}
-
-.calculator-input {
-    margin-bottom: 1rem;
-}
-
-.calculator-input label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #475569;
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.calculator-input input {
-    width: 100%;
-    padding: 0.75rem 1rem 0.75rem 2rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: all 0.2s;
-}
-
-.calculator-input input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.currency-symbol {
-    position: absolute;
-    left: 1rem;
-    color: #64748b;
-    font-weight: 500;
-}
-
-.calculator-result {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: #f1f5f9;
-    border-radius: 8px;
-    font-weight: 500;
-}
-
-.calculator-result.insufficient {
-    background: #fef2f2;
-    color: #dc2626;
-}
-
-.payment-actions {
-    padding: 1.5rem;
-    background: #f8fafc;
-    border-top: 1px solid #e2e8f0;
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-}
-.sort-filter {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.sort-select {
-    padding: 0.75rem 2.5rem 0.75rem 1rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    background-color: white;
-    appearance: none;
-    font-size: 0.9rem;
-    color: #334155;
-    cursor: pointer;
-    width: 180px;
-    transition: all 0.2s;
-}
-
-.sort-select:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.sort-filter i {
-    position: absolute;
-    right: 1rem;
-    pointer-events: none;
-    color: #64748b;
-}
-
-@media (max-width: 768px) {
-    .sort-filter {
-        width: 100%;
-    }
-    
-    .sort-select {
-        width: 100%;
-    }
-    .admin-container {
-        padding-left: 60px;
-    }
-
-    .admin-content {
-        padding: 1rem;
-    }
-
-    .search-filter {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .filters-right {
-        flex-direction: column;
-        width: 100%;
-    }
-    
-    .search-box, .date-filter {
-        width: 100%;
-        max-width: 100%;
-    }
-    
-    .date-input {
-        width: 100%;
-    }
-    
-    .status-filters {
-        order: 2;
-        justify-content: center;
-    }
-    
-    .reset-filters-btn {
-        width: 100%;
-        justify-content: center;
-        margin-top: 0.5rem;
-    }
-
-    .modal-content {
-        width: 95%;
-        padding: 1rem;
-    }
-    
-    .action-buttons {
-        flex-direction: row;
-        gap: 0.3rem;
-        flex-wrap: wrap;
-    }
-    
-    .view-btn, .rewards-btn, .rewards-redeemed-btn {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.6rem;
-    }
-}
-
-/* Walk-in Rewards Modal Styles */
-.walkin-rewards-modal {
-    max-width: 600px;
-    width: 95%;
-}
-
-.walkin-rewards-modal .modal-header {
-    text-align: center;
-    padding: 2rem 2rem 1rem;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.walkin-rewards-modal .modal-header h2 {
-    margin: 0 0 0.5rem 0;
-    color: #1e293b;
-    font-size: 1.5rem;
-}
-
-.walkin-rewards-modal .modal-header p {
-    margin: 0;
-    color: #64748b;
-    font-size: 0.95rem;
-}
-
-.rewards-info {
-    padding: 2rem;
-}
-
-.order-summary {
-    background: #f8fafc;
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 2rem;
-    border: 1px solid #e2e8f0;
-}
-
-.order-summary h3 {
-    margin: 0 0 1rem 0;
-    color: #1e293b;
-    font-size: 1.1rem;
-}
-
-.order-summary p {
-    margin: 0.5rem 0;
-    color: #475569;
-}
-
-.reward-method-selection h3 {
-    margin: 0 0 1.5rem 0;
-    color: #1e293b;
-    font-size: 1.1rem;
-}
-
-.method-options {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.method-option {
-    cursor: pointer;
-}
-
-.method-option input[type="radio"] {
-    display: none;
-}
-
-.method-card {
-    padding: 1.5rem;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    text-align: center;
-    transition: all 0.3s ease;
-    background: white;
-}
-
-.method-card:hover {
-    border-color: #3b82f6;
-    background: #f8fafc;
-}
-
-.method-option input[type="radio"]:checked + .method-card {
-    border-color: #10b981;
-    background: #f0fdf4;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
-}
-
-.method-card i {
-    font-size: 2rem;
-    color: #64748b;
-    margin-bottom: 0.75rem;
-    transition: color 0.3s ease;
-}
-
-.method-option input[type="radio"]:checked + .method-card i {
-    color: #10b981;
-}
-
-.method-card span {
-    display: block;
-    font-weight: 600;
-    color: #1e293b;
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-}
-
-.method-card small {
-    color: #64748b;
-    font-size: 0.875rem;
-}
-
-.user-id-section,
-.qr-code-section {
-    margin-top: 1.5rem;
-}
-
-.input-group {
-    display: flex;
-    gap: 1rem;
-    align-items: end;
-    margin-bottom: 1rem;
-}
-
-.input-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #374151;
-    font-weight: 500;
-    font-size: 0.875rem;
-}
-
-.user-id-input,
-.qr-input {
-    flex: 1;
-    padding: 0.75rem 1rem;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
-}
-
-.user-id-input:focus,
-.qr-input:focus {
-    outline: none;
-    border-color: #10b981;
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-}
-
-.lookup-btn {
-    padding: 0.75rem 1.5rem;
-    background: #10b981;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    white-space: nowrap;
-}
-
-.lookup-btn:hover:not(:disabled) {
-    background: #059669;
-    transform: translateY(-1px);
-}
-
-.lookup-btn:disabled {
-    background: #94a3b8;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.user-preview {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-radius: 8px;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.user-info i {
-    font-size: 2rem;
-    color: #10b981;
-}
-
-.user-details h4 {
-    margin: 0 0 0.25rem 0;
-    color: #1e293b;
-    font-size: 1.1rem;
-}
-
-.user-details p {
-    margin: 0.125rem 0;
-    color: #475569;
-    font-size: 0.875rem;
-}
-
-.error-message {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 8px;
-    color: #dc2626;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.qr-scanner-container {
-    text-align: center;
-}
-
-.qr-scanner-container h4 {
-    margin: 0 0 0.5rem 0;
-    color: #1e293b;
-}
-
-.qr-scanner-container p {
-    margin: 0 0 1rem 0;
-    color: #64748b;
-    font-size: 0.875rem;
-}
-
-.scanner-placeholder {
-    padding: 2rem;
-    border: 2px dashed #d1d5db;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    background: #f9fafb;
-}
-
-.scanner-placeholder i {
-    font-size: 3rem;
-    color: #9ca3af;
-    margin-bottom: 1rem;
-}
-
-.scanner-placeholder p {
-    margin: 0.5rem 0;
-    color: #6b7280;
-}
-
-.manual-qr-input {
-    text-align: left;
-}
-
-.manual-qr-input label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #374151;
-    font-weight: 500;
-    font-size: 0.875rem;
-}
-
-/* QR Method Selection */
-.qr-method-selection {
-    margin-bottom: 1.5rem;
-}
-
-.qr-method-tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    justify-content: center;
-}
-
-.qr-tab {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border: 2px solid #e5e7eb;
-    background: #f9fafb;
-    color: #6b7280;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.qr-tab:hover {
-    border-color: #3b82f6;
-    background: #eff6ff;
-    color: #3b82f6;
-}
-
-.qr-tab.active {
-    border-color: #3b82f6;
-    background: #3b82f6;
-    color: white;
-}
-
-/* Camera Scanner */
-.camera-scanner {
-    margin-bottom: 1rem;
-}
-
-.camera-placeholder {
-    padding: 2rem;
-    border: 2px dashed #d1d5db;
-    border-radius: 8px;
-    background: #f9fafb;
-    text-align: center;
-}
-
-.camera-placeholder i {
-    font-size: 3rem;
-    color: #9ca3af;
-    margin-bottom: 1rem;
-}
-
-.start-camera-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    margin: 1rem auto 0;
-    transition: all 0.2s ease;
-}
-
-.start-camera-btn:hover {
-    background: #2563eb;
-}
-
-.camera-view {
-    position: relative;
-    width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-.qr-video {
-    width: 100%;
-    height: 300px;
-    object-fit: cover;
-    border-radius: 8px;
-    background: #000;
-}
-
-.camera-overlay {
-    position: absolute;
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
+    background-color: rgba(0,0,0,0.5);
     display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
-    pointer-events: none;
+    align-items: center;
+    z-index: 1000;
 }
 
-.scan-area {
-    width: 200px;
-    height: 200px;
-    border: 3px solid #3b82f6;
+.modal-content {
+    background: white;
     border-radius: 12px;
-    background: rgba(59, 130, 246, 0.1);
-    margin-bottom: 1rem;
+    padding: 2rem;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
-.camera-overlay p {
-    color: white;
-    background: rgba(0, 0, 0, 0.7);
+.order-details h2 {
+    margin: 0 0 1.5rem 0;
+}
+
+.modal-scroll-content {
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 0.5rem;
+}
+
+.order-info {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.order-info p {
+    margin: 0.5rem 0;
+}
+
+.staff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #e8f5e9;
+    color: #2e7d32;
     padding: 0.5rem 1rem;
     border-radius: 20px;
-    margin: 0;
+    font-size: 0.875rem;
 }
 
-.camera-controls {
-    text-align: center;
+.price-breakdown {
     margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
 }
 
-.stop-camera-btn {
+.subtotal {
+    color: #666;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: #ef4444;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    margin: 0 auto;
-    transition: all 0.2s ease;
 }
 
-.stop-camera-btn:hover {
-    background: #dc2626;
-}
-
-/* Upload Scanner */
-.upload-scanner {
-    margin-bottom: 1rem;
-}
-
-.upload-area {
-    padding: 2rem;
-    border: 2px dashed #d1d5db;
-    border-radius: 8px;
-    background: #f9fafb;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.upload-area:hover {
-    border-color: #3b82f6;
-    background: #eff6ff;
-}
-
-.upload-area i {
-    font-size: 3rem;
-    color: #9ca3af;
-    margin-bottom: 1rem;
-}
-
-.upload-hint {
-    font-size: 0.75rem;
-    color: #9ca3af;
-    margin: 0.5rem 0 0 0;
-}
-
-.upload-preview {
-    margin-top: 1rem;
-}
-
-.uploaded-image {
+.discount-amount {
+    color: #4CAF50;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    background: white;
+    gap: 0.5rem;
 }
 
-.uploaded-image img {
-    width: 80px;
-    height: 80px;
+.total-amount {
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.product-image {
+    width: 60px;
+    height: 60px;
     object-fit: cover;
-    border-radius: 6px;
-}
-
-.upload-info {
-    flex: 1;
-    text-align: left;
-}
-
-.upload-info p {
-    margin: 0 0 0.5rem 0;
-    font-weight: 500;
-    color: #374151;
-}
-
-.process-qr-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: #10b981;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-}
-
-.process-qr-btn:hover {
-    background: #059669;
-}
-
-/* Manual Scanner */
-.manual-scanner {
-    margin-bottom: 1rem;
-}
-
-.manual-qr-input small {
-    display: block;
-    margin-top: 0.5rem;
-    color: #6b7280;
-    font-size: 0.75rem;
-}
-
-/* QR Generator Section */
-.qr-generator-section {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    background: #f8fafc;
     border-radius: 8px;
-    border: 1px solid #e2e8f0;
 }
 
-.qr-generator-section h4 {
-    margin: 0 0 1rem 0;
-    color: #374151;
-    font-size: 1rem;
+.products-table {
+    margin: 1.5rem 0;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    max-height: 380px;
+    overflow-y: auto;
 }
 
-.generator-controls {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    margin-bottom: 1rem;
+tfoot {
+    border-top: 2px solid #eee;
 }
 
-.test-user-input {
-    padding: 0.5rem;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    width: 150px;
-    font-size: 0.875rem;
-}
-
-.test-user-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.generate-qr-btn {
-    background: #3b82f6;
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.875rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: background 0.2s;
-}
-
-.generate-qr-btn:hover {
-    background: #2563eb;
-}
-
-.generated-qr {
-    text-align: center;
+tfoot tr td {
     padding: 1rem;
-    background: white;
-    border-radius: 6px;
-    border: 1px solid #e5e7eb;
+    font-weight: 600;
 }
 
-.generated-qr canvas {
-    display: block;
-    margin: 0 auto 1rem;
+.total-label {
+    text-align: right;
+    color: #2c3e50;
 }
 
-.generated-qr p {
-    margin: 0;
-    color: #6b7280;
-    font-size: 0.875rem;
-}
-
-.walkin-rewards-modal .modal-actions {
-    padding: 1.5rem 2rem;
-    background: #f8fafc;
-    border-top: 1px solid #e2e8f0;
+.modal-actions {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
     display: flex;
-    gap: 1rem;
     justify-content: flex-end;
+    gap: 1rem;
 }
 
-.apply-rewards-btn {
-    background: #10b981;
+.pay-btn {
+    background-color: #4CAF50;
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 500;
+    border-radius: 6px;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-size: 0.95rem;
     transition: all 0.3s ease;
 }
 
-.apply-rewards-btn:hover:not(:disabled) {
-    background: #059669;
-    transform: translateY(-1px);
+.pay-btn:hover {
+    background-color: #45a049;
 }
 
-.apply-rewards-btn:disabled {
-    background: #94a3b8;
+.close-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background-color: #5a6268;
+}
+
+.accept-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.accept-btn:hover {
+    background-color: #45a049;
+}
+
+.accept-btn:disabled {
+    background-color: #94a3b8;
     cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.accept-btn:disabled:hover {
+    background-color: #94a3b8;
     transform: none;
 }
 
-.skip-btn {
-    background: #6b7280;
+.accept-btn .fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.cancel-btn {
+    background-color: #6c757d;
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 500;
+    border-radius: 6px;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-size: 0.95rem;
     transition: all 0.3s ease;
 }
 
-.skip-btn:hover {
-    background: #4b5563;
-    transform: translateY(-1px);
+.cancel-btn:hover {
+    background-color: #5a6268;
 }
 
-/* Rewards Success Modal */
-.rewards-success-modal {
-    max-width: 450px;
-    text-align: center;
-    padding: 2rem;
+.cancel-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
-.success-icon {
-    font-size: 4rem;
-    color: #10b981;
-    margin-bottom: 1rem;
+.choice-info {
+    font-size: 0.85rem;
+    color: #3498db;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #eef6fd;
+    padding: 0.4rem 0.7rem;
+    border-radius: 4px;
+    width: fit-content;
 }
 
-.rewards-success-modal h2 {
-    margin: 0 0 1.5rem 0;
-    color: #1e293b;
-    font-size: 1.5rem;
-}
-
-.success-details {
-    background: #f0fdf4;
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    border: 1px solid #bbf7d0;
-}
-
-.success-details p {
-    margin: 0.5rem 0;
-    color: #166534;
-    font-size: 0.95rem;
-}
-
-.success-message {
-    color: #64748b;
-    font-size: 0.95rem;
-    margin-bottom: 2rem;
-}
-
-@media (max-width: 768px) {
-    .method-options {
-        grid-template-columns: 1fr;
-    }
-    
-    .input-group {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .walkin-rewards-modal .modal-actions {
-        flex-direction: column;
-    }
-    
-    .apply-rewards-btn,
-    .skip-btn {
-        width: 100%;
-        justify-content: center;
-    }
-}
-
-.pagination-container {
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-top: 2rem;
-    padding: 1rem;
-    background-color: #f8fafc;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.order-details h2 {
+    margin: 0 0 1.5rem 0;
+}
+
+.modal-scroll-content {
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 0.5rem;
+}
+
+.order-info {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.order-info p {
+    margin: 0.5rem 0;
+}
+
+.staff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+.price-breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.subtotal {
+    color: #666;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.discount-amount {
+    color: #4CAF50;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.total-amount {
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.product-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
     border-radius: 8px;
 }
 
-.pagination-controls {
+.products-table {
+    margin: 1.5rem 0;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+tfoot {
+    border-top: 2px solid #eee;
+}
+
+tfoot tr td {
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.total-label {
+    text-align: right;
+    color: #2c3e50;
+}
+
+.modal-actions {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.pay-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
     display: flex;
     align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.pay-btn:hover {
+    background-color: #45a049;
+}
+
+.close-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background-color: #5a6268;
+}
+
+.accept-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.accept-btn:hover {
+    background-color: #45a049;
+}
+
+.accept-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.accept-btn:disabled:hover {
+    background-color: #94a3b8;
+    transform: none;
+}
+
+.accept-btn .fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+.cancel-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.choice-info {
+    font-size: 0.85rem;
+    color: #3498db;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #eef6fd;
+    padding: 0.4rem 0.7rem;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.order-details h2 {
+    margin: 0 0 1.5rem 0;
+}
+
+.modal-scroll-content {
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 0.5rem;
+}
+
+.order-info {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.order-info p {
+    margin: 0.5rem 0;
+}
+
+.staff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+.price-breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.subtotal {
+    color: #666;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.discount-amount {
+    color: #4CAF50;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.total-amount {
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.product-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.products-table {
+    margin: 1.5rem 0;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+tfoot {
+    border-top: 2px solid #eee;
+}
+
+tfoot tr td {
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.total-label {
+    text-align: right;
+    color: #2c3e50;
+}
+
+.modal-actions {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.pay-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.pay-btn:hover {
+    background-color: #45a049;
+}
+
+.close-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background-color: #5a6268;
+}
+
+.accept-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.accept-btn:hover {
+    background-color: #45a049;
+}
+
+.accept-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.accept-btn:disabled:hover {
+    background-color: #94a3b8;
+    transform: none;
+}
+
+.accept-btn .fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+.cancel-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.choice-info {
+    font-size: 0.85rem;
+    color: #3498db;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #eef6fd;
+    padding: 0.4rem 0.7rem;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.order-details h2 {
+    margin: 0 0 1.5rem 0;
+}
+
+.modal-scroll-content {
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 0.5rem;
+}
+
+.order-info {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.order-info p {
+    margin: 0.5rem 0;
+}
+
+.staff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+.price-breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.subtotal {
+    color: #666;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.discount-amount {
+    color: #4CAF50;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.total-amount {
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.product-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.products-table {
+    margin: 1.5rem 0;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+tfoot {
+    border-top: 2px solid #eee;
+}
+
+tfoot tr td {
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.total-label {
+    text-align: right;
+    color: #2c3e50;
+}
+
+.modal-actions {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.pay-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.pay-btn:hover {
+    background-color: #45a049;
+}
+
+.close-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background-color: #5a6268;
+}
+
+.accept-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.accept-btn:hover {
+    background-color: #45a049;
+}
+
+.accept-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.accept-btn:disabled:hover {
+    background-color: #94a3b8;
+    transform: none;
+}
+
+.accept-btn .fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+.cancel-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.choice-info {
+    font-size: 0.85rem;
+    color: #3498db;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #eef6fd;
+    padding: 0.4rem 0.7rem;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.order-details h2 {
+    margin: 0 0 1.5rem 0;
+}
+
+.modal-scroll-content {
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 0.5rem;
+}
+
+.order-info {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.order-info p {
+    margin: 0.5rem 0;
+}
+
+.staff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+.price-breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.subtotal {
+    color: #666;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.discount-amount {
+    color: #4CAF50;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.total-amount {
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.product-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.products-table {
+    margin: 1.5rem 0;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+tfoot {
+    border-top: 2px solid #eee;
+}
+
+tfoot tr td {
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.total-label {
+    text-align: right;
+    color: #2c3e50;
+}
+
+.modal-actions {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.pay-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.pay-btn:hover {
+    background-color: #45a049;
+}
+
+.close-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background-color: #5a6268;
+}
+
+.accept-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.accept-btn:hover {
+    background-color: #45a049;
+}
+
+.accept-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.accept-btn:disabled:hover {
+    background-color: #94a3b8;
+    transform: none;
+}
+
+.accept-btn .fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+.cancel-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.choice-info {
+    font-size: 0.85rem;
+    color: #3498db;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #eef6fd;
+    padding: 0.4rem 0.7rem;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.order-details h2 {
+    margin: 0 0 1.5rem 0;
+}
+
+.modal-scroll-content {
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 0.5rem;
+}
+
+.order-info {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.order-info p {
+    margin: 0.5rem 0;
+}
+
+.staff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+.price-breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.subtotal {
+    color: #666;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.discount-amount {
+    color: #4CAF50;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.total-amount {
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.product-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.products-table {
+    margin: 1.5rem 0;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+tfoot {
+    border-top: 2px solid #eee;
+}
+
+tfoot tr td {
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.total-label {
+    text-align: right;
+    color: #2c3e50;
+}
+
+.modal-actions {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.pay-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.pay-btn:hover {
+    background-color: #45a049;
+}
+
+.close-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background-color: #5a6268;
+}
+
+.accept-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.accept-btn:hover {
+    background-color: #45a049;
+}
+
+.accept-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.accept-btn:disabled:hover {
+    background-color: #94a3b8;
+    transform: none;
+}
+
+.accept-btn .fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+.cancel-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.choice-info {
+    font-size: 0.85rem;
+    color: #3498db;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #eef6fd;
+    padding: 0.4rem 0.7rem;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.order-details h2 {
+    margin: 0 0 1.5rem 0;
+}
+
+.modal-scroll-content {
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 0.5rem;
+}
+
+.order-info {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.order-info p {
+    margin: 0.5rem 0;
+}
+
+.staff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+.price-breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.subtotal {
+    color: #666;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.discount-amount {
+    color: #4CAF50;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.total-amount {
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.product-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.products-table {
+    margin: 1.5rem 0;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+tfoot {
+    border-top: 2px solid #eee;
+}
+
+tfoot tr td {
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.total-label {
+    text-align: right;
+    color: #2c3e50;
+}
+
+.modal-actions {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.pay-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.pay-btn:hover {
+    background-color: #45a049;
+}
+
+.close-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    background-color: #5a6268;
+}
+
+.accept-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.accept-btn:hover {
+    background-color: #45a049;
+}
+
+.accept-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.accept-btn:disabled:hover {
+    background-color: #94a3b8;
+    transform: none;
+}
+
+.accept-btn .fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+.cancel-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.choice-info {
+    font-size: 0.85rem;
+    color: #3498db;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #eef6fd;
+    padding: 0.4rem 0.7rem;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.order-details h2 {
+    margin: 0 0 1.5rem 0;
+}
+
+.modal-scroll-content {
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 0.5rem;
+}
+
+.order-info {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.order-info p {
+    margin: 0.5rem 0;
+}
+
+.staff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+.price-breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.subtotal {
+    color: #666;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.discount-amount {
+    color: #4CAF50;
+    margin: 0.25rem 0;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.total-amount {
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.product-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.products-table {
+    margin: 1.5rem 0;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+tfoot {
+    border-top: 2px solid #eee;
+}
+
+tfoot tr td {
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.total-label {
+    text-align: right;
+    color: #2c3e50;
+}
+
+.modal-actions {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.pay-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.pay-btn:hover {
+    background-color: #45a049;
+}
+
+.close-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
     gap: 1rem;
 }
 

@@ -3399,3 +3399,244 @@ exports.deleteStaffTransactions = async (req, res) => {
     }
 };
 
+// GCash Payment Management Functions
+exports.getPendingGCashPayments = async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                pi.id,
+                pi.order_id,
+                pi.amount,
+                pi.gcash_reference,
+                pi.status,
+                pi.created_at,
+                pi.payment_type,
+                pi.total_amount,
+                pi.user_id,
+                CONCAT(u.firstname, ' ', u.lastname) as customer_name,
+                u.email as customer_email
+            FROM payment_intents pi
+            LEFT JOIN users u ON pi.user_id = u.id
+            WHERE pi.status = 'pending_verification'
+            AND pi.gcash_reference IS NOT NULL
+            ORDER BY pi.created_at DESC
+        `;
+        
+        const [payments] = await db.execute(query);
+        
+        res.json(payments);
+    } catch (error) {
+        console.error('Error fetching pending GCash payments:', error);
+        res.status(500).json({ message: 'Error fetching pending GCash payments' });
+    }
+};
+
+exports.getOrderGCashDetails = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        
+        // First check if order exists and has GCash payment method
+        const orderQuery = `
+            SELECT 
+                o.order_id,
+                o.payment_method,
+                o.payment_intent_id,
+                o.status,
+                o.total_amount
+            FROM orders o
+            WHERE o.order_id = ?
+        `;
+        
+        const [orders] = await db.execute(orderQuery, [orderId]);
+        
+        if (orders.length === 0) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+        
+        const order = orders[0];
+        
+        if (order.payment_method !== 'gcash') {
+            return res.status(400).json({ message: 'Order does not use GCash payment method' });
+        }
+        
+        // Get GCash payment details from payment_intents table
+        let gcashQuery, gcashParams;
+        
+        if (order.payment_intent_id) {
+            // If there's a payment_intent_id, use it
+            gcashQuery = `
+                SELECT 
+                    pi.id,
+                    pi.gcash_reference,
+                    pi.amount,
+                    pi.status,
+                    pi.payment_type,
+                    pi.total_amount,
+                    pi.created_at,
+                    pi.verified_at,
+                    NULL as receipt_url
+                FROM payment_intents pi
+                WHERE pi.reference_number = ?
+                ORDER BY pi.created_at DESC
+                LIMIT 1
+            `;
+            gcashParams = [order.payment_intent_id];
+        } else {
+            // If no payment_intent_id, try to find by order_id
+            gcashQuery = `
+                SELECT 
+                    pi.id,
+                    pi.gcash_reference,
+                    pi.amount,
+                    pi.status,
+                    pi.payment_type,
+                    pi.total_amount,
+                    pi.created_at,
+                    pi.verified_at,
+                    NULL as receipt_url
+                FROM payment_intents pi
+                WHERE pi.order_id = ?
+                ORDER BY pi.created_at DESC
+                LIMIT 1
+            `;
+            gcashParams = [orderId];
+        }
+        
+        const [gcashDetails] = await db.execute(gcashQuery, gcashParams);
+        
+        if (gcashDetails.length === 0) {
+            return res.status(404).json({ message: 'GCash payment details not found' });
+        }
+        
+        res.json(gcashDetails[0]);
+        
+    } catch (error) {
+        console.error('Error fetching GCash details:', error);
+        res.status(500).json({ message: 'Error fetching GCash payment details' });
+    }
+};
+
+exports.verifyGCashPayment = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { isValid, gcash_reference } = req.body;
+        
+        // Start a transaction
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+        
+        try {
+            // First, get the order details
+            const orderQuery = `
+                SELECT 
+                    o.order_id,
+                    o.status,
+                    o.payment_method,
+                    o.payment_intent_id,
+                    o.total_amount
+                FROM orders o
+                WHERE o.order_id = ?
+            `;
+            
+            const [orders] = await connection.execute(orderQuery, [orderId]);
+            
+            if (orders.length === 0) {
+                await connection.rollback();
+                connection.release();
+                return res.status(404).json({ message: 'Order not found' });
+            }
+            
+            const order = orders[0];
+            
+            if (order.payment_method !== 'gcash') {
+                await connection.rollback();
+                connection.release();
+                return res.status(400).json({ message: 'Order does not use GCash payment method' });
+            }
+            
+            if (order.status !== 'to verify') {
+                await connection.rollback();
+                connection.release();
+                return res.status(400).json({ message: 'Order is not in verification status' });
+            }
+            
+            if (isValid) {
+                // Approve the payment - update order status to pending
+                const updateOrderQuery = `
+                    UPDATE orders 
+                    SET status = 'pending', 
+                        payment_status = 'paid',
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE order_id = ?
+                `;
+                
+                await connection.execute(updateOrderQuery, [orderId]);
+                
+                // Update payment intent status if exists
+                if (gcash_reference) {
+                    const updatePaymentQuery = `
+                        UPDATE payment_intents 
+                        SET status = 'verified', 
+                            verified_at = CURRENT_TIMESTAMP,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE gcash_reference = ?
+                    `;
+                    
+                    await connection.execute(updatePaymentQuery, [gcash_reference]);
+                }
+                
+                await connection.commit();
+                
+                res.json({ 
+                    message: 'GCash payment verified successfully', 
+                    orderId: orderId,
+                    newStatus: 'pending'
+                });
+                
+            } else {
+                // Reject the payment - update order status to cancelled
+                const updateOrderQuery = `
+                    UPDATE orders 
+                    SET status = 'cancelled', 
+                        payment_status = 'failed',
+                        cancel_reason = 'GCash payment verification failed',
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE order_id = ?
+                `;
+                
+                await connection.execute(updateOrderQuery, [orderId]);
+                
+                // Update payment intent status if exists
+                if (gcash_reference) {
+                    const updatePaymentQuery = `
+                        UPDATE payment_intents 
+                        SET status = 'rejected', 
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE gcash_reference = ?
+                    `;
+                    
+                    await connection.execute(updatePaymentQuery, [gcash_reference]);
+                }
+                
+                await connection.commit();
+                
+                res.json({ 
+                    message: 'GCash payment rejected', 
+                    orderId: orderId,
+                    newStatus: 'cancelled'
+                });
+            }
+            
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+        
+    } catch (error) {
+        console.error('Error verifying GCash payment:', error);
+        res.status(500).json({ message: 'Error verifying GCash payment' });
+    }
+};
+

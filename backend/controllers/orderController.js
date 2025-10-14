@@ -160,7 +160,7 @@ exports.createOrder = async (req, res) => {
         const validPaymentMethod = ['cash', 'gcash', 'hatid'].includes(paymentMethod) ? paymentMethod : 'cash';
 
         // Validate status for GCash payments
-        const orderStatus = status || (validPaymentMethod === 'gcash' ? 'paid using gcash' : 'pending');
+        const orderStatus = status || (validPaymentMethod === 'gcash' ? 'to verify' : 'pending');
 
         // Debug log
         console.log('Creating order with validated total amount:', validatedTotalAmount);
