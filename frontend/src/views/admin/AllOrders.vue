@@ -454,56 +454,109 @@
 
         <!-- Order GCash Verification Confirmation Modal -->
         <div v-if="showOrderVerificationModal" class="modal-overlay">
-            <div class="modal-content order-verification-modal">
-                <div class="verification-header">
-                    <h3>
+            <div class="modal-content gcash-verification-modal">
+                <div class="order-details">
+                    <h2>
                         <i class="fab fa-google-pay"></i>
                         Verify GCash Payment
-                    </h3>
+                    </h2>
+                    
+                    <div class="modal-scroll-content">
+                        <div class="order-info">
+                            <p><strong>Order ID:</strong> {{ selectedOrder.order_id }}</p>
+                            <p><strong>Customer:</strong> {{ selectedOrder.customer_name }}</p>
+                            <p><strong>Order Date:</strong> {{ formatDate(selectedOrder.created_at) }}</p>
+                        </div>
+
+                        <!-- Enhanced GCash Payment Details -->
+                        <div class="gcash-payment-details">
+                            <div class="gcash-info-section">
+                                <h4><i class="fab fa-google-pay"></i> GCash Payment Information</h4>
+                                <div class="gcash-details-grid">
+                                    <div class="gcash-detail-item">
+                                        <label>Reference Number:</label>
+                                        <span class="gcash-reference">{{ selectedOrder.gcash_reference || 'N/A' }}</span>
+                                    </div>
+                                    <div class="gcash-detail-item">
+                                        <label>Payment Amount:</label>
+                                        <span class="gcash-amount">{{ formatPrice(selectedOrder.gcash_amount || selectedOrder.total_amount) }}</span>
+                                    </div>
+                                    <div class="gcash-detail-item">
+                                        <label>Payment Type:</label>
+                                        <span>{{ selectedOrder.payment_type === 'downpayment' ? 'Downpayment (25%)' : 'Full Payment' }}</span>
+                                    </div>
+                                    <div class="gcash-detail-item">
+                                        <label>Submitted Date:</label>
+                                        <span>{{ formatDate(selectedOrder.gcash_submitted_at || selectedOrder.created_at) }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Receipt Picture Display -->
+                                <div v-if="selectedOrder.gcash_receipt_url" class="receipt-image-section">
+                                    <label>Receipt Picture:</label>
+                                    <div class="receipt-image-container">
+                                        <img 
+                                            :src="selectedOrder.gcash_receipt_url" 
+                                            alt="GCash Receipt"
+                                            class="receipt-image"
+                                            @error="handleReceiptImageError"
+                                            @click="showReceiptModal = true"
+                                        >
+                                        <div class="receipt-overlay">
+                                            <i class="fas fa-search-plus"></i>
+                                            <span>Click to view full size</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div v-else class="no-receipt-notice">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>No receipt image uploaded</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="verification-warning-section">
+                            <div class="verification-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <div class="warning-content">
+                                    <h4>Important Notice</h4>
+                                    <p>This action will change the order status from "To Verify" to "Pending" and cannot be undone. Please verify the payment details carefully before proceeding.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="verification-content">
-                    <div class="verification-info">
-                        <p>Are you sure you want to verify this GCash payment?</p>
-                        <div class="verification-details">
-                            <p><strong>Order ID:</strong> {{ selectedOrder.order_id }}</p>
-                            <p><strong>Reference Number:</strong> {{ selectedOrder.gcash_reference }}</p>
-                            <p><strong>Amount:</strong> {{ formatPrice(selectedOrder.gcash_amount || selectedOrder.total_amount) }}</p>
-                        </div>
-                        <p class="verification-warning">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            This action will change the order status from "To Verify" to "Pending" and cannot be undone.
-                        </p>
-                    </div>
-
-                    <div class="verification-actions">
-                        <button 
-                            @click="verifyOrderGCashPayment(true)" 
-                            class="verify-btn approve"
-                            :disabled="processingOrderVerification"
-                        >
-                            <i class="fas fa-check-circle"></i>
-                            <span v-if="processingOrderVerification">Approving...</span>
-                            <span v-else>Approve Payment</span>
-                        </button>
-                        <button 
-                            @click="verifyOrderGCashPayment(false)" 
-                            class="verify-btn reject"
-                            :disabled="processingOrderVerification"
-                        >
-                            <i class="fas fa-times-circle"></i>
-                            <span v-if="processingOrderVerification">Rejecting...</span>
-                            <span v-else>Reject Payment</span>
-                        </button>
-                        <button 
-                            @click="showOrderVerificationModal = false" 
-                            class="verify-btn cancel"
-                            :disabled="processingOrderVerification"
-                        >
-                            <i class="fas fa-ban"></i>
-                            Cancel
-                        </button>
-                    </div>
+                <div class="modal-actions verification-actions">
+                    <button 
+                        @click="verifyOrderGCashPayment(true)" 
+                        class="verify-btn approve"
+                        :disabled="processingOrderVerification"
+                    >
+                        <i class="fas fa-check-circle" v-if="!processingOrderVerification"></i>
+                        <i class="fas fa-spinner fa-spin" v-else></i>
+                        <span v-if="processingOrderVerification">Approving...</span>
+                        <span v-else>Approve Payment</span>
+                    </button>
+                    <button 
+                        @click="verifyOrderGCashPayment(false)" 
+                        class="verify-btn reject"
+                        :disabled="processingOrderVerification"
+                    >
+                        <i class="fas fa-times-circle" v-if="!processingOrderVerification"></i>
+                        <i class="fas fa-spinner fa-spin" v-else></i>
+                        <span v-if="processingOrderVerification">Rejecting...</span>
+                        <span v-else>Reject Payment</span>
+                    </button>
+                    <button 
+                        @click="showOrderVerificationModal = false" 
+                        class="close-btn"
+                        :disabled="processingOrderVerification"
+                    >
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </button>
                 </div>
             </div>
         </div>
@@ -1553,6 +1606,46 @@ export default {
     gap: 1rem;
     align-items: center;
     flex-wrap: wrap;
+}
+
+.sort-filter {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 200px;
+}
+
+.sort-filter i {
+    position: absolute;
+    right: 10px;
+    color: #a0aec0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.sort-select {
+    width: 100%;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background-color: white;
+    color: #2c3e50;
+    font-size: 0.9rem;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    transition: all 0.2s ease;
+}
+
+.sort-select:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+.sort-select:hover {
+    border-color: #cbd5e0;
 }
 
 .date-filter {
@@ -4619,6 +4712,323 @@ tfoot tr td {
         min-width: unset;
         width: 100%;
     }
+}
+
+/* GCash Payment Details Styles */
+.gcash-payment-details {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.gcash-info-section h4 {
+    color: #2c3e50;
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.gcash-info-section h4 i {
+    color: #0066cc;
+    font-size: 1.2rem;
+}
+
+.gcash-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.gcash-detail-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.gcash-detail-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.gcash-detail-item label {
+    display: block;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.gcash-detail-item span {
+    color: #2c3e50;
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.gcash-reference {
+    color: #0066cc !important;
+    font-family: 'Courier New', monospace;
+    font-weight: 600 !important;
+}
+
+.gcash-amount {
+    color: #16a34a !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+}
+
+.receipt-image-section {
+    margin-top: 1rem;
+}
+
+.receipt-image-section label {
+    display: block;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.receipt-image-container {
+    position: relative;
+    display: inline-block;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.receipt-image-container:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.receipt-image {
+    width: 200px;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.receipt-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.receipt-image-container:hover .receipt-overlay {
+    opacity: 1;
+}
+
+.receipt-overlay i {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.no-receipt-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #6b7280;
+    font-style: italic;
+    background: #f9fafb;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px dashed #d1d5db;
+}
+
+.no-receipt-notice i {
+    color: #9ca3af;
+}
+
+/* Verify GCash Payment Button Styles */
+.verify-gcash-modal-btn {
+    background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+}
+
+.verify-gcash-modal-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0052a3 0%, #003d7a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 102, 204, 0.4);
+}
+
+.verify-gcash-modal-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.verify-gcash-modal-btn i {
+    font-size: 1.1rem;
+}
+
+/* Enhanced GCash Verification Modal Styles */
+.gcash-verification-modal {
+    max-width: 900px;
+    width: 95%;
+}
+
+.verification-warning-section {
+    margin: 1.5rem 0;
+}
+
+.verification-warning {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.verification-warning i {
+    color: #d97706;
+    font-size: 1.2rem;
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+}
+
+.warning-content h4 {
+    color: #92400e;
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.warning-content p {
+    color: #92400e;
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.verification-actions {
+    gap: 1rem;
+    justify-content: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.verify-btn.approve {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.verify-btn.approve:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.verify-btn.reject {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.verify-btn.reject:hover:not(:disabled) {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.verify-btn:disabled {
+    background: #9ca3af !important;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.verify-btn i {
+    font-size: 1rem;
+}
+
+/* Receipt Modal Styles */
+.receipt-modal {
+    max-width: 600px;
+    padding: 1.5rem;
+}
+
+.receipt-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.receipt-modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.receipt-modal-body {
+    text-align: center;
+}
+
+.full-receipt-image {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 </style>
 
