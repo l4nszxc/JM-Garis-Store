@@ -66,6 +66,62 @@
                 </div>
             </div>
 
+            <!-- GCash Reference Input -->
+            <div v-if="selectedPaymentMethod === 'gcash'" class="gcash-reference-section">
+                <h4 class="section-title">
+                    <i class="fab fa-google-pay"></i>
+                    GCash Payment Details
+                </h4>
+                <div class="gcash-instructions">
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h5>Send payment to JM Garis Store GCash</h5>
+                            <p>Amount: <strong>{{ formatPrice(calculateTotal) }}</strong></p>
+                            <p>Please send the exact amount to our GCash account</p>
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h5>Enter your GCash Reference Number</h5>
+                            <p>After sending payment, enter the reference number from your GCash transaction</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="reference-input-section">
+                    <label for="gcashReference" class="input-label">
+                        <i class="fas fa-receipt"></i>
+                        GCash Reference Number
+                    </label>
+                    <input 
+                        type="text" 
+                        id="gcashReference"
+                        v-model="gcashReference"
+                        placeholder="Enter GCash reference number (e.g., 1234567890)"
+                        class="reference-input"
+                        maxlength="20"
+                        @input="validateGCashReference"
+                    >
+                    <small class="input-help">Enter the reference number exactly as shown in your GCash transaction</small>
+                    <div v-if="gcashReferenceError" class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ gcashReferenceError }}
+                    </div>
+                </div>
+                
+                <div class="verification-notice">
+                    <div class="notice-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="notice-content">
+                        <h6>Payment Verification</h6>
+                        <p>Your payment will be verified by our admin team. You will receive an email confirmation once your payment is verified and your order is processed.</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Cash on Pickup Info -->
             <div v-if="selectedPaymentMethod === 'cash' && paymentSettings.downpayment_enabled" class="downpayment-info-section">
                 <div class="downpayment-info">
@@ -93,6 +149,62 @@
                                 <span>Total Order:</span>
                                 <span class="amount total-amount">{{ formatPrice(calculateTotal) }}</span>
                             </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Downpayment GCash Reference -->
+                <div class="downpayment-gcash-section">
+                    <h4 class="section-title">
+                        <i class="fab fa-google-pay"></i>
+                        Pay Downpayment via GCash
+                    </h4>
+                    <div class="downpayment-instructions">
+                        <div class="instruction-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h5>Send downpayment to JM Garis Store GCash</h5>
+                                <p>Amount: <strong>{{ formatPrice(downpaymentAmount) }}</strong></p>
+                                <p>Please send the exact downpayment amount to our GCash account</p>
+                            </div>
+                        </div>
+                        <div class="instruction-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h5>Enter your GCash Reference Number</h5>
+                                <p>After sending payment, enter the reference number from your GCash transaction</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="reference-input-section">
+                        <label for="downpaymentGcashReference" class="input-label">
+                            <i class="fas fa-receipt"></i>
+                            Downpayment GCash Reference Number
+                        </label>
+                        <input 
+                            type="text" 
+                            id="downpaymentGcashReference"
+                            v-model="downpaymentGcashReference"
+                            placeholder="Enter GCash reference number for downpayment"
+                            class="reference-input"
+                            maxlength="20"
+                            @input="validateDownpaymentGCashReference"
+                        >
+                        <small class="input-help">Enter the reference number exactly as shown in your GCash transaction</small>
+                        <div v-if="downpaymentGcashReferenceError" class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            {{ downpaymentGcashReferenceError }}
+                        </div>
+                    </div>
+                    
+                    <div class="verification-notice">
+                        <div class="notice-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="notice-content">
+                            <h6>Downpayment Verification</h6>
+                            <p>Your downpayment will be verified by our admin team. Once verified, your order will be prepared for pickup with the remaining balance to be paid on pickup.</p>
                         </div>
                     </div>
                 </div>
@@ -365,10 +477,20 @@
             
             <div class="payment-status-body">
                 <div class="success-message">
-                    <p>Your GCash payment has been processed successfully.</p>
-                    <div v-if="successOrderId" class="order-info">
-                        <p><strong>Order ID:</strong> #{{ successOrderId }}</p>
-                        <p>Your order has been created and is now being processed.</p>
+                    <p>Your GCash payment reference has been submitted successfully.</p>
+                    <div v-if="currentOrderId" class="order-info">
+                        <p><strong>Payment Reference:</strong> #{{ currentOrderId }}</p>
+                        <p><strong>Amount:</strong> {{ formatPrice(currentAmount) }}</p>
+                        <p>Your payment is pending verification. You will receive an email confirmation once verified.</p>
+                    </div>
+                    
+                    <div class="verification-steps">
+                        <h4>What happens next?</h4>
+                        <ol>
+                            <li>Our admin team will verify your GCash payment</li>
+                            <li>You'll receive an email confirmation once verified</li>
+                            <li>Your order will then be processed for pickup/delivery</li>
+                        </ol>
                     </div>
                 </div>
                 
@@ -451,6 +573,10 @@ export default {
             selectedDiscountId: '',
             packagingPreference: false,
             selectedPaymentMethod: 'cash',
+            gcashReference: '',
+            gcashReferenceError: '',
+            downpaymentGcashReference: '',
+            downpaymentGcashReferenceError: '',
             processingPayment: false,
             showPaymentStatus: false,
             currentOrderId: null,
@@ -502,6 +628,11 @@ export default {
             // If GCash is selected but disabled, switch to cash
             if (newMethod === 'gcash' && !this.paymentSettings.gcash_enabled) {
                 this.selectedPaymentMethod = 'cash';
+            }
+            
+            // Clear GCash fields when switching away from GCash
+            if (newMethod !== 'gcash') {
+                this.clearGCashFields();
             }
         },
         selectedItems: {
@@ -601,6 +732,18 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 return false;
             }
             
+            // GCash reference validation
+            if (this.selectedPaymentMethod === 'gcash' && (!this.gcashReference.trim() || this.gcashReferenceError)) {
+                return false;
+            }
+            
+            // Cash with downpayment validation
+            if (this.selectedPaymentMethod === 'cash' && this.paymentSettings.downpayment_enabled) {
+                if (!this.downpaymentGcashReference.trim() || this.downpaymentGcashReferenceError) {
+                    return false;
+                }
+            }
+            
             // Additional validation for HATID delivery
             if (this.selectedPaymentMethod === 'hatid' && !this.deliveryAddress.trim()) {
                 return false;
@@ -674,6 +817,52 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             }).format(price).replace('PHP', '₱');
+        },
+        validateGCashReference() {
+            this.gcashReferenceError = '';
+            
+            if (!this.gcashReference.trim()) {
+                this.gcashReferenceError = 'GCash reference number is required';
+                return;
+            }
+            
+            // Basic validation: should be alphanumeric and at least 6 characters
+            const reference = this.gcashReference.trim();
+            if (reference.length < 6) {
+                this.gcashReferenceError = 'Reference number must be at least 6 characters';
+                return;
+            }
+            
+            if (!/^[a-zA-Z0-9]+$/.test(reference)) {
+                this.gcashReferenceError = 'Reference number should only contain letters and numbers';
+                return;
+            }
+        },
+        validateDownpaymentGCashReference() {
+            this.downpaymentGcashReferenceError = '';
+            
+            if (!this.downpaymentGcashReference.trim()) {
+                this.downpaymentGcashReferenceError = 'Downpayment GCash reference number is required';
+                return;
+            }
+            
+            // Basic validation: should be alphanumeric and at least 6 characters
+            const reference = this.downpaymentGcashReference.trim();
+            if (reference.length < 6) {
+                this.downpaymentGcashReferenceError = 'Reference number must be at least 6 characters';
+                return;
+            }
+            
+            if (!/^[a-zA-Z0-9]+$/.test(reference)) {
+                this.downpaymentGcashReferenceError = 'Reference number should only contain letters and numbers';
+                return;
+            }
+        },
+        clearGCashFields() {
+            this.gcashReference = '';
+            this.gcashReferenceError = '';
+            this.downpaymentGcashReference = '';
+            this.downpaymentGcashReferenceError = '';
         },
         handleImageError(e) {
             e.target.src = '/img/placeholder.jpg';
@@ -766,7 +955,7 @@ Special Instructions: ${this.specialInstructions || ''}`;
         
         async processGCashPayment(orderData) {
             try {
-                // Create GCash payment without creating order first
+                // Create GCash payment with manual reference
                 const token = localStorage.getItem('token');
                 const paymentResponse = await this.$fetch('/api/payment/gcash/create-payment-only', {
                     method: 'POST',
@@ -779,34 +968,41 @@ Special Instructions: ${this.specialInstructions || ''}`;
                         items: orderData.items,
                         discountId: orderData.discountId,
                         packagingPreference: orderData.packagingPreference,
-                        paymentMethod: 'gcash'
+                        paymentMethod: 'gcash',
+                        gcashReference: this.gcashReference.trim()
                     })
                 });
 
                 if (!paymentResponse.ok) {
-                    throw new Error('Failed to create GCash payment');
+                    const errorData = await paymentResponse.json();
+                    throw new Error(errorData.message || 'Failed to create GCash payment');
                 }
 
                 const paymentData = await paymentResponse.json();
                 
-                // Open payment in new window instead of redirecting
-                const paymentWindow = window.open(
-                    paymentData.checkoutUrl,
-                    'gcash-payment',
-                    'width=800,height=600,scrollbars=yes,resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no'
-                );
-
-                if (!paymentWindow) {
-                    throw new Error('Payment window blocked. Please allow popups and try again.');
-                }
-
-                // Monitor the payment window
-                this.monitorPaymentWindow(paymentWindow, paymentData.paymentId, orderData);
+                // Show success message and close modal
+                this.handleManualGCashSuccess(paymentData);
                 
             } catch (error) {
                 console.error('GCash payment error:', error);
                 throw error;
             }
+        },
+        
+        handleManualGCashSuccess(paymentData) {
+            this.processingPayment = false;
+            this.verifyingPayment = false;
+            
+            // Store order and payment reference for display
+            this.currentOrderId = paymentData.orderId || paymentData.referenceNumber;
+            this.currentAmount = paymentData.amount;
+            
+            // Close main modal and show success modal
+            this.$emit('close');
+            this.showPaymentSuccessModal = true;
+            
+            // Clear the cart
+            this.$emit('clear-cart');
         },
          monitorPaymentWindow(paymentWindow, paymentId, orderData) {
             let windowClosedTime = null;
@@ -999,7 +1195,7 @@ Special Instructions: ${this.specialInstructions || ''}`;
         
         async processCashWithDownpayment(orderData) {
             try {
-                // Create GCash payment for downpayment only
+                // Create GCash downpayment with manual reference
                 const token = localStorage.getItem('token');
                 const paymentResponse = await this.$fetch('/api/payment/gcash/create-downpayment', {
                     method: 'POST',
@@ -1014,34 +1210,41 @@ Special Instructions: ${this.specialInstructions || ''}`;
                         items: orderData.items,
                         discountId: orderData.discountId,
                         packagingPreference: orderData.packagingPreference,
-                        paymentMethod: 'cash'
+                        paymentMethod: 'cash',
+                        gcashReference: this.downpaymentGcashReference.trim()
                     })
                 });
 
                 if (!paymentResponse.ok) {
-                    throw new Error('Failed to create downpayment');
+                    const errorData = await paymentResponse.json();
+                    throw new Error(errorData.message || 'Failed to create downpayment');
                 }
 
                 const paymentData = await paymentResponse.json();
                 
-                // Open payment in new window for downpayment
-                const paymentWindow = window.open(
-                    paymentData.checkoutUrl,
-                    'gcash-downpayment',
-                    'width=800,height=600,scrollbars=yes,resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no'
-                );
-
-                if (!paymentWindow) {
-                    throw new Error('Payment window blocked. Please allow popups and try again.');
-                }
-
-                // Monitor the downpayment window
-                this.monitorDownpaymentWindow(paymentWindow, paymentData.paymentId, orderData);
+                // Show success message and close modal
+                this.handleManualDownpaymentSuccess(paymentData);
                 
             } catch (error) {
                 console.error('Cash with downpayment error:', error);
                 throw error;
             }
+        },
+        
+        handleManualDownpaymentSuccess(paymentData) {
+            this.processingPayment = false;
+            this.verifyingPayment = false;
+            
+            // Store payment reference for display
+            this.currentOrderId = paymentData.referenceNumber;
+            this.currentAmount = paymentData.downpaymentAmount;
+            
+            // Close main modal and show success modal
+            this.$emit('close');
+            this.showPaymentSuccessModal = true;
+            
+            // Clear the cart
+            this.$emit('clear-cart');
         },
 
         monitorDownpaymentWindow(paymentWindow, paymentId, orderData) {
@@ -3190,6 +3393,171 @@ input:checked + .slider:before {
     .payment-status-body {
         padding: 0 clamp(1rem, 3vw, 1.5rem) clamp(1.5rem, 4vh, 2rem);
     }
+}
+
+/* GCash Reference Sections */
+.gcash-reference-section,
+.downpayment-gcash-section {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8f3ff 100%);
+    border-radius: 12px;
+    border: 1px solid #d1e7ff;
+}
+
+.gcash-instructions,
+.downpayment-instructions {
+    margin-bottom: 1.5rem;
+}
+
+.instruction-step {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    background: #007bff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.step-content h5 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.step-content p {
+    margin: 0.25rem 0;
+    color: #666;
+    line-height: 1.4;
+}
+
+.reference-input-section {
+    margin-bottom: 1.5rem;
+}
+
+.input-label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.input-label i {
+    margin-right: 0.5rem;
+    color: #007bff;
+}
+
+.reference-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.reference-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.input-help {
+    display: block;
+    margin-top: 0.5rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.error-message {
+    display: flex;
+    align-items: center;
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 6px;
+    color: #e53e3e;
+    font-size: 0.9rem;
+}
+
+.error-message i {
+    margin-right: 0.5rem;
+}
+
+.verification-notice {
+    display: flex;
+    align-items: flex-start;
+    padding: 1rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    border-left: 4px solid #28a745;
+}
+
+.notice-icon {
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.notice-icon i {
+    color: #28a745;
+    font-size: 1.2rem;
+}
+
+.notice-content h6 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.notice-content p {
+    margin: 0;
+    color: #666;
+    line-height: 1.4;
+    font-size: 0.95rem;
+}
+
+.verification-steps {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.verification-steps h4 {
+    margin: 0 0 0.75rem 0;
+    color: #333;
+    font-size: 1rem;
+}
+
+.verification-steps ol {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.verification-steps li {
+    margin-bottom: 0.5rem;
+    color: #666;
+    line-height: 1.4;
 }
 </style>
 

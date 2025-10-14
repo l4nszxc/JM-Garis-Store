@@ -92,18 +92,27 @@
                                     </template>
                                 </td>
                                 <td>
-                                    <span :class="['status-badge', order.status.toLowerCase().replace(/ /g, '-')]">
-                                        <i v-if="order.status === 'pending'" class="fas fa-clock"></i>
-                                        <i v-else-if="order.status === 'pending_pickup'" class="fas fa-hand-holding"></i>
-                                        <i v-else-if="order.status === 'pending_delivery'" class="fas fa-truck"></i>
-                                        <i v-else-if="order.status === 'paid using gcash'" class="fas fa-mobile-alt"></i>
-                                        <i v-else-if="order.status === 'preparing'" class="fas fa-utensils"></i>
-                                        <i v-else-if="order.status === 'ready for pickup'" class="fas fa-check-circle"></i>
-                                        <i v-else-if="order.status === 'paid'" class="fas fa-check-double"></i>
-                                        <i v-else-if="order.status === 'cancelled'" class="fas fa-times-circle"></i>
-                                        <i v-else class="fas fa-info-circle"></i>
-                                        {{ getStatusDisplay(order.status) }}
-                                    </span>
+                                    <div class="status-column">
+                                        <span :class="['status-badge', order.status.toLowerCase().replace(/ /g, '-')]">
+                                            <i v-if="order.status === 'pending'" class="fas fa-clock"></i>
+                                            <i v-else-if="order.status === 'pending_pickup'" class="fas fa-hand-holding"></i>
+                                            <i v-else-if="order.status === 'pending_delivery'" class="fas fa-truck"></i>
+                                            <i v-else-if="order.status === 'paid using gcash'" class="fas fa-mobile-alt"></i>
+                                            <i v-else-if="order.status === 'preparing'" class="fas fa-utensils"></i>
+                                            <i v-else-if="order.status === 'ready for pickup'" class="fas fa-check-circle"></i>
+                                            <i v-else-if="order.status === 'paid'" class="fas fa-check-double"></i>
+                                            <i v-else-if="order.status === 'cancelled'" class="fas fa-times-circle"></i>
+                                            <i v-else class="fas fa-info-circle"></i>
+                                            {{ getStatusDisplay(order.status) }}
+                                        </span>
+                                        <!-- GCash Verification Button for pending GCash payments -->
+                                        <div v-if="hasPendingGCashPayment(order)" class="gcash-verification">
+                                            <button @click="showGCashVerification(order)" class="verify-gcash-btn">
+                                                <i class="fab fa-google-pay"></i>
+                                                Verify GCash
+                                            </button>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="payment-method">
@@ -796,6 +805,79 @@
             </div>
         </div>
 
+        <!-- GCash Verification Modal -->
+        <div v-if="showGCashVerificationModal" class="modal-overlay">
+            <div class="modal-content gcash-verification-modal">
+                <div class="verification-header">
+                    <h3>
+                        <i class="fab fa-google-pay"></i>
+                        Verify GCash Payment
+                    </h3>
+                    <button @click="closeGCashVerificationModal" class="close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div v-if="selectedGCashPayment" class="verification-content">
+                    <div class="payment-info">
+                        <h4>Payment Details</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Order ID:</label>
+                                <span>{{ selectedGCashPayment.order_id || 'N/A' }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Customer:</label>
+                                <span>{{ selectedGCashPayment.customer_name }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>GCash Reference:</label>
+                                <span class="gcash-reference">{{ selectedGCashPayment.gcash_reference }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Amount:</label>
+                                <span class="amount">{{ formatPrice(selectedGCashPayment.amount) }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Payment Type:</label>
+                                <span>{{ selectedGCashPayment.payment_type === 'downpayment' ? 'Downpayment' : 'Full Payment' }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Submitted:</label>
+                                <span>{{ formatDate(selectedGCashPayment.created_at) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="verification-actions">
+                        <h4>Verify Payment</h4>
+                        <p>Please check your GCash account for the payment with reference number: <strong>{{ selectedGCashPayment.gcash_reference }}</strong></p>
+                        
+                        <div class="verification-buttons">
+                            <button 
+                                @click="verifyGCashPayment(true)" 
+                                class="verify-btn approve"
+                                :disabled="processingVerification"
+                            >
+                                <i class="fas fa-check-circle"></i>
+                                <span v-if="processingVerification">Approving...</span>
+                                <span v-else>Approve Payment</span>
+                            </button>
+                            <button 
+                                @click="verifyGCashPayment(false)" 
+                                class="verify-btn reject"
+                                :disabled="processingVerification"
+                            >
+                                <i class="fas fa-times-circle"></i>
+                                <span v-if="processingVerification">Rejecting...</span>
+                                <span v-else>Reject Payment</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Logout Modal -->
         <LogoutModal 
             :show="showLogoutModal"
@@ -866,6 +948,12 @@ export default {
             cameraStream: null,
             scanningQR: false,
             qrUploadFile: null,
+            
+            // GCash verification modal
+            showGCashVerificationModal: false,
+            selectedGCashPayment: null,
+            processingVerification: false,
+            pendingGCashPayments: [],
             qrDetectionInterval: null,
             
             // QR Generator for testing
@@ -1602,6 +1690,115 @@ export default {
             }
         },
         
+        // GCash verification methods
+        hasPendingGCashPayment(order) {
+            // Check if this order has pending GCash payments awaiting verification
+            return this.pendingGCashPayments.some(payment => 
+                payment.order_id === order.order_id || 
+                (payment.status === 'pending_verification' && payment.user_id === order.user_id)
+            );
+        },
+        
+        async showGCashVerification(order) {
+            try {
+                // Fetch pending GCash payments for this order
+                await this.fetchPendingGCashPayments();
+                
+                // Find the pending payment for this order
+                const pendingPayment = this.pendingGCashPayments.find(payment => 
+                    payment.order_id === order.order_id || 
+                    (payment.status === 'pending_verification' && payment.user_id === order.user_id)
+                );
+                
+                if (pendingPayment) {
+                    this.selectedGCashPayment = {
+                        ...pendingPayment,
+                        customer_name: order.customer_name,
+                        order_id: order.order_id
+                    };
+                    this.showGCashVerificationModal = true;
+                } else {
+                    alert('No pending GCash payment found for this order.');
+                }
+            } catch (error) {
+                console.error('Error showing GCash verification:', error);
+                alert('Error loading GCash payment details.');
+            }
+        },
+        
+        async fetchPendingGCashPayments() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await this.$fetch('/api/payment/admin/pending', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    this.pendingGCashPayments = await response.json();
+                } else {
+                    console.error('Failed to fetch pending payments');
+                    this.pendingGCashPayments = [];
+                }
+            } catch (error) {
+                console.error('Error fetching pending GCash payments:', error);
+                this.pendingGCashPayments = [];
+            }
+        },
+        
+        async verifyGCashPayment(isValid) {
+            if (!this.selectedGCashPayment) return;
+            
+            this.processingVerification = true;
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await this.$fetch('/api/payment/admin/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        paymentId: this.selectedGCashPayment.id,
+                        isValid: isValid
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Show success message
+                    alert(isValid ? 
+                        'GCash payment approved successfully! Order has been processed.' : 
+                        'GCash payment has been rejected.'
+                    );
+                    
+                    // Refresh orders and pending payments
+                    await this.fetchOrders();
+                    await this.fetchPendingGCashPayments();
+                    
+                    // Close modal
+                    this.closeGCashVerificationModal();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to verify payment');
+                }
+            } catch (error) {
+                console.error('Error verifying GCash payment:', error);
+                alert('Error verifying payment: ' + error.message);
+            } finally {
+                this.processingVerification = false;
+            }
+        },
+        
+        closeGCashVerificationModal() {
+            this.showGCashVerificationModal = false;
+            this.selectedGCashPayment = null;
+            this.processingVerification = false;
+        },
+        
         // Customer Rewards method
         async openCustomerRewards(order) {
             try {
@@ -2028,6 +2225,7 @@ export default {
             this.username = decoded.username;
         }
         this.fetchOrders();
+        this.fetchPendingGCashPayments();
     },
     
     beforeUnmount() {
@@ -4126,6 +4324,251 @@ tfoot tr td {
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
+    }
+}
+
+/* GCash Verification Styles */
+.status-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.gcash-verification {
+    margin-top: 0.5rem;
+}
+
+.verify-gcash-btn {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    border: none;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.verify-gcash-btn:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+}
+
+.verify-gcash-btn i {
+    font-size: 0.7rem;
+}
+
+/* GCash Verification Modal */
+.gcash-verification-modal {
+    max-width: 600px;
+    margin: 2rem auto;
+}
+
+.verification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+}
+
+.verification-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.verification-header .close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+
+.verification-header .close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.verification-content {
+    padding: 2rem;
+}
+
+.payment-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.payment-info h4 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.info-item label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.info-item span {
+    font-size: 0.95rem;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.info-item .gcash-reference {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    border: 1px solid #bbdefb;
+}
+
+.info-item .amount {
+    color: #28a745;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.verification-actions {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    padding: 1.5rem;
+}
+
+.verification-actions h4 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.verification-actions p {
+    margin: 0 0 1.5rem 0;
+    color: #6c757d;
+    line-height: 1.5;
+}
+
+.verification-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.verify-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    min-width: 140px;
+    justify-content: center;
+}
+
+.verify-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.verify-btn.approve {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    color: white;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.verify-btn.approve:hover:not(:disabled) {
+    background: linear-gradient(135deg, #1e7e34 0%, #155724 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+}
+
+.verify-btn.reject {
+    background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%);
+    color: white;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+}
+
+.verify-btn.reject:hover:not(:disabled) {
+    background: linear-gradient(135deg, #bd2130 0%, #a71e2a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+}
+
+.verify-btn i {
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .gcash-verification-modal {
+        margin: 1rem;
+        max-width: calc(100% - 2rem);
+    }
+    
+    .verification-header {
+        padding: 1rem 1.5rem;
+    }
+    
+    .verification-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .verification-content {
+        padding: 1.5rem;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .verification-buttons {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .verify-btn {
+        min-width: unset;
+        width: 100%;
     }
 }
 </style>

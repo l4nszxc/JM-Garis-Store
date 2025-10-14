@@ -39,12 +39,16 @@ class Staff {
                     o.accepted_by,
                     o.accepted_at,
                     o.payment_method,
+                    o.payment_intent_id,
                     o.is_physical_order,
                     u.email,
                     s.username as staff_name,
                     pi.payment_type,
                     pi.total_amount as original_total,
                     pi.remaining_amount,
+                    pi.gcash_reference,
+                    pi.status as payment_status,
+                    pi.verified_at,
                     CASE 
                         WHEN ur.order_id IS NOT NULL THEN 1 
                         ELSE 0 
@@ -52,7 +56,7 @@ class Staff {
                 FROM orders o
                 LEFT JOIN users u ON o.user_id = u.id
                 LEFT JOIN users s ON o.accepted_by = s.id
-                LEFT JOIN payment_intents pi ON o.order_id = pi.order_id
+                LEFT JOIN payment_intents pi ON o.payment_intent_id = pi.reference_number
                 LEFT JOIN user_rewards ur ON o.order_id = ur.order_id
                 ORDER BY o.created_at DESC
             `);

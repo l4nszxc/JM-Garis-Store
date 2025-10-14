@@ -42,6 +42,30 @@
                                 </span>
                             </div>
                             
+                            <!-- GCash Payment Details -->
+                            <div v-if="order.payment_method === 'gcash' && order.gcash_reference" class="gcash-payment-info">
+                                <div class="gcash-reference-info">
+                                    <i class="fab fa-google-pay"></i>
+                                    <div class="gcash-details">
+                                        <span class="gcash-label">GCash Reference:</span>
+                                        <span class="gcash-reference">{{ order.gcash_reference }}</span>
+                                    </div>
+                                </div>
+                                <div v-if="order.payment_status === 'pending_verification'" class="verification-status pending">
+                                    <i class="fas fa-clock"></i>
+                                    <span>Payment verification pending</span>
+                                </div>
+                                <div v-else-if="order.payment_status === 'succeeded' || order.status === 'paid using gcash'" class="verification-status verified">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Payment verified</span>
+                                    <small v-if="order.verified_at">{{ formatDate(order.verified_at) }}</small>
+                                </div>
+                                <div v-else-if="order.payment_status === 'failed'" class="verification-status failed">
+                                    <i class="fas fa-times-circle"></i>
+                                    <span>Payment verification failed</span>
+                                </div>
+                            </div>
+                            
                             <!-- Cancel reason if applicable -->
                             <div v-if="order.cancel_reason" class="cancel-info">
                                 <i class="fas fa-info-circle"></i>
@@ -374,6 +398,8 @@ export default {
                     const orders = await response.json();
                     // Ensure each order has a valid estimatedPickupTime
                     this.orders = orders.map(order => {
+                        let orderWithEstimate = { ...order };
+                        
                         if (order.status === 'preparing') {
                             // Calculate estimated time: 3 minutes per product
                             const timePerProduct = 180; // 180 seconds (3 minutes) per product
@@ -383,12 +409,10 @@ export default {
                             const estimatedTime = new Date(order.accepted_at);
                             estimatedTime.setSeconds(estimatedTime.getSeconds() + estimatedSeconds);
                             
-                            return {
-                                ...order,
-                                estimatedPickupTime: estimatedTime.toISOString()
-                            };
+                            orderWithEstimate.estimatedPickupTime = estimatedTime.toISOString();
                         }
-                        return order;
+                        
+                        return orderWithEstimate;
                     });
                 }
             } catch (error) {
@@ -1038,6 +1062,130 @@ export default {
     .items-list,
     .order-summary {
         padding: 0.75rem;
+    }
+}
+
+/* GCash Payment Information Styles */
+.gcash-payment-info {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+    border-radius: 8px;
+    border: 1px solid #bbdefb;
+}
+
+.gcash-reference-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.gcash-reference-info i {
+    font-size: 1.5rem;
+    color: #1976d2;
+}
+
+.gcash-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.gcash-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.gcash-reference {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1976d2;
+    background: rgba(25, 118, 210, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid rgba(25, 118, 210, 0.2);
+}
+
+.verification-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+}
+
+.verification-status i {
+    font-size: 0.8rem;
+}
+
+.verification-status.pending {
+    background: rgba(255, 193, 7, 0.1);
+    color: #e65100;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.verification-status.pending i {
+    color: #ff9800;
+}
+
+.verification-status.verified {
+    background: rgba(76, 175, 80, 0.1);
+    color: #2e7d32;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.verification-status.verified i {
+    color: #4caf50;
+}
+
+.verification-status.failed {
+    background: rgba(244, 67, 54, 0.1);
+    color: #c62828;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.verification-status.failed i {
+    color: #f44336;
+}
+
+.verification-status small {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-left: auto;
+    font-weight: normal;
+}
+
+@media (max-width: 768px) {
+    .gcash-reference-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .gcash-reference-info i {
+        font-size: 1.25rem;
+    }
+    
+    .gcash-reference {
+        font-size: 0.8rem;
+        word-break: break-all;
+    }
+    
+    .verification-status {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .verification-status small {
+        font-size: 0.7rem;
     }
 }
 </style>

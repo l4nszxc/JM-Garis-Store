@@ -60,7 +60,7 @@ exports.createCashOrderWithDownpayment = async (req, res) => {
         // Link the downpayment to the order
         if (downpaymentPaymentId) {
             await connection.execute(
-                'UPDATE payment_intents SET order_id = ? WHERE payment_link_id = ?',
+                'UPDATE payment_intents SET order_id = ? WHERE gcash_reference = ?',
                 [orderId, downpaymentPaymentId]
             );
         }
@@ -192,7 +192,7 @@ exports.createOrder = async (req, res) => {
         // If this is a GCash payment with paymentId, link the payment to the order
         if (validPaymentMethod === 'gcash' && paymentId) {
             await connection.execute(
-                'UPDATE payment_intents SET order_id = ? WHERE payment_link_id = ?',
+                'UPDATE payment_intents SET order_id = ? WHERE gcash_reference = ?',
                 [orderId, paymentId]
             );
         }

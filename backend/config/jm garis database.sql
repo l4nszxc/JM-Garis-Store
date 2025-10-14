@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Sep 14, 2025 at 05:08 PM
+-- Generation Time: Oct 14, 2025 at 07:42 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -37,6 +37,13 @@ CREATE TABLE `available_discounts` (
   `order_id` char(7) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+--
+-- Dumping data for table `available_discounts`
+--
+
+INSERT INTO `available_discounts` (`id`, `user_id`, `amount`, `created_at`, `expires_at`, `used`, `order_id`) VALUES
+(68, 1014, 5.00, '2025-10-07 08:45:12', '2025-11-06 08:45:12', 1, '0440898');
+
 -- --------------------------------------------------------
 
 --
@@ -51,6 +58,13 @@ CREATE TABLE `cart` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `choice_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `cart`
+--
+
+INSERT INTO `cart` (`id`, `user_id`, `product_id`, `quantity`, `created_at`, `choice_id`) VALUES
+(2491926, 1014, 32, 1, '2025-10-14 19:41:16', NULL);
 
 -- --------------------------------------------------------
 
@@ -73,9 +87,9 @@ CREATE TABLE `loyalty_tiers` (
 --
 
 INSERT INTO `loyalty_tiers` (`id`, `name`, `min_spend`, `max_spend`, `bonus_percentage`, `has_free_product`, `created_at`) VALUES
-(1, 'Bronze', 10000.00, 15000.00, 5.00, 0, '2025-06-30 13:50:00'),
+(1, 'Bronzezxc', 2.00, 150300.00, 10.00, 0, '2025-06-30 13:50:00'),
 (2, 'Silver', 16000.00, 20000.00, 10.00, 0, '2025-06-30 13:50:00'),
-(3, 'Gold', 21000.00, NULL, 15.00, 1, '2025-06-30 13:50:00');
+(3, 'Gold', 100000.00, NULL, 15.00, 1, '2025-06-30 13:50:00');
 
 -- --------------------------------------------------------
 
@@ -98,6 +112,54 @@ CREATE TABLE `notifications` (
   `related_order_id` char(7) DEFAULT NULL,
   `action_url` varchar(500) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `notifications`
+--
+
+INSERT INTO `notifications` (`id`, `custom_id`, `user_id`, `title`, `message`, `type`, `icon`, `is_read`, `is_deleted`, `created_at`, `updated_at`, `related_order_id`, `action_url`) VALUES
+(62, 'order-0619440-pending', 1014, 'Order Update', 'Order #0619440 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-09-15 02:28:34', '2025-09-16 08:41:54', '0619440', '/order-details/0619440'),
+(63, 'order-0619440-cancelled', 1014, 'Order Update', 'Order #0619440 status updated to cancelled.', 'order', 'fas fa-bell', 1, 0, '2025-09-15 02:28:50', '2025-09-16 08:41:54', '0619440', '/order-details/0619440'),
+(66, 'order-5587250-pending', 1014, 'Order Update', 'Order #5587250 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-09-16 05:50:43', '2025-09-16 08:41:54', '5587250', '/order-details/5587250'),
+(67, 'order-5587250-ready for pickup', 1014, 'Order Update', 'Order #5587250 is ready for pickup!', 'order', 'fas fa-check-circle', 1, 0, '2025-09-16 05:51:43', '2025-09-16 08:41:54', '5587250', '/order-details/5587250'),
+(69, 'order-5587250-paid', 1014, 'Order Update', 'Order #5587250 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 1, 0, '2025-09-16 05:53:43', '2025-09-16 08:41:54', '5587250', '/order-details/5587250'),
+(70, 'order-8329578-paid', 1014, 'Order Update', 'Order #8329578 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 1, 0, '2025-09-16 05:55:31', '2025-09-16 08:41:54', '8329578', '/order-details/8329578'),
+(73, 'order-8329578-ready for pickup', 1014, 'Order Update', 'Order #8329578 is ready for pickup!', 'order', 'fas fa-check-circle', 1, 0, '2025-09-16 05:58:31', '2025-09-16 08:41:54', '8329578', '/order-details/8329578'),
+(90, 'order-6393957-pending', 1014, 'Order Update', 'Order #6393957 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-09-16 08:26:28', '2025-09-16 08:41:54', '6393957', '/order-details/6393957'),
+(91, 'order-PO00002-ready for pickup', 1016, 'Order Update', 'Order #PO00002 is ready for pickup!', 'order', 'fas fa-check-circle', 0, 0, '2025-09-16 08:28:57', '2025-09-16 08:28:57', 'PO00002', '/order-details/PO00002'),
+(92, 'order-PO00001-paid', 1016, 'Order Update', 'Order #PO00001 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-09-16 08:28:57', '2025-09-16 08:28:57', 'PO00001', '/order-details/PO00001'),
+(93, 'order-6393957-preparing', 1014, 'Order Update', 'Order #6393957 is now being prepared.', 'order', 'fas fa-utensils', 1, 0, '2025-09-16 08:29:29', '2025-09-16 08:41:54', '6393957', '/order-details/6393957'),
+(94, 'order-6393957-paid', 1014, 'Order Update', 'Order #6393957 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 1, 0, '2025-09-16 08:30:29', '2025-09-16 08:41:54', '6393957', '/order-details/6393957'),
+(98, 'order-PO00007-paid', 1016, 'Order Update', 'Order #PO00007 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-07 08:27:32', '2025-10-07 08:27:32', 'PO00007', '/order-details/PO00007'),
+(99, 'order-PO00006-paid', 1016, 'Order Update', 'Order #PO00006 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-07 08:27:32', '2025-10-07 08:27:32', 'PO00006', '/order-details/PO00006'),
+(100, 'order-9248589-pending', 1014, 'Order Update', 'Order #9248589 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-07 08:44:09', '2025-10-07 08:44:09', '9248589', '/order-details/9248589'),
+(101, 'order-9248589-paid', 1014, 'Order Update', 'Order #9248589 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-07 08:45:05', '2025-10-07 08:45:05', '9248589', '/order-details/9248589'),
+(103, 'order-0440898-pending', 1014, 'Order Update', 'Order #0440898 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-07 08:45:22', '2025-10-07 08:45:22', '0440898', '/order-details/0440898'),
+(104, 'order-0440898-paid', 1014, 'Order Update', 'Order #0440898 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-07 08:46:31', '2025-10-07 08:46:31', '0440898', '/order-details/0440898'),
+(117, 'order-2145910-pending', 1014, 'Order Update', 'Order #2145910 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-07 21:58:41', '2025-10-07 21:58:41', '2145910', '/order-details/2145910'),
+(118, 'order-1411356-pending', 1014, 'Order Update', 'Order #1411356 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-07 21:59:00', '2025-10-07 21:59:00', '1411356', '/order-details/1411356'),
+(124, 'order-1448515-pending', 1014, 'Order Update', 'Order #1448515 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-07 22:07:59', '2025-10-07 22:07:59', '1448515', '/order-details/1448515'),
+(132, 'order-1448515-preparing', 1014, 'Order Update', 'Order #1448515 is now being prepared.', 'order', 'fas fa-utensils', 0, 0, '2025-10-07 22:18:51', '2025-10-07 22:18:51', '1448515', '/order-details/1448515'),
+(171, 'order-PO00041-paid', 1016, 'Order Update', 'Order #PO00041 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00041', '/order-details/PO00041'),
+(172, 'order-PO00040-paid', 1016, 'Order Update', 'Order #PO00040 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00040', '/order-details/PO00040'),
+(173, 'order-PO00039-paid', 1016, 'Order Update', 'Order #PO00039 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00039', '/order-details/PO00039'),
+(174, 'order-PO00038-paid', 1016, 'Order Update', 'Order #PO00038 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00038', '/order-details/PO00038'),
+(175, 'order-PO00037-paid', 1016, 'Order Update', 'Order #PO00037 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00037', '/order-details/PO00037'),
+(176, 'order-PO00036-paid', 1016, 'Order Update', 'Order #PO00036 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00036', '/order-details/PO00036'),
+(177, 'order-PO00035-paid', 1016, 'Order Update', 'Order #PO00035 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00035', '/order-details/PO00035'),
+(178, 'order-PO00034-paid', 1016, 'Order Update', 'Order #PO00034 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00034', '/order-details/PO00034'),
+(179, 'order-PO00033-paid', 1016, 'Order Update', 'Order #PO00033 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00033', '/order-details/PO00033'),
+(180, 'order-1448515-ready for pickup', 1014, 'Order Update', 'Order #1448515 is ready for pickup!', 'order', 'fas fa-check-circle', 0, 0, '2025-10-08 16:29:24', '2025-10-08 16:29:24', '1448515', '/order-details/1448515'),
+(181, 'order-1411356-preparing', 1014, 'Order Update', 'Order #1411356 is now being prepared.', 'order', 'fas fa-utensils', 0, 0, '2025-10-08 16:29:24', '2025-10-08 16:29:24', '1411356', '/order-details/1411356'),
+(183, 'order-1448515-paid', 1014, 'Order Update', 'Order #1448515 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:30:24', '2025-10-08 16:30:24', '1448515', '/order-details/1448515'),
+(304, 'order-1411356-paid', 1014, 'Order Update', 'Order #1411356 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 17:10:53', '2025-10-08 17:10:53', '1411356', '/order-details/1411356'),
+(311, 'order-2145910-ready for pickup', 1014, 'Order Update', 'Order #2145910 is ready for pickup!', 'order', 'fas fa-check-circle', 0, 0, '2025-10-08 17:12:53', '2025-10-08 17:12:53', '2145910', '/order-details/2145910'),
+(314, 'order-2145910-paid', 1014, 'Order Update', 'Order #2145910 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 17:13:53', '2025-10-08 17:13:53', '2145910', '/order-details/2145910'),
+(405, 'order-1967882-pending', 1014, 'Order Update', 'Order #1967882 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-08 18:05:58', '2025-10-08 18:05:58', '1967882', '/order-details/1967882'),
+(425, 'order-8731696-pending', 1014, 'Order Update', 'Order #8731696 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-08 18:38:39', '2025-10-08 18:38:39', '8731696', '/order-details/8731696'),
+(426, 'order-8731696-ready for pickup', 1014, 'Order Update', 'Order #8731696 is ready for pickup!', 'order', 'fas fa-check-circle', 0, 0, '2025-10-09 18:34:22', '2025-10-09 18:34:22', '8731696', '/order-details/8731696'),
+(427, 'order-8731696-paid', 1014, 'Order Update', 'Order #8731696 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-09 18:35:22', '2025-10-09 18:35:22', '8731696', '/order-details/8731696'),
+(428, 'order-3839021-pending', 1014, 'Order Update', 'Order #3839021 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-14 19:40:37', '2025-10-14 19:40:37', '3839021', '/order-details/3839021');
 
 -- --------------------------------------------------------
 
@@ -125,6 +187,22 @@ CREATE TABLE `orders` (
   `payment_method` varchar(50) DEFAULT 'cash'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+--
+-- Dumping data for table `orders`
+--
+
+INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_status`, `created_at`, `updated_at`, `cancel_reason`, `accepted_by`, `accepted_at`, `cash_amount`, `change_amount`, `customer_name`, `is_physical_order`, `packaging_preference`, `payment_intent_id`, `payment_method`) VALUES
+('0619440', 1014, 301.00, 'cancelled', 'pending', '2025-09-15 02:28:34', '2025-09-15 02:28:46', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
+('3839021', 1014, 301.00, 'pending', 'pending', '2025-10-14 19:40:37', '2025-10-14 19:40:37', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
+('5587250', 1014, 234.00, 'paid', 'pending', '2025-09-16 05:50:43', '2025-09-16 05:53:20', NULL, 1016, '2025-09-16 13:50:58', 4000.00, 3766.00, NULL, 0, 'eco', NULL, 'cash'),
+('6393957', 1014, 50.00, 'paid', 'pending', '2025-09-16 08:26:28', '2025-09-16 08:29:56', NULL, 1016, '2025-09-16 16:29:21', 50.00, 0.00, NULL, 0, 'eco', NULL, 'cash'),
+('8329578', 1014, 649.00, 'paid', 'pending', '2025-09-16 05:54:37', '2025-09-16 06:02:39', NULL, 1016, '2025-09-16 13:54:45', 1000.00, 351.00, NULL, 0, 'eco', NULL, 'hatid'),
+('PO00001', 1016, 936.00, 'paid', 'pending', '2025-09-16 05:51:25', '2025-09-16 05:52:46', NULL, 1016, '2025-09-16 13:51:25', 1000.00, 64.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash'),
+('PO00002', 1016, 843.00, 'paid', 'pending', '2025-09-16 06:29:43', '2025-10-07 08:07:16', NULL, 1016, '2025-09-16 14:29:43', 1000.00, 157.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash'),
+('PO00003', 1016, 255.00, 'paid', 'pending', '2025-09-16 08:44:48', '2025-10-02 02:57:00', NULL, 1016, '2025-09-16 16:44:48', 300.00, 45.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash'),
+('PO00004', 1016, 72.00, 'paid', 'pending', '2025-10-01 07:04:58', '2025-10-01 07:05:09', NULL, 1016, '2025-10-01 15:04:58', 100.00, 28.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash'),
+('PO00005', 1016, 95.00, 'paid', 'pending', '2025-10-01 07:10:23', '2025-10-01 07:10:42', NULL, 1016, '2025-10-01 15:10:23', 95.00, 0.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash');
+
 -- --------------------------------------------------------
 
 --
@@ -139,6 +217,22 @@ CREATE TABLE `order_items` (
   `price` decimal(10,2) NOT NULL,
   `choice_id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `order_items`
+--
+
+INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, `choice_id`) VALUES
+(4262, '0619440', 31, 1, 301.00, NULL),
+(4263, '5587250', 32, 1, 234.00, NULL),
+(4264, 'PO00001', 32, 4, 234.00, NULL),
+(4265, '8329578', 33, 1, 649.00, NULL),
+(4266, 'PO00002', 72, 1, 843.00, 104),
+(4267, '6393957', 178, 1, 50.00, 264),
+(4268, 'PO00003', 72, 1, 255.00, 99),
+(4269, 'PO00004', 79, 1, 72.00, NULL),
+(4270, 'PO00005', 83, 1, 95.00, NULL),
+(4325, '3839021', 31, 1, 301.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -184,22 +278,28 @@ CREATE TABLE `order_reviews` (
 CREATE TABLE `payment_intents` (
   `id` int NOT NULL,
   `order_id` varchar(255) DEFAULT NULL,
-  `source_id` varchar(255) DEFAULT NULL,
   `amount` decimal(10,2) NOT NULL,
   `status` varchar(20) DEFAULT 'pending',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `payment_link_id` varchar(255) DEFAULT NULL,
   `reference_number` varchar(255) DEFAULT NULL,
-  `paymongo_link_id` varchar(255) DEFAULT NULL,
-  `webhook_received_at` timestamp NULL DEFAULT NULL,
   `paid_at` timestamp NULL DEFAULT NULL,
   `order_data` text,
   `user_id` int DEFAULT NULL,
   `payment_type` varchar(20) DEFAULT 'full_payment',
   `total_amount` decimal(10,2) DEFAULT NULL,
-  `remaining_amount` decimal(10,2) DEFAULT NULL
+  `remaining_amount` decimal(10,2) DEFAULT NULL,
+  `gcash_reference` varchar(255) DEFAULT NULL,
+  `verified_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `payment_intents`
+--
+
+INSERT INTO `payment_intents` (`id`, `order_id`, `amount`, `status`, `created_at`, `updated_at`, `reference_number`, `paid_at`, `order_data`, `user_id`, `payment_type`, `total_amount`, `remaining_amount`, `gcash_reference`, `verified_at`) VALUES
+(69, NULL, 301.00, 'pending_verification', '2025-10-14 19:21:37', '2025-10-14 19:21:37', 'temp_1760469697864_1014', NULL, '{\"items\":[{\"id\":2491925,\"product_id\":31,\"quantity\":1,\"price\":301,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 301.00, NULL, '000000', NULL),
+(70, NULL, 234.00, 'pending_verification', '2025-10-14 19:41:27', '2025-10-14 19:41:27', 'temp_1760470887794_1014', NULL, '{\"items\":[{\"id\":2491926,\"product_id\":32,\"quantity\":1,\"price\":234,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 234.00, NULL, '0032131', NULL);
 
 -- --------------------------------------------------------
 
@@ -226,7 +326,7 @@ CREATE TABLE `payment_settings` (
 --
 
 INSERT INTO `payment_settings` (`id`, `gcash_enabled`, `gcash_public_key`, `gcash_secret_key`, `gcash_environment`, `downpayment_enabled`, `downpayment_percentage`, `min_order_amount`, `created_at`, `updated_at`, `updated_by`) VALUES
-(1, 0, NULL, NULL, 'test', 0, 25.00, 500.00, '2025-09-09 17:29:41', '2025-09-14 14:32:34', 20);
+(1, 1, NULL, NULL, 'test', 0, 30.00, 500.00, '2025-09-09 17:29:41', '2025-10-14 19:02:45', 20);
 
 -- --------------------------------------------------------
 
@@ -251,12 +351,12 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_quantity`, `category`, `image`, `created_at`, `updated_at`) VALUES
-(31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 949, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-03-31 23:21:29', '2025-09-14 14:32:56'),
-(32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 949, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-03-31 23:22:15', '2025-09-14 15:09:41'),
-(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 942, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-03-31 23:22:59', '2025-09-14 14:57:52'),
+(31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 895, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-03-31 23:21:29', '2025-10-14 19:40:37'),
+(32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 930, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-03-31 23:22:15', '2025-10-08 18:38:39'),
+(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 927, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-03-31 23:22:59', '2025-10-08 18:38:39'),
 (34, 'GSM Mojito', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 0.00, 72, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-03-31 23:28:23', '2025-07-03 18:59:39'),
 (36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 72, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-03-31 23:34:49', '2025-08-07 00:31:09'),
-(37, 'Primera Light 1Liter', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 189.00, 92, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-03-31 23:35:27', '2025-08-07 00:31:10'),
+(37, 'Primera Light 1Liter', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 189.00, 91, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-03-31 23:35:27', '2025-10-07 14:19:16'),
 (38, 'Lucky 7 Corned Beef ', 'organic-free corned beef multipack', 0.00, 196, 'Canned Goods', 'https://i.ibb.co/MD9MDJ5q/d66d18901a73.png', '2025-03-31 23:37:33', '2025-07-03 18:36:10'),
 (41, 'Lucky 7 Meat Loaf 150g', 'organic-free corned beef multipack', 22.50, 50, 'Canned Goods', 'https://i.ibb.co/tTMm9hg9/bf73f6e95a5d.png', '2025-03-31 23:42:51', '2025-07-03 18:32:12'),
 (45, 'Datu Patis ', '#1 fish sauce in the Philippines.', 0.00, 95, 'Condiments', 'https://i.ibb.co/0Ry6CFm6/51d8ce58dd9f.png', '2025-04-01 01:25:10', '2025-07-03 18:55:44'),
@@ -264,7 +364,7 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (48, 'Argentina Corned Beef', 'No. 1 corned beef brand that has the food qualities consumer most value', 0.00, 100, 'Canned Goods', 'https://i.ibb.co/W46GfnGB/d19d7b986670.png', '2025-04-01 01:32:37', '2025-07-03 18:28:05'),
 (50, 'Primera Light 1Liter', 'a unique 55-proof brandy liqueur masterpiece', 185.00, 15, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 01:41:56', '2025-08-07 02:33:00'),
 (51, 'May Sparkle Red', 'A non-alcoholic beverage from freshly-pressed and carefully-selected Belgium Grapes.', 0.00, 6, 'Beverages', 'https://i.ibb.co/Wv5gFDjr/d75fc84e5138.png', '2025-04-01 01:43:28', '2025-04-01 09:04:28'),
-(52, 'Novellino 750mL', 'Novellino Wild Blackberry is a casual wine vinified from choice vitis vinifera grapes in the tradition of fine Italian winemaking', 270.00, 5, 'Beverages', 'https://i.ibb.co/278v021y/05b8707b2772.png', '2025-04-01 01:45:11', '2025-06-19 01:02:00'),
+(52, 'Novellino 750mL', 'Novellino Wild Blackberry is a casual wine vinified from choice vitis vinifera grapes in the tradition of fine Italian winemaking', 270.00, 6, 'Beverages', 'https://i.ibb.co/278v021y/05b8707b2772.png', '2025-04-01 01:45:11', '2025-09-16 05:38:45'),
 (53, 'The Bar Dry Gin 335mL ', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 6, 'Beverages', 'https://i.ibb.co/jkNpPRn2/4cd7e58417a4.png', '2025-04-01 01:46:37', '2025-04-16 23:31:00'),
 (54, 'The Bar Pink 335mL', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 58, 'Beverages', 'https://i.ibb.co/hxGrvfmq/a6f137b5983c.png', '2025-04-01 01:47:16', '2025-05-18 22:14:33'),
 (55, 'The Bar Lime 335mL', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 6, 'Beverages', 'https://i.ibb.co/8gggkGVx/49ad7f791839.png', '2025-04-01 01:47:46', '2025-08-07 00:31:29'),
@@ -291,11 +391,11 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (76, 'Birch Tree', ' known for its affordable price and high-quality nutrition, with a focus on fortified milk for children and adults. ', 0.00, 22, 'Milk and Chocolate Drink', 'https://i.ibb.co/xK9CjyBV/e407420a9dcb.png', '2025-04-08 15:10:11', '2025-06-27 06:31:05'),
 (77, 'Del Monte Ketchup', 'made from real, high-quality tomatoes, naturally contains lycopene, and is guaranteed to have no preservatives, offering a rich tomato flavor and a sweet-sour taste for delicious dips and meals', 49.00, 18, 'Condiments', 'https://i.ibb.co/jmzv3ZM/728ac9940fe7.png', '2025-04-08 22:48:17', '2025-06-13 17:16:24'),
 (78, 'Lorins Patis', 'a popular, tangy Filipino fish sauce, ideal as a dipping sauce or cooking ingredient for a wide variety of dishes, including seafood, meat, poultry, vegetables, and Filipino favorites like sinigang and nilaga. ', 0.00, 20, 'Condiments', 'https://i.ibb.co/3yZ5qszC/df3e929a28ec.png', '2025-04-08 23:02:19', '2025-07-03 18:56:23'),
-(79, 'Sugar per kg', 'brown and white refined', 72.00, 300, 'Condiments', 'https://i.ibb.co/xK5TGqzf/2eb5e49aefb7.png', '2025-04-08 23:06:43', '2025-04-08 23:12:13'),
+(79, 'Sugar per kg', 'brown and white refined', 72.00, 299, 'Condiments', 'https://i.ibb.co/xK5TGqzf/2eb5e49aefb7.png', '2025-04-08 23:06:43', '2025-10-01 07:04:58'),
 (80, 'Salt per kg', 'sea salt', 12.00, 200, 'Condiments', 'https://i.ibb.co/j9LdB8xH/50a57d229f22.png', '2025-04-08 23:08:19', '2025-04-08 23:08:19'),
 (81, 'Paminta per Tie', 'whole and ground black pepper', 8.00, 100, 'Condiments', 'https://i.ibb.co/N6RqFRg8/3912cb5cc3e9.png', '2025-04-08 23:10:07', '2025-04-08 23:10:07'),
 (82, 'Laurel per Tie', 'is an evergreen plant used to add flavor to dishes. It is used in cuisines all over the world for flavoring especially stews and broths, marinades, meat and fish dishes, gravies, and game.', 8.00, 30, 'Condiments', 'https://i.ibb.co/1Gg3Rqmt/c68fa580806f.png', '2025-04-08 23:11:30', '2025-06-11 07:32:15'),
-(83, 'Mafran Banana Catsup', 'formulated from choice spices, natural flavor and aroma of banana', 95.00, 12, 'Condiments', 'https://i.ibb.co/jP5X36rq/dc20ac6e0fce.png', '2025-04-08 23:13:42', '2025-04-08 23:13:42'),
+(83, 'Mafran Banana Catsup', 'formulated from choice spices, natural flavor and aroma of banana', 95.00, 11, 'Condiments', 'https://i.ibb.co/jP5X36rq/dc20ac6e0fce.png', '2025-04-08 23:13:42', '2025-10-01 07:10:23'),
 (84, 'Dip Catsup Gallon', 'often used as a dip or a topping for various dishes, characterized by its sweet and tangy flavor', 99.00, 7, 'Condiments', 'https://i.ibb.co/KjDjv9WP/00bb85cf904b.png', '2025-04-08 23:15:01', '2025-09-10 09:08:10'),
 (85, '555 Karne Norte', ' a locally manufactured corned beef, known for its quality and affordability, made with selected beef, hashed, and hygienically processed under international standards, ready to eat. ', 0.00, 30, 'Canned Goods', 'https://i.ibb.co/xtWHP4pc/d786693a1768.png', '2025-04-08 23:17:10', '2025-07-03 18:45:04'),
 (86, '555 Tausi', 'a popular Filipino canned food featuring fried sardines in a savory-sweet sauce with the distinct flavor of fermented black beans (tausi)', 33.00, 10, 'Canned Goods', 'https://i.ibb.co/B5zmwwY5/47dcc1b0cebc.png', '2025-04-08 23:18:12', '2025-04-08 23:18:12'),
@@ -377,7 +477,8 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (169, 'Top Coffee Tripid (10\'s)', '3 packs per sachet, a total of 30 packs', 139.00, 200, 'Coffee and Creamer', 'https://i.ibb.co/N6V8Ch58/062230b4f2a1.png', '2025-07-03 18:14:50', '2025-07-03 18:14:50'),
 (170, 'O-Puff', 'O-Puff is a brand of cream-filled marshmallows produced by Oishi.', 0.00, 100, 'Candies and Snacks', 'https://i.ibb.co/wZvtjvYb/3af922cb5a22.png', '2025-07-03 18:19:49', '2025-07-03 18:19:49'),
 (171, 'Polvoron (24\'s)', 'Polvoron is a Filipino-style shortbread made of toasted flour, powdered milk, sugar, and butter. Sweet, buttery, and easy to customize with different flavors.', 24.00, 50, 'Candies and Snacks', 'https://i.ibb.co/pjxsNdkn/8a208d83c9a7.png', '2025-07-03 18:22:04', '2025-07-03 18:22:04'),
-(172, 'Superstix ', 'Superstix are crunchy wafer sticks produced by Rebisco, known for their creamy, flavorful fillings.', 0.00, 30, 'Candies and Snacks', 'https://i.ibb.co/wh17M6H0/55bdc4ede310.png', '2025-07-03 18:24:49', '2025-07-03 18:24:49');
+(172, 'Superstix ', 'Superstix are crunchy wafer sticks produced by Rebisco, known for their creamy, flavorful fillings.', 0.00, 30, 'Candies and Snacks', 'https://i.ibb.co/wh17M6H0/55bdc4ede310.png', '2025-07-03 18:24:49', '2025-07-03 18:24:49'),
+(178, 'TRYTRY PRODUCTS', 'ZXCXZCJFKAJH', 0.00, 96, 'Beverages', 'https://i.ibb.co/XMLp2cF/62b6f6a6d7a5.jpg', '2025-09-16 08:23:59', '2025-09-16 08:23:59');
 
 -- --------------------------------------------------------
 
@@ -463,13 +564,13 @@ INSERT INTO `product_choices` (`choice_id`, `product_id`, `name`, `price`, `stoc
 (96, 72, '90g', 37.00, 50, NULL),
 (97, 72, '135g', 54.00, 50, NULL),
 (98, 72, '300g', 114.00, 100, NULL),
-(99, 72, '680g', 255.00, 20, NULL),
+(99, 72, '680g', 255.00, 19, NULL),
 (100, 72, '840g', 307.00, 20, NULL),
 (101, 72, '1210g', 440.00, 10, NULL),
 (102, 72, '1.5kg', 542.00, 10, NULL),
 (103, 72, '2kg', 710.00, 10, NULL),
-(104, 72, '2.4kg', 843.00, 10, NULL),
-(105, 74, '33g (sold per tie)', 93.00, 5, NULL),
+(104, 72, '2.4kg', 843.00, 9, NULL),
+(105, 74, '33g (sold per tie)', 93.00, 10, NULL),
 (106, 74, '300g', 114.00, 20, NULL),
 (107, 74, '840g', 307.00, 5, NULL),
 (108, 73, '33g (sold per tie)', 141.00, 5, NULL),
@@ -594,7 +695,7 @@ INSERT INTO `product_choices` (`choice_id`, `product_id`, `name`, `price`, `stoc
 (227, 69, '100g', 32.00, 100, NULL),
 (228, 69, '155g', 40.00, 200, NULL),
 (229, 38, '100g', 17.50, 200, NULL),
-(230, 38, '150g', 22.75, 198, NULL),
+(230, 38, '150g', 22.75, 187, NULL),
 (231, 38, '210g', 31.00, 100, NULL),
 (232, 67, '100g', 20.50, 100, NULL),
 (233, 67, '150g', 30.50, 100, NULL),
@@ -624,7 +725,9 @@ INSERT INTO `product_choices` (`choice_id`, `product_id`, `name`, `price`, `stoc
 (257, 34, '700ml', 141.00, 100, NULL),
 (258, 34, '1L', 189.00, 82, NULL),
 (259, 59, 'Light', 1008.00, 50, NULL),
-(260, 59, 'Apple', 835.00, 50, NULL);
+(260, 59, 'Apple', 835.00, 50, NULL),
+(264, 178, '500ml', 50.00, 42, 'https://i.ibb.co/TBS8wCMJ/ec280384bcd6.jpg'),
+(265, 178, '1 Liter', 70.00, 21, NULL);
 
 -- --------------------------------------------------------
 
@@ -668,7 +771,7 @@ CREATE TABLE `receipt_settings` (
 --
 
 INSERT INTO `receipt_settings` (`id`, `storeName`, `storeTagline`, `storeAddress`, `contactNumber`, `thankyouMessage`, `footerText`, `created_at`, `updated_at`) VALUES
-(1, 'JM Garis Store', 'Official Receiptzxc', 'Barcenaga, Naujan City, Oriental Mindorozxczxczzxc\n', '09127649805', 'Thank you for your purchase!\nPlease come again', 'You can Contact us in: +63*** *** ****', '2025-06-13 22:06:01', '2025-08-05 12:50:03');
+(1, 'JM Garis Store', 'Official Receipt', 'Barcenaga, Naujan City, Oriental Mindoro, Philippines', '09127649805', 'Thank you for your purchase!\nPlease come again!', '', '2025-06-13 22:06:01', '2025-09-16 05:56:25');
 
 -- --------------------------------------------------------
 
@@ -691,7 +794,7 @@ CREATE TABLE `rewards_settings` (
 --
 
 INSERT INTO `rewards_settings` (`id`, `points_per_amount`, `amount_threshold`, `point_value`, `description`, `updated_at`, `updated_by`) VALUES
-(1, 1, 100.00, 0.50, '', '2025-06-30 16:45:57', 20);
+(1, 1, 100.00, 0.50, '', '2025-09-16 08:34:29', 20);
 
 -- --------------------------------------------------------
 
@@ -766,9 +869,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `firstname`, `middlename`, `lastname`, `gender`, `civil_status`, `phone_number`, `address`, `birthdate`, `email`, `password`, `created_at`, `otp`, `otp_expires`, `email_verified`, `role`, `password_reset_otp`, `password_reset_otp_expires`, `profile_picture`, `points`) VALUES
-(20, 'adminsiL4ns', '', NULL, '', 'male', 'single', NULL, NULL, NULL, 'admin@gmail.com', '$2a$10$mUmvlJQ0rZiODOSt/wPcS.oB.d2pWNki8eqgruP3jf58KyllhRSnu', '2025-02-14 20:30:57', NULL, NULL, 1, 'admin', NULL, NULL, NULL, 0),
-(1014, 'L4nszxc', 'Lans Lorence', 'Navarro', 'Hernandez', 'male', 'single', '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', '2004-07-09', 'lanslorence@gmail.com', '$2a$10$LqL9bOD8WT5e6N3imT6sBuXzplQHVei0k7jaCayx06isCEGWD9oEi', '2025-09-14 05:52:17', NULL, NULL, 1, 'user', NULL, NULL, 'https://i.ibb.co/k6kTRjSF/a4661fb8cd2e.jpg', 0),
-(1015, 'L4nszxc123', 'Lans', NULL, 'Navarro', 'other', 'single', '09639447150', 'Zone 3, Ibaba West, Calapan City, Oriental Mindoro', '2004-09-07', 'hernandezlanslorence@gmail.com', '$2a$10$WrITFF7EbUxh5EWK7PXSb.SWkQ5MH5sXYdciQq1YtJWMelRTS5Fqa', '2025-09-14 14:19:04', NULL, NULL, 1, 'user', NULL, NULL, NULL, 0);
+(20, 'adminsiL4ns', '', NULL, '', 'male', 'single', NULL, NULL, NULL, 'admin@gmail.com', '$2a$10$3uohNbdXLU1Tg/JcOamDY.6P4OoZiNuHtzDlqbGJ/DTJ83gGTdji2', '2025-02-14 20:30:57', NULL, NULL, 1, 'admin', NULL, NULL, NULL, 0),
+(1014, 'L4nszxc', 'Lans Lorence', 'Navarro', 'Hernandez', 'male', 'single', '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', '2004-07-09', 'lanslorence@gmail.com', '$2a$10$LqL9bOD8WT5e6N3imT6sBuXzplQHVei0k7jaCayx06isCEGWD9oEi', '2025-09-14 05:52:17', NULL, NULL, 1, 'user', 'DbzDDj', '2025-10-09 03:59:00', 'https://i.ibb.co/rfd1Zm1J/61c2de7d82fa.jpg', 0),
+(1016, 'KIEN 43', 'L4ns Lor3nc3', 'Navarro', 'Hernandez', 'male', 'single', '09127649805', 'Ibaba West, Calapan City, Oriental Mindoro', '2004-07-09', 'hernandezlanslorence@gmail.com', '$2a$10$wBjhChblHNGSSe2o7rxNVeXxooR0vI6UjmeYFlnfUQsYTEEqvZ50u', '2025-09-16 05:45:31', NULL, NULL, 1, 'staff', NULL, NULL, NULL, 0),
+(1017, 'adminzxc', 'Lansdsadsa', NULL, 'Losdadsarence', NULL, NULL, NULL, NULL, NULL, 'l4nsh3rn4nd3z@gmail.com', '$2a$10$6Zf2E3YQkpoU/evPQv5QzuscqWT4cYhvBm6FJgmXXmjT9uxPAf7sa', '2025-09-16 05:46:27', NULL, NULL, 1, 'admin', NULL, NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -788,6 +892,13 @@ CREATE TABLE `user_loyalty_status` (
   `last_updated` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+--
+-- Dumping data for table `user_loyalty_status`
+--
+
+INSERT INTO `user_loyalty_status` (`id`, `user_id`, `loyalty_tier_id`, `current_month_spend`, `last_month_spend`, `two_months_ago_spend`, `tier_start_date`, `tier_end_date`, `last_updated`) VALUES
+(10, 1014, 2, 16137.00, 0.00, 0.00, '2025-10-15', '2026-01-14', '2025-10-14 19:40:37');
+
 -- --------------------------------------------------------
 
 --
@@ -802,6 +913,30 @@ CREATE TABLE `user_rewards` (
   `description` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `user_rewards`
+--
+
+INSERT INTO `user_rewards` (`id`, `user_id`, `order_id`, `points`, `description`, `created_at`) VALUES
+(584, 1014, '0619440', 3, 'Earned points from order #0619440 (₱301.00)', '2025-09-15 02:28:34'),
+(585, 1014, '5587250', 1, 'Earned points from order #5587250 (₱234.00)', '2025-09-16 05:50:43'),
+(586, 1014, '8329578', 3, 'Earned points from order #8329578 (₱649.00)', '2025-09-16 05:54:37'),
+(587, 1014, '9248589', 39, 'Earned points from order #9248589 (₱3960.00)', '2025-10-07 08:44:08'),
+(588, 1014, '9248589', 3, 'Bronzezxc loyalty bonus (+10.00%)', '2025-10-07 08:44:08'),
+(589, 1014, NULL, -10, 'Redeemed for Bronze Rewardz - ₱5.00 discount', '2025-10-07 08:45:12'),
+(590, 1014, '0440898', 2, 'Earned points from order #0440898 (₱229.00)', '2025-10-07 08:45:22'),
+(591, 1014, 'PO00030', 3, 'Earned points from order #PO00030 (₱301.00)', '2025-10-07 15:42:29'),
+(592, 1014, 'PO00033', 3, 'Earned points from order #PO00033 (₱301.00)', '2025-10-07 18:49:07'),
+(593, 1014, 'PO00034', 3, 'Earned points from order #PO00034 (₱301.00)', '2025-10-07 18:53:20'),
+(594, 1014, '2145910', 43, 'Earned points from order #2145910 (₱4362.00)', '2025-10-07 21:58:41'),
+(595, 1014, '2145910', 4, 'Bronzezxc loyalty bonus (+10.00%)', '2025-10-07 21:58:41'),
+(596, 1014, '1411356', 3, 'Earned points from order #1411356 (₱301.00)', '2025-10-07 21:59:00'),
+(597, 1014, '1448515', 3, 'Earned points from order #1448515 (₱301.00)', '2025-10-07 22:07:59'),
+(598, 1014, '1967882', 2, 'Earned points from order #1967882 (₱234.00)', '2025-10-08 18:05:57'),
+(599, 1014, '8731696', 43, 'Earned points from order #8731696 (₱4362.00)', '2025-10-08 18:38:39'),
+(600, 1014, '8731696', 4, 'Bronzezxc loyalty bonus (+10.00%)', '2025-10-08 18:38:39'),
+(601, 1014, '3839021', 3, 'Earned points from order #3839021 (₱301.00)', '2025-10-14 19:40:37');
 
 --
 -- Indexes for dumped tables
@@ -879,9 +1014,7 @@ ALTER TABLE `order_reviews`
 ALTER TABLE `payment_intents`
   ADD PRIMARY KEY (`id`),
   ADD KEY `order_id` (`order_id`),
-  ADD KEY `idx_payment_link_id` (`payment_link_id`),
-  ADD KEY `idx_reference_number` (`reference_number`),
-  ADD KEY `idx_paymongo_link_id` (`paymongo_link_id`);
+  ADD KEY `idx_reference_number` (`reference_number`);
 
 --
 -- Indexes for table `payment_settings`
@@ -968,31 +1101,31 @@ ALTER TABLE `user_rewards`
 -- AUTO_INCREMENT for table `available_discounts`
 --
 ALTER TABLE `available_discounts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
 
 --
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491908;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491927;
 
 --
 -- AUTO_INCREMENT for table `loyalty_tiers`
 --
 ALTER TABLE `loyalty_tiers`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=429;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4262;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4326;
 
 --
 -- AUTO_INCREMENT for table `order_reports`
@@ -1010,7 +1143,7 @@ ALTER TABLE `order_reviews`
 -- AUTO_INCREMENT for table `payment_intents`
 --
 ALTER TABLE `payment_intents`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
 
 --
 -- AUTO_INCREMENT for table `payment_settings`
@@ -1022,13 +1155,13 @@ ALTER TABLE `payment_settings`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `products_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=173;
+  MODIFY `products_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=179;
 
 --
 -- AUTO_INCREMENT for table `product_choices`
 --
 ALTER TABLE `product_choices`
-  MODIFY `choice_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=261;
+  MODIFY `choice_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=266;
 
 --
 -- AUTO_INCREMENT for table `product_reports`
@@ -1052,25 +1185,25 @@ ALTER TABLE `rewards_settings`
 -- AUTO_INCREMENT for table `reward_tiers`
 --
 ALTER TABLE `reward_tiers`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1016;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1018;
 
 --
 -- AUTO_INCREMENT for table `user_loyalty_status`
 --
 ALTER TABLE `user_loyalty_status`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `user_rewards`
 --
 ALTER TABLE `user_rewards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=584;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=602;
 
 --
 -- Constraints for dumped tables
