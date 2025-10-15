@@ -1541,6 +1541,25 @@ export default {
             this.showWalkInRewardsModal = true;
         },
         
+        stopCameraScanning() {
+            // Stop camera stream if active
+            if (this.cameraStream) {
+                this.cameraStream.getTracks().forEach(track => {
+                    track.stop();
+                });
+                this.cameraStream = null;
+            }
+            
+            // Clear QR detection interval if active
+            if (this.qrDetectionInterval) {
+                clearInterval(this.qrDetectionInterval);
+                this.qrDetectionInterval = null;
+            }
+            
+            // Reset scanning state
+            this.scanningQR = false;
+        },
+        
         // ...existing methods...
     },
     mounted() {
