@@ -339,6 +339,8 @@
                                                     alt="Payment Receipt" 
                                                     class="receipt-image"
                                                     @error="handleReceiptImageError"
+                                                    @click="openReceiptImageModal"
+                                                    title="Click to view full size"
                                                 />
                                                 <div v-else-if="receiptImageError" class="receipt-error">
                                                     <i class="fas fa-exclamation-triangle text-warning"></i>
@@ -1082,6 +1084,38 @@
             @confirm="handleLogout"
             @cancel="showLogoutModal = false"
         />
+
+        <!-- Receipt Image Modal -->
+        <div v-if="showReceiptImageModal" class="modal-overlay receipt-image-modal-overlay" @click="closeReceiptImageModal">
+            <div class="receipt-image-modal-content" @click.stop>
+                <div class="receipt-image-modal-header">
+                    <h3>Receipt Image</h3>
+                    <button @click="closeReceiptImageModal" class="close-modal-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="receipt-image-modal-body">
+                    <div v-if="receiptImageUrl" class="full-size-image-container">
+                        <img 
+                            :src="receiptImageUrl" 
+                            alt="Full Size Receipt" 
+                            class="full-size-receipt-image"
+                            @error="handleReceiptImageError"
+                        />
+                    </div>
+                    <div v-else class="no-image-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>No image available</span>
+                    </div>
+                </div>
+                <div class="receipt-image-modal-footer">
+                    <p v-if="selectedOrder?.receipt_filename">
+                        <strong>File:</strong> {{ selectedOrder.receipt_filename }}
+                    </p>
+                    <button @click="closeReceiptImageModal" class="close-btn">Close</button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -1173,6 +1207,7 @@ export default {
             // Receipt image for order details modal
             receiptImageUrl: null,
             receiptImageError: false,
+            showReceiptImageModal: false,
             
             // Pagination
             currentPage: 1,
@@ -2133,8 +2168,19 @@ export default {
             this.receiptImageError = false;
         },
         
+        openReceiptImageModal() {
+            if (this.receiptImageUrl) {
+                this.showReceiptImageModal = true;
+            }
+        },
+        
+        closeReceiptImageModal() {
+            this.showReceiptImageModal = false;
+        },
+        
         closeOrderDetails() {
             this.cleanupReceiptImage();
+            this.closeReceiptImageModal();
             this.selectedOrder = null;
         },
         
@@ -3431,6 +3477,7 @@ th {
 
 .receipt-image:hover {
     transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .receipt-error, .receipt-loading {
@@ -5646,6 +5693,200 @@ tfoot tr td {
     }
     
     .full-receipt-image {
+        max-height: 50vh;
+    }
+}
+
+/* Receipt Image Modal Styles */
+.receipt-image-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    backdrop-filter: blur(2px);
+}
+
+.receipt-image-modal-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.receipt-image-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.receipt-image-modal-header h3 {
+    margin: 0;
+    color: #495057;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
+
+.close-modal-btn:hover {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.receipt-image-modal-body {
+    flex: 1;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+    background-color: #f8f9fa;
+}
+
+.full-size-image-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.full-size-receipt-image {
+    max-width: 100%;
+    max-height: 70vh;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    background: white;
+    padding: 0.5rem;
+}
+
+.no-image-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+.no-image-message i {
+    font-size: 3rem;
+    color: #ffc107;
+}
+
+.receipt-image-modal-footer {
+    padding: 1rem 1.5rem;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.receipt-image-modal-footer p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.receipt-image-modal-footer .close-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.receipt-image-modal-footer .close-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Mobile responsive styles for receipt image modal */
+@media (max-width: 768px) {
+    .receipt-image-modal-content {
+        max-width: 95vw;
+        max-height: 95vh;
+        margin: 1rem;
+    }
+    
+    .receipt-image-modal-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .receipt-image-modal-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .close-modal-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 1.2rem;
+    }
+    
+    .receipt-image-modal-body {
+        padding: 1rem;
+    }
+    
+    .full-size-receipt-image {
+        max-height: 60vh;
+    }
+    
+    .receipt-image-modal-footer {
+        padding: 0.75rem 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: stretch;
+    }
+    
+    .receipt-image-modal-footer p {
+        text-align: center;
+        order: 2;
+    }
+    
+    .receipt-image-modal-footer .close-btn {
+        order: 1;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .receipt-image-modal-content {
+        max-width: 98vw;
+        max-height: 98vh;
+        margin: 0.5rem;
+    }
+    
+    .full-size-receipt-image {
         max-height: 50vh;
     }
 }
