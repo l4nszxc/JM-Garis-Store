@@ -348,6 +348,66 @@
                         </table>
                     </div>
                 </div>
+                
+                <!-- Payment Verification Section for To Verify Orders -->
+                <div v-if="selectedOrder && selectedOrder.status === 'to verify' && paymentIntent" class="verification-section">
+                    <h3><i class="fas fa-receipt"></i> Payment Verification Details</h3>
+                    
+                    <div class="verification-content">
+                        <div v-if="paymentIntent.verification_method === 'reference'" class="verification-info">
+                            <div class="info-row">
+                                <strong>Payment Method:</strong> GCash Reference Number
+                            </div>
+                            <div class="info-row">
+                                <strong>Reference Number:</strong> 
+                                <span class="ref-number">{{ paymentIntent.gcash_reference }}</span>
+                            </div>
+                        </div>
+                        
+                        <div v-else-if="paymentIntent.verification_method === 'receipt'" class="verification-info">
+                            <div class="info-row">
+                                <strong>Payment Method:</strong> GCash Receipt Image
+                            </div>
+                            <div v-if="paymentIntent.receipt_image" class="receipt-preview">
+                                <div v-if="receiptImageBlob && !imageLoadError" class="image-container">
+                                    <img 
+                                        :src="receiptImageBlob" 
+                                        alt="GCash Receipt" 
+                                        class="receipt-image"
+                                        @click="openReceiptModal"
+                                    />
+                                    <p class="receipt-note">Click image to view full size</p>
+                                </div>
+                                <div v-else-if="imageLoadError" class="image-error-fallback">
+                                    <div class="error-icon">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </div>
+                                    <p><strong>Receipt image unavailable</strong></p>
+                                    <p class="error-details">The receipt image could not be loaded from the server.</p>
+                                    <button @click="retryImageLoad" class="retry-btn">
+                                        <i class="fas fa-redo"></i> Retry
+                                    </button>
+                                </div>
+                                <div v-else class="loading-container">
+                                    <div class="loading-spinner">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    </div>
+                                    <p>Loading receipt image...</p>
+                                </div>
+                            </div>
+                            <div v-else class="no-receipt-info">
+                                <div class="info-row">
+                                    <strong>Status:</strong> Receipt image not available
+                                </div>
+                                <p class="receipt-note">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    No receipt image was uploaded for this payment.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="modal-actions">
                     <button 
                         v-if="selectedOrder.status === 'ready for pickup'"
@@ -355,6 +415,15 @@
                         class="pay-btn"
                     >
                         <i class="fas fa-money-bill-wave"></i> Pay Order
+                    </button>
+                    <button 
+                        v-if="selectedOrder && selectedOrder.status === 'to verify' && paymentIntent"
+                        @click="showVerificationConfirmation" 
+                        :disabled="isVerifying"
+                        class="verify-btn"
+                    >
+                        <i class="fas fa-check-circle"></i> 
+                        {{ isVerifying ? 'Verifying...' : 'Verify Payment' }}
                     </button>
                     <button @click="selectedOrder = null" class="close-btn">
                         <i class="fas fa-times"></i> Close
@@ -468,6 +537,99 @@
                     >
                         <i class="fas fa-times"></i>
                         Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Verification Confirmation Modal -->
+        <div v-if="showVerificationConfirm" class="modal-overlay">
+            <div class="modal-content verification-confirm-modal">
+                <div class="modal-header">
+                    <h2><i class="fas fa-check-circle"></i> Verify Payment</h2>
+                    <p>Confirm payment verification for Order #{{ selectedOrder?.order_id }}</p>
+                </div>
+
+                <div class="confirmation-content">
+                    <div class="warning-section">
+                        <i class="fas fa-exclamation-triangle warning-icon"></i>
+                        <h3>Are you certain the payment is correct?</h3>
+                        <p>Please double-check the payment verification details before confirming.</p>
+                    </div>
+                    
+                    <div class="verification-summary" v-if="paymentIntent">
+                        <h4>Payment Details:</h4>
+                        <div v-if="paymentIntent.verification_method === 'reference'" class="summary-row">
+                            <strong>GCash Reference:</strong> {{ paymentIntent.gcash_reference }}
+                        </div>
+                        <div v-else-if="paymentIntent.verification_method === 'receipt'" class="summary-row">
+                            <strong>Payment Method:</strong> GCash Receipt Image
+                        </div>
+                        <div class="summary-row">
+                            <strong>Order Total:</strong> {{ formatPrice(selectedOrder.total_amount) }}
+                        </div>
+                    </div>
+                    
+                    <div class="action-consequences">
+                        <h4>This action will:</h4>
+                        <ul>
+                            <li>Change order status from "To Verify" to "Pending"</li>
+                            <li>Mark the payment as verified</li>
+                            <li><strong>Cannot be undone</strong> once confirmed</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button 
+                        @click="verifyPayment" 
+                        :disabled="isVerifying"
+                        class="confirm-verify-btn"
+                    >
+                        <i class="fas fa-check"></i>
+                        {{ isVerifying ? 'Verifying...' : 'Yes, Verify Payment' }}
+                    </button>
+                    <button 
+                        @click="hideVerificationConfirmation" 
+                        :disabled="isVerifying"
+                        class="cancel-btn"
+                    >
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Receipt Image Popup Modal -->
+        <div v-if="showReceiptModal" class="modal-overlay receipt-modal-overlay" @click="closeReceiptModal">
+            <div class="modal-content receipt-modal-content" @click.stop>
+                <div class="receipt-modal-header">
+                    <h2><i class="fas fa-receipt"></i> GCash Receipt</h2>
+                    <button @click="closeReceiptModal" class="close-modal-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="receipt-modal-body">
+                    <div class="receipt-image-container">
+                        <img 
+                            :src="receiptImageBlob || paymentIntent.receipt_image" 
+                            alt="GCash Receipt" 
+                            class="full-receipt-image"
+                        />
+                    </div>
+                    
+                    <div class="receipt-info">
+                        <p><strong>Order ID:</strong> {{ selectedOrder?.order_id }}</p>
+                        <p><strong>Amount:</strong> {{ formatPrice(paymentIntent.amount) }}</p>
+                        <p><strong>Payment Method:</strong> GCash Receipt Upload</p>
+                    </div>
+                </div>
+                
+                <div class="receipt-modal-actions">
+                    <button @click="closeReceiptModal" class="close-btn">
+                        <i class="fas fa-times"></i> Close
                     </button>
                 </div>
             </div>
@@ -885,6 +1047,14 @@ export default {
             
             // Cache receipt settings to avoid repeated API calls
             cachedReceiptSettings: null,
+            
+            // Payment verification data
+            paymentIntent: null,
+            showVerificationConfirm: false,
+            isVerifying: false,
+            showReceiptModal: false,
+            imageLoadError: false,
+            receiptImageBlob: null,
             
             // Pagination
             currentPage: 1,
@@ -1623,6 +1793,13 @@ export default {
                         discount_amount: parseFloat(orderData.discount_amount) || 0,
                         email: orderData.email // Make sure email is included in the order data
                     };
+                    
+                    // Fetch payment intent data for "to verify" orders
+                    if (orderData.status === 'to verify' && orderData.payment_method === 'gcash') {
+                        await this.fetchPaymentIntent(orderData.order_id);
+                    } else {
+                        this.paymentIntent = null; // Clear any previous payment intent data
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching order details:', error);
@@ -1674,6 +1851,158 @@ export default {
                 }
             } catch (error) {
                 console.error('Error fetching rewards settings:', error);
+            }
+        },
+        
+        async fetchPaymentIntent(orderId) {
+            try {
+                this.imageLoadError = false; // Reset image error state
+                this.receiptImageBlob = null; // Reset blob URL
+                
+                const token = localStorage.getItem('token');
+                const response = await this.$fetch(`/api/payment/admin/payment-intent/${orderId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Payment intent data:', data);
+                    this.paymentIntent = data;
+                    
+                    // If there's a receipt image, load it with authentication
+                    if (data.receipt_image && data.verification_method === 'receipt') {
+                        await this.loadReceiptImageBlob(data.id);
+                    }
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Failed to fetch payment intent:', errorData);
+                    
+                    if (errorData.code === 'ORDER_NOT_FOUND') {
+                        console.warn(`Order ${orderId} not found in database`);
+                    } else if (errorData.code === 'PAYMENT_INTENT_NOT_FOUND') {
+                        console.warn(`No payment intent found for order ${orderId}. Order status: ${errorData.orderStatus}`);
+                    }
+                    
+                    this.paymentIntent = null;
+                }
+            } catch (error) {
+                console.error('Error fetching payment intent:', error);
+                this.paymentIntent = null;
+            }
+        },
+        
+        async loadReceiptImageBlob(paymentId) {
+            try {
+                console.log(`Loading receipt image for payment ID: ${paymentId}`);
+                const token = localStorage.getItem('token');
+                
+                const response = await this.$fetch(`/api/payment/receipt-db/${paymentId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    this.receiptImageBlob = URL.createObjectURL(blob);
+                    console.log('Receipt image loaded successfully as blob');
+                    this.imageLoadError = false;
+                } else {
+                    console.error('Failed to load receipt image:', response.status, response.statusText);
+                    this.imageLoadError = true;
+                }
+            } catch (error) {
+                console.error('Error loading receipt image blob:', error);
+                this.imageLoadError = true;
+            }
+        },
+        
+        showVerificationConfirmation() {
+            this.showVerificationConfirm = true;
+        },
+        
+        hideVerificationConfirmation() {
+            this.showVerificationConfirm = false;
+        },
+        
+        async verifyPayment() {
+            if (!this.selectedOrder || !this.paymentIntent) return;
+            
+            this.isVerifying = true;
+            try {
+                const token = localStorage.getItem('token');
+                const response = await this.$fetch(`/api/payment/admin/verify/${this.paymentIntent.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        orderId: this.selectedOrder.order_id,
+                        action: 'verify'
+                    })
+                });
+                
+                const responseData = await response.json();
+                
+                if (response.ok) {
+                    // Update the order status in the local list
+                    const orderIndex = this.orders.findIndex(o => o.order_id === this.selectedOrder.order_id);
+                    if (orderIndex !== -1) {
+                        this.orders[orderIndex].status = 'pending';
+                    }
+                    
+                    // Update the selected order
+                    this.selectedOrder.status = 'pending';
+                    
+                    // Clear payment intent as it's no longer needed
+                    this.paymentIntent = null;
+                    
+                    // Close confirmation modal
+                    this.showVerificationConfirm = false;
+                    
+                    // Show success message
+                    alert('Payment verified successfully! Order status updated to pending.');
+                    
+                } else {
+                    console.error('Verification failed:', responseData);
+                    alert('Payment verification failed: ' + (responseData.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Network error during verification:', error);
+                alert('Network error during verification. Please try again.');
+            } finally {
+                this.isVerifying = false;
+            }
+        },
+        
+        openReceiptModal() {
+            if (this.paymentIntent && this.paymentIntent.receipt_image) {
+                this.showReceiptModal = true;
+            }
+        },
+        
+        closeReceiptModal() {
+            this.showReceiptModal = false;
+        },
+        
+        handleImageError(event) {
+            console.error('Failed to load receipt image:', event.target.src);
+            this.imageLoadError = true;
+        },
+        
+        handleImageLoad(event) {
+            console.log('Receipt image loaded successfully:', event.target.src);
+            this.imageLoadError = false;
+        },
+        
+        retryImageLoad() {
+            this.imageLoadError = false;
+            if (this.paymentIntent && this.paymentIntent.id) {
+                this.loadReceiptImageBlob(this.paymentIntent.id);
             }
         },
         
@@ -2064,6 +2393,11 @@ export default {
         // Clean up any upload file URLs
         if (this.qrUploadFile && this.qrUploadFile.preview) {
             URL.revokeObjectURL(this.qrUploadFile.preview);
+        }
+        
+        // Clean up receipt image blob URLs to prevent memory leaks
+        if (this.receiptImageBlob) {
+            URL.revokeObjectURL(this.receiptImageBlob);
         }
     }
 }
@@ -4341,6 +4675,535 @@ tfoot tr td {
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
+    }
+}
+
+/* Verification Section Styles */
+.verification-section {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+    border: 2px solid #4285f4;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.1);
+}
+
+.verification-section h3 {
+    color: #1a73e8;
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.verification-content {
+    margin-bottom: 1.5rem;
+}
+
+.verification-info .info-row {
+    display: flex;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+}
+
+.verification-info .info-row strong {
+    min-width: 140px;
+    color: #333;
+}
+
+.ref-number {
+    background: #f1f3f4;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: #1a73e8;
+}
+
+.receipt-preview {
+    margin-top: 0.75rem;
+}
+
+.receipt-image {
+    max-width: 200px;
+    max-height: 300px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.receipt-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.receipt-note {
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
+.no-receipt-info {
+    padding: 1rem;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    margin-top: 0.75rem;
+}
+
+.no-receipt-info .info-row {
+    margin-bottom: 0.5rem;
+}
+
+.no-receipt-info .receipt-note {
+    margin: 0.5rem 0 0 0;
+    color: #856404;
+    font-size: 0.875rem;
+}
+
+.no-receipt-info .receipt-note i {
+    margin-right: 0.5rem;
+    color: #f39c12;
+}
+
+.image-error-message {
+    padding: 0.75rem;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 6px;
+    color: #721c24;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.image-error-message i {
+    color: #dc3545;
+}
+
+.image-container {
+    position: relative;
+}
+
+.image-error-fallback {
+    text-align: center;
+    padding: 2rem 1rem;
+    background: #fff3cd;
+    border: 2px dashed #ffeaa7;
+    border-radius: 8px;
+    margin-top: 0.75rem;
+}
+
+.error-icon {
+    font-size: 3rem;
+    color: #f39c12;
+    margin-bottom: 1rem;
+}
+
+.image-error-fallback p {
+    margin: 0.5rem 0;
+    color: #856404;
+}
+
+.image-error-fallback .error-details {
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+.retry-btn {
+    background: #17a2b8;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    margin-top: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.retry-btn:hover {
+    background: #138496;
+    transform: translateY(-1px);
+}
+
+.loading-container {
+    text-align: center;
+    padding: 2rem 1rem;
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    margin-top: 0.75rem;
+}
+
+.loading-spinner {
+    font-size: 2rem;
+    color: #17a2b8;
+    margin-bottom: 1rem;
+}
+
+.loading-container p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.verification-actions {
+    text-align: center;
+}
+
+.verify-btn {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+    border: none;
+    padding: 0.875rem 2rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.verify-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #45a049 0%, #4caf50 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4);
+}
+
+.verify-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Verification Confirmation Modal Styles */
+.verification-confirm-modal {
+    max-width: 500px;
+}
+
+.verification-confirm-modal .modal-header {
+    background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px 12px 0 0;
+}
+
+.verification-confirm-modal .modal-header h2 {
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.confirmation-content {
+    padding: 1.5rem;
+}
+
+.warning-section {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+}
+
+.warning-icon {
+    font-size: 2rem;
+    color: #f39c12;
+    margin-bottom: 0.5rem;
+}
+
+.warning-section h3 {
+    color: #856404;
+    margin: 0.5rem 0;
+}
+
+.warning-section p {
+    color: #856404;
+    margin: 0;
+}
+
+.verification-summary {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.verification-summary h4 {
+    margin: 0 0 0.75rem 0;
+    color: #333;
+}
+
+.summary-row {
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.action-consequences {
+    background: #fff5f5;
+    padding: 1rem;
+    border: 1px solid #fed7d7;
+    border-radius: 8px;
+}
+
+.action-consequences h4 {
+    margin: 0 0 0.75rem 0;
+    color: #c53030;
+}
+
+.action-consequences ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: #c53030;
+}
+
+.action-consequences li {
+    margin-bottom: 0.25rem;
+}
+
+.confirm-verify-btn {
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+    border: none;
+    padding: 0.875rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    margin-right: 1rem;
+}
+
+.confirm-verify-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #45a049 0%, #4caf50 100%);
+    transform: translateY(-2px);
+}
+
+.confirm-verify-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.cancel-btn {
+    background: #f44336;
+    color: white;
+    border: none;
+    padding: 0.875rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover:not(:disabled) {
+    background: #d32f2f;
+    transform: translateY(-2px);
+}
+
+.cancel-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Receipt Image Popup Modal Styles */
+.receipt-modal-overlay {
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+}
+
+.receipt-modal-content {
+    max-width: 90vw;
+    max-height: 90vh;
+    width: auto;
+    height: auto;
+    padding: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.receipt-modal-header {
+    background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.receipt-modal-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.close-modal-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.close-modal-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.receipt-modal-body {
+    flex: 1;
+    overflow: auto;
+    background: #f8f9fa;
+}
+
+.receipt-image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    background: #fff;
+}
+
+.full-receipt-image {
+    max-width: 100%;
+    max-height: 70vh;
+    width: auto;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.full-receipt-image:hover {
+    transform: scale(1.02);
+}
+
+.receipt-info {
+    padding: 1rem 1.5rem;
+    background: #fff;
+    border-top: 1px solid #e9ecef;
+}
+
+.receipt-info p {
+    margin: 0.5rem 0;
+    font-size: 0.95rem;
+    color: #495057;
+}
+
+.receipt-info strong {
+    color: #212529;
+}
+
+.receipt-modal-actions {
+    background: #fff;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.receipt-modal-actions .close-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.receipt-modal-actions .close-btn:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+/* Responsive styles for receipt modal */
+@media (max-width: 768px) {
+    .receipt-modal-content {
+        max-width: 95vw;
+        max-height: 95vh;
+        margin: 1rem;
+    }
+    
+    .receipt-modal-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .receipt-modal-header h2 {
+        font-size: 1.1rem;
+    }
+    
+    .close-modal-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 1.1rem;
+    }
+    
+    .receipt-info {
+        padding: 0.75rem 1rem;
+    }
+    
+    .receipt-modal-actions {
+        padding: 0.75rem 1rem;
+    }
+    
+    .full-receipt-image {
+        max-height: 60vh;
+    }
+}
+
+@media (max-width: 480px) {
+    .receipt-modal-content {
+        max-width: 98vw;
+        max-height: 98vh;
+        margin: 0.5rem;
+    }
+    
+    .receipt-image-container {
+        padding: 0.5rem;
+    }
+    
+    .full-receipt-image {
+        max-height: 50vh;
     }
 }
 </style>

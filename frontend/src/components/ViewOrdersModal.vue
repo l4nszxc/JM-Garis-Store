@@ -1076,15 +1076,14 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 const token = localStorage.getItem('token');
                 
                 // Quick backend health check
-                const backendUrl = process.env.VUE_APP_API_BASE_URL || 'http://localhost:7904';
-                console.log('🔍 Backend URL:', backendUrl);
+                console.log('🔍 Backend URL:', this.API_BASE_URL);
                 
                 try {
-                    const healthCheck = await fetch(`${backendUrl}/health`);
+                    const healthCheck = await this.$fetch('/health');
                     console.log('💓 Backend health check:', healthCheck.status);
                 } catch (healthError) {
                     console.error('❌ Backend not reachable:', healthError);
-                    throw new Error('Cannot connect to backend server. Please ensure it is running on port 7904.');
+                    throw new Error('Cannot connect to backend server. Please try again.');
                 }
                 
                 // Prepare the request data based on verification method
@@ -1116,12 +1115,10 @@ Special Instructions: ${this.specialInstructions || ''}`;
                     formData.append('gcashReceipt', this.gcashReceiptFile);
                     
                     console.log('🔍 Attempting file upload to backend...');
-                    // Use direct URL to ensure we're hitting the correct backend
-                    const backendUrl = process.env.VUE_APP_API_BASE_URL || 'http://localhost:7904';
-                    const uploadUrl = `${backendUrl}/api/payment/gcash/create-payment-with-receipt`;
-                    console.log('📤 Upload URL:', uploadUrl);
+                    // Use the API mixin for consistent URL handling
+                    console.log('📤 Upload URL:', `${this.API_BASE_URL}/api/payment/gcash/create-payment-with-receipt`);
                     
-                    const response = await fetch(uploadUrl, {
+                    const response = await this.$fetch('/api/payment/gcash/create-payment-with-receipt', {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`

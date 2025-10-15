@@ -149,17 +149,36 @@ router.get('/receipt-db/:paymentId', authenticate, async (req, res) => {
     try {
         const { paymentId } = req.params;
         
+        console.log(`Attempting to serve receipt image for payment ID: ${paymentId}`);
+        
         // Fetch the receipt image from database
         const [rows] = await require('../config/db').execute(
-            'SELECT receipt_image, receipt_filename, receipt_mimetype FROM payment_intents WHERE id = ? OR reference_number = ?',
+            'SELECT receipt_image, receipt_filename, receipt_mimetype, receipt_filesize FROM payment_intents WHERE id = ? OR reference_number = ?',
             [paymentId, paymentId]
         );
         
-        if (rows.length === 0 || !rows[0].receipt_image) {
-            return res.status(404).json({ message: 'Receipt image not found' });
+        console.log(`Found ${rows.length} rows for payment ID ${paymentId}`);
+        
+        if (rows.length === 0) {
+            console.log(`No payment intent found for ID: ${paymentId}`);
+            return res.status(404).json({ 
+                message: 'Payment intent not found',
+                paymentId: paymentId
+            });
         }
         
-        const { receipt_image, receipt_filename, receipt_mimetype } = rows[0];
+        const { receipt_image, receipt_filename, receipt_mimetype, receipt_filesize } = rows[0];
+        
+        console.log(`Receipt data: filename=${receipt_filename}, mimetype=${receipt_mimetype}, size=${receipt_filesize}, has_image=${!!receipt_image}`);
+        
+        if (!receipt_image) {
+            console.log(`No receipt image data for payment ID: ${paymentId}`);
+            return res.status(404).json({ 
+                message: 'Receipt image not found - no image data in database',
+                paymentId: paymentId,
+                hasFilename: !!receipt_filename
+            });
+        }
         
         // Set appropriate headers
         res.set({
@@ -172,7 +191,7 @@ router.get('/receipt-db/:paymentId', authenticate, async (req, res) => {
         
     } catch (error) {
         console.error('Error serving receipt image from database:', error);
-        res.status(500).json({ message: 'Error retrieving receipt image' });
+        res.status(500).json({ message: 'Error retrieving receipt image', error: error.message });
     }
 });
 
@@ -212,6 +231,231 @@ router.get('/receipt-info/:paymentId', authenticate, async (req, res) => {
     } catch (error) {
         console.error('Error getting receipt info:', error);
         res.status(500).json({ message: 'Error retrieving receipt information' });
+    }
+});
+
+// Admin route to get payment intent by order ID
+router.get('/admin/payment-intent/:orderId', authenticate, async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        
+        console.log(`Fetching payment intent for order: ${orderId}`);
+        
+        // Fetch the payment intent for the specific order
+        const [rows] = await require('../config/db').execute(
+            `SELECT 
+                pi.id,
+                pi.order_id,
+                pi.user_id,
+                pi.amount,
+                pi.status,
+                pi.verification_method,
+                pi.gcash_reference,
+                pi.receipt_filename,
+                pi.receipt_mimetype,
+                pi.receipt_filesize,
+                pi.created_at,
+                pi.updated_at,
+                CASE 
+                    WHEN pi.receipt_image IS NOT NULL THEN 
+                        CONCAT('http://localhost:7904/api/payment/receipt-db/', pi.id)
+                    ELSE NULL
+                END as receipt_image,
+                CASE 
+                    WHEN pi.receipt_image IS NOT NULL THEN true
+                    ELSE false
+                END as has_receipt_data
+            FROM payment_intents pi
+            WHERE pi.order_id = ? AND pi.status IN ('pending', 'pending_verification')
+            ORDER BY pi.created_at DESC
+            LIMIT 1`,
+            [orderId]
+        );
+        
+        console.log(`Found ${rows.length} payment intents for order ${orderId}`);
+        
+        if (rows.length > 0) {
+            console.log(`Payment intent data:`, {
+                id: rows[0].id,
+                verification_method: rows[0].verification_method,
+                has_receipt_data: rows[0].has_receipt_data,
+                receipt_filename: rows[0].receipt_filename,
+                receipt_image_url: rows[0].receipt_image
+            });
+        }
+        
+        if (rows.length === 0) {
+            // Check if the order exists at all
+            const [orderCheck] = await require('../config/db').execute(
+                'SELECT order_id, status FROM orders WHERE order_id = ?',
+                [orderId]
+            );
+            
+            if (orderCheck.length === 0) {
+                return res.status(404).json({ 
+                    message: `Order ${orderId} not found`,
+                    code: 'ORDER_NOT_FOUND'
+                });
+            } else {
+                return res.status(404).json({ 
+                    message: `No payment intent found for order ${orderId}. Order status: ${orderCheck[0].status}`,
+                    code: 'PAYMENT_INTENT_NOT_FOUND',
+                    orderStatus: orderCheck[0].status
+                });
+            }
+        }
+        
+        res.json(rows[0]);
+        
+    } catch (error) {
+        console.error('Error fetching payment intent:', error);
+        res.status(500).json({ message: 'Error fetching payment intent' });
+    }
+});
+
+// Admin route to verify payment and update order status
+router.post('/admin/verify/:paymentId', authenticate, async (req, res) => {
+    try {
+        const { paymentId } = req.params;
+        const { orderId, action } = req.body;
+        
+        console.log(`Verifying payment: paymentId=${paymentId}, orderId=${orderId}, action=${action}`);
+        
+        if (action !== 'verify') {
+            return res.status(400).json({ message: 'Invalid action' });
+        }
+        
+        const db = require('../config/db');
+        
+        // Check current payment intent status first
+        const [currentPayment] = await db.execute(
+            'SELECT id, status, order_id FROM payment_intents WHERE id = ?',
+            [paymentId]
+        );
+        
+        if (currentPayment.length === 0) {
+            return res.status(404).json({ message: 'Payment intent not found' });
+        }
+        
+        console.log(`Current payment intent:`, currentPayment[0]);
+        
+        // Check current order status
+        const [currentOrder] = await db.execute(
+            'SELECT order_id, status FROM orders WHERE order_id = ?',
+            [orderId]
+        );
+        
+        if (currentOrder.length === 0) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+        
+        console.log(`Current order:`, currentOrder[0]);
+        
+        // Start transaction
+        await db.query('START TRANSACTION');
+        
+        try {
+            // Update payment intent status to verified
+            const [updatePayment] = await db.execute(
+                'UPDATE payment_intents SET status = ?, updated_at = NOW() WHERE id = ? AND status IN (?, ?)',
+                ['verified', paymentId, 'pending', 'pending_verification']
+            );
+            
+            console.log(`Payment update result: ${updatePayment.affectedRows} rows affected`);
+            
+            if (updatePayment.affectedRows === 0) {
+                await db.query('ROLLBACK');
+                return res.status(404).json({ 
+                    message: 'Payment intent not found or already verified',
+                    currentStatus: currentPayment[0].status
+                });
+            }
+            
+            // Update order status from 'to verify' to 'pending'
+            const [updateOrder] = await db.execute(
+                'UPDATE orders SET status = ?, updated_at = NOW() WHERE order_id = ? AND status = ?',
+                ['pending', orderId, 'to verify']
+            );
+            
+            console.log(`Order update result: ${updateOrder.affectedRows} rows affected`);
+            
+            if (updateOrder.affectedRows === 0) {
+                await db.query('ROLLBACK');
+                return res.status(404).json({ 
+                    message: 'Order not found or status already changed',
+                    currentStatus: currentOrder[0].status
+                });
+            }
+            
+            // Commit transaction
+            await db.query('COMMIT');
+            
+            res.json({ 
+                message: 'Payment verified successfully',
+                paymentId: paymentId,
+                orderId: orderId,
+                newStatus: 'pending'
+            });
+            
+        } catch (transactionError) {
+            await db.query('ROLLBACK');
+            throw transactionError;
+        }
+        
+    } catch (error) {
+        console.error('Error verifying payment:', error);
+        res.status(500).json({ 
+            message: 'Error verifying payment', 
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
+
+// Test endpoint to update a payment intent with receipt image (for testing)
+router.post('/admin/test-receipt/:paymentId', async (req, res) => {
+    try {
+        const { paymentId } = req.params;
+        const db = require('../config/db');
+        
+        console.log(`Adding test receipt to payment intent ${paymentId}`);
+        
+        // Read the existing receipt file
+        const fs = require('fs');
+        const receiptPath = path.join(__dirname, '..', 'uploads', 'gcash-receipts', 'receipt_1760563104840_1014_1.jpg');
+        
+        if (!fs.existsSync(receiptPath)) {
+            console.log(`Test receipt file not found at: ${receiptPath}`);
+            return res.status(404).json({ message: 'Test receipt file not found' });
+        }
+        
+        const receiptBuffer = fs.readFileSync(receiptPath);
+        console.log(`Read receipt file: ${receiptBuffer.length} bytes`);
+        
+        // Update the payment intent with receipt data
+        const [updateResult] = await db.execute(
+            `UPDATE payment_intents 
+             SET verification_method = 'receipt',
+                 receipt_image = ?,
+                 receipt_filename = 'test_receipt.jpg',
+                 receipt_mimetype = 'image/jpeg',
+                 receipt_filesize = ?
+             WHERE id = ?`,
+            [receiptBuffer, receiptBuffer.length, paymentId]
+        );
+        
+        console.log(`Update result: ${updateResult.affectedRows} rows affected`);
+        
+        res.json({ 
+            message: 'Payment intent updated with test receipt',
+            paymentId: paymentId,
+            receiptSize: receiptBuffer.length,
+            affectedRows: updateResult.affectedRows
+        });
+        
+    } catch (error) {
+        console.error('Error updating payment intent with test receipt:', error);
+        res.status(500).json({ message: 'Error updating payment intent', error: error.message });
     }
 });
 
