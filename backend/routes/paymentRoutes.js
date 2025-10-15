@@ -258,7 +258,7 @@ router.get('/admin/payment-intent/:orderId', authenticate, async (req, res) => {
                 pi.updated_at,
                 CASE 
                     WHEN pi.receipt_image IS NOT NULL THEN 
-                        CONCAT('http://localhost:7904/api/payment/receipt-db/', pi.id)
+                        CONCAT('/api/payment/receipt-db/', pi.id)
                     ELSE NULL
                 END as receipt_image,
                 CASE 
@@ -266,7 +266,7 @@ router.get('/admin/payment-intent/:orderId', authenticate, async (req, res) => {
                     ELSE false
                 END as has_receipt_data
             FROM payment_intents pi
-            WHERE pi.order_id = ? AND pi.status IN ('pending', 'pending_verification')
+            WHERE pi.order_id = ?
             ORDER BY pi.created_at DESC
             LIMIT 1`,
             [orderId]

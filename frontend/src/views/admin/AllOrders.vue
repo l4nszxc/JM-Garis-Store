@@ -75,6 +75,7 @@
                                 <th>Customer</th>
                                 <th>Status</th>
                                 <th>Payment Method</th>
+                                <th>Payment Verification</th>
                                 <th>Total Amount</th>
                                 <th>Order Date</th>
                                 <th>Staff Assigned</th>
@@ -117,6 +118,37 @@
                                         <i v-else class="fas fa-credit-card"></i>
                                         {{ getPaymentMethodLabel(order.payment_method) }}
                                     </span>
+                                </td>
+                                <td>
+                                    <div v-if="order.payment_method === 'gcash'" class="payment-verification">
+                                        <div v-if="order.payment_status === 'verified'" class="verification-item verified">
+                                            <i class="fas fa-check-circle text-success"></i>
+                                            <span class="verification-text">Verified</span>
+                                        </div>
+                                        <div v-else-if="order.payment_status === 'rejected'" class="verification-item rejected">
+                                            <i class="fas fa-times-circle text-danger"></i>
+                                            <span class="verification-text">Rejected</span>
+                                        </div>
+                                        <div v-else-if="order.payment_status === 'pending_verification'" class="verification-item pending">
+                                            <i class="fas fa-clock text-warning"></i>
+                                            <span class="verification-text">Pending verification</span>
+                                        </div>
+                                        <div v-else-if="order.verification_method === 'receipt' && order.receipt_filename" class="verification-item pending">
+                                            <i class="fas fa-receipt text-warning"></i>
+                                            <span class="verification-text">Receipt uploaded</span>
+                                        </div>
+                                        <div v-else-if="order.verification_method === 'reference' && order.gcash_reference" class="verification-item pending">
+                                            <i class="fas fa-hashtag text-blue"></i>
+                                            <span class="verification-text">Ref: {{ order.gcash_reference.substring(0, 12) }}{{ order.gcash_reference.length > 12 ? '...' : '' }}</span>
+                                        </div>
+                                        <div v-else class="verification-item missing">
+                                            <i class="fas fa-exclamation-triangle text-danger"></i>
+                                            <span class="verification-text">No verification data</span>
+                                        </div>
+                                    </div>
+                                    <div v-else class="payment-verification">
+                                        <span class="verification-text text-muted">N/A</span>
+                                    </div>
                                 </td>
                                 <td>
                                     <span v-if="order.payment_type === 'downpayment'">
@@ -261,6 +293,88 @@
                                 {{ getPaymentMethodLabel(selectedOrder.payment_method) }}
                             </span>
                         </p>
+                        
+                        <!-- Payment Verification Details for GCash (hide if status is "to verify") -->
+                        <div v-if="selectedOrder.payment_method === 'gcash' && selectedOrder.status !== 'to verify'" class="payment-verification-details">
+                            <p><strong>Payment Verification Details:</strong></p>
+                            <div class="verification-details-content">
+                                <div v-if="selectedOrder.payment_status === 'verified'" class="verification-status verified">
+                                    <i class="fas fa-check-circle text-success"></i>
+                                    <span class="status-text">Payment Verified</span>
+                                    <small v-if="selectedOrder.verified_at" class="verification-date">
+                                        Verified on {{ formatDate(selectedOrder.verified_at) }}
+                                    </small>
+                                </div>
+                                <div v-else-if="selectedOrder.payment_status === 'rejected'" class="verification-status rejected">
+                                    <i class="fas fa-times-circle text-danger"></i>
+                                    <span class="status-text">Payment Rejected</span>
+                                </div>
+                                <div v-else-if="selectedOrder.payment_status === 'pending_verification'" class="verification-status pending">
+                                    <i class="fas fa-clock text-warning"></i>
+                                    <span class="status-text">Pending Verification</span>
+                                </div>
+                                <div v-else class="verification-status unknown">
+                                    <i class="fas fa-question-circle text-muted"></i>
+                                    <span class="status-text">Status Unknown</span>
+                                </div>
+                                
+                                <div class="verification-method-info">
+                                    <div v-if="selectedOrder.verification_method === 'receipt'" class="method-info">
+                                        <p><strong>Verification Method:</strong> Receipt Upload</p>
+                                        <p v-if="selectedOrder.receipt_filename">
+                                            <strong>Receipt File:</strong> {{ selectedOrder.receipt_filename }}
+                                        </p>
+                                        <p v-if="selectedOrder.gcash_reference && selectedOrder.gcash_reference !== selectedOrder.receipt_filename">
+                                            <strong>Receipt Storage Reference:</strong> 
+                                            <span class="reference-number">{{ selectedOrder.gcash_reference }}</span>
+                                        </p>
+                                        
+                                        <!-- Receipt Image Display -->
+                                        <div v-if="selectedOrder.receipt_filename" class="receipt-image-container">
+                                            <p><strong>Receipt Image:</strong></p>
+                                            <div class="receipt-image-wrapper">
+                                                <img 
+                                                    v-if="receiptImageUrl" 
+                                                    :src="receiptImageUrl" 
+                                                    alt="Payment Receipt" 
+                                                    class="receipt-image"
+                                                    @error="handleReceiptImageError"
+                                                />
+                                                <div v-else-if="receiptImageError" class="receipt-error">
+                                                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                                                    <span>Unable to load receipt image</span>
+                                                </div>
+                                                <div v-else class="receipt-loading">
+                                                    <i class="fas fa-spinner fa-spin"></i>
+                                                    <span>Loading receipt...</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div v-else-if="selectedOrder.verification_method === 'reference'" class="method-info">
+                                        <p><strong>Verification Method:</strong> Reference Number</p>
+                                        <p v-if="selectedOrder.gcash_reference">
+                                            <strong>GCash Reference Number:</strong> 
+                                            <span class="reference-number">{{ selectedOrder.gcash_reference }}</span>
+                                        </p>
+                                    </div>
+                                    <div v-else-if="selectedOrder.gcash_reference || selectedOrder.receipt_filename" class="method-info">
+                                        <p><strong>Verification Method:</strong> <span class="text-muted">Legacy/Mixed Data</span></p>
+                                        <p v-if="selectedOrder.gcash_reference">
+                                            <strong>Reference/File:</strong> 
+                                            <span class="reference-number">{{ selectedOrder.gcash_reference }}</span>
+                                        </p>
+                                        <p v-if="selectedOrder.receipt_filename && selectedOrder.receipt_filename !== selectedOrder.gcash_reference">
+                                            <strong>Receipt File:</strong> {{ selectedOrder.receipt_filename }}
+                                        </p>
+                                    </div>
+                                    <div v-else class="method-info">
+                                        <p><strong>Verification Method:</strong> <span class="text-muted">Not specified</span></p>
+                                        <p class="text-muted"><em>No verification data available for this order.</em></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <p v-if="selectedOrder.staff_name">
                             <strong>Staff Assigned:</strong> 
                             <span class="staff-badge">
@@ -425,7 +539,7 @@
                         <i class="fas fa-check-circle"></i> 
                         {{ isVerifying ? 'Verifying...' : 'Verify Payment' }}
                     </button>
-                    <button @click="selectedOrder = null" class="close-btn">
+                    <button @click="closeOrderDetails" class="close-btn">
                         <i class="fas fa-times"></i> Close
                     </button>
                 </div>
@@ -1055,6 +1169,10 @@ export default {
             showReceiptModal: false,
             imageLoadError: false,
             receiptImageBlob: null,
+            
+            // Receipt image for order details modal
+            receiptImageUrl: null,
+            receiptImageError: false,
             
             // Pagination
             currentPage: 1,
@@ -1794,6 +1912,19 @@ export default {
                         email: orderData.email // Make sure email is included in the order data
                     };
                     
+                    // Clear previous receipt image data
+                    this.receiptImageUrl = null;
+                    this.receiptImageError = false;
+                    
+                    // Load receipt image for GCash orders with receipt verification (except "to verify" status)
+                    if (orderData.payment_method === 'gcash' && 
+                        orderData.verification_method === 'receipt' && 
+                        orderData.status !== 'to verify' &&
+                        orderData.payment_intent_id) {
+                        // Use payment intent ID directly from order data
+                        await this.loadOrderReceiptImage(orderData.payment_intent_id);
+                    }
+                    
                     // Fetch payment intent data for "to verify" orders
                     if (orderData.status === 'to verify' && orderData.payment_method === 'gcash') {
                         await this.fetchPaymentIntent(orderData.order_id);
@@ -1918,6 +2049,93 @@ export default {
                 console.error('Error loading receipt image blob:', error);
                 this.imageLoadError = true;
             }
+        },
+        
+        async loadOrderReceiptImage(paymentId) {
+            try {
+                console.log(`Loading order receipt image for payment ID: ${paymentId}`);
+                this.receiptImageError = false;
+                this.receiptImageUrl = null;
+                
+                const token = localStorage.getItem('token');
+                
+                const response = await this.$fetch(`/api/payment/receipt-db/${paymentId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    this.receiptImageUrl = URL.createObjectURL(blob);
+                    console.log('Order receipt image loaded successfully');
+                } else {
+                    console.error('Failed to load order receipt image:', response.status, response.statusText);
+                    this.receiptImageError = true;
+                }
+            } catch (error) {
+                console.error('Error loading order receipt image:', error);
+                this.receiptImageError = true;
+            }
+        },
+        
+        handleReceiptImageError() {
+            console.error('Receipt image failed to display');
+            this.receiptImageError = true;
+        },
+        
+        async loadReceiptImageForOrder(orderId) {
+            try {
+                console.log(`Loading receipt image for order: ${orderId}`);
+                
+                // First get the payment intent ID for this order
+                const token = localStorage.getItem('token');
+                const response = await this.$fetch(`/api/payment/admin/payment-intent/${orderId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const paymentIntentData = await response.json();
+                    console.log('Payment intent data received:', paymentIntentData);
+                    
+                    if (paymentIntentData && paymentIntentData.id) {
+                        // Now load the receipt image using the payment intent ID
+                        await this.loadOrderReceiptImage(paymentIntentData.id);
+                    } else {
+                        console.log('No payment intent found for order:', orderId);
+                        this.receiptImageError = true;
+                    }
+                } else {
+                    console.error('Failed to get payment intent for order:', orderId, 'Status:', response.status);
+                    // Try to get more error details
+                    try {
+                        const errorData = await response.json();
+                        console.error('Error details:', errorData);
+                    } catch (e) {
+                        console.error('Could not parse error response');
+                    }
+                    this.receiptImageError = true;
+                }
+            } catch (error) {
+                console.error('Error loading receipt image for order:', error);
+                this.receiptImageError = true;
+            }
+        },
+        
+        cleanupReceiptImage() {
+            if (this.receiptImageUrl) {
+                URL.revokeObjectURL(this.receiptImageUrl);
+                this.receiptImageUrl = null;
+            }
+            this.receiptImageError = false;
+        },
+        
+        closeOrderDetails() {
+            this.cleanupReceiptImage();
+            this.selectedOrder = null;
         },
         
         showVerificationConfirmation() {
@@ -2820,6 +3038,79 @@ th {
     color: #6c757d;
 }
 
+.payment-verification {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+}
+
+.verification-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.6rem;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.verification-item.verified {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.verification-item.rejected {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.verification-item.pending {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+}
+
+.verification-item.missing {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.verification-text {
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.8rem;
+}
+
+.text-blue {
+    color: #007bff !important;
+}
+
+.text-green {
+    color: #28a745 !important;
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-warning {
+    color: #ffc107 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.text-gray {
+    color: #6c757d !important;
+}
+
+.text-muted {
+    color: #868e96 !important;
+    font-style: italic;
+}
+
 .pending {
     background-color: #fef3c7;
     color: #92400e;
@@ -3011,6 +3302,158 @@ th {
     overflow-y: auto;
     flex: 1;
     padding-right: 0.5rem;
+}
+
+/* Payment Verification Details in Modal */
+.payment-verification-details {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+
+.payment-verification-details > p {
+    margin: 0 0 1rem 0;
+    font-weight: 600;
+    color: #495057;
+}
+
+.verification-details-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.verification-status {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.verification-status.verified {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.verification-status.rejected {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.verification-status.pending {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+}
+
+.verification-status.unknown {
+    background-color: #e9ecef;
+    border: 1px solid #ced4da;
+    color: #6c757d;
+}
+
+.verification-status i {
+    font-size: 1.2rem;
+}
+
+.status-text {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.verification-date {
+    margin-left: auto;
+    font-style: italic;
+    color: #6c757d;
+}
+
+.verification-method-info {
+    padding: 1rem;
+    background-color: white;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+}
+
+.method-info p {
+    margin: 0.5rem 0;
+}
+
+.reference-number {
+    font-family: 'Courier New', monospace;
+    background-color: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Receipt Image Styles */
+.receipt-image-container {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: white;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+}
+
+.receipt-image-container > p {
+    margin: 0 0 0.75rem 0;
+    font-weight: 600;
+}
+
+.receipt-image-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 150px;
+    background-color: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 6px;
+    padding: 1rem;
+}
+
+.receipt-image {
+    max-width: 100%;
+    max-height: 400px;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.receipt-image:hover {
+    transform: scale(1.02);
+}
+
+.receipt-error, .receipt-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: #6c757d;
+    text-align: center;
+}
+
+.receipt-error i {
+    font-size: 2rem;
+    color: #ffc107;
+}
+
+.receipt-loading i {
+    font-size: 1.5rem;
+    color: #007bff;
+}
+
+.receipt-loading span, .receipt-error span {
+    font-weight: 500;
 }
 
 .order-info {
