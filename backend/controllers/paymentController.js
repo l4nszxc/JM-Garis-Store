@@ -1,4 +1,21 @@
 const db = require('../config/db');
+const fs = require('fs');
+const path = require('path');
+
+// Utility function to clean up uploaded file
+function cleanupUploadedFile(filePath) {
+    if (filePath && fs.existsSync(filePath)) {
+        try {
+            fs.unlinkSync(filePath);
+            console.log(`Cleaned up uploaded file: ${filePath}`);
+            return true;
+        } catch (error) {
+            console.error(`Error cleaning up uploaded file ${filePath}:`, error);
+            return false;
+        }
+    }
+    return false;
+}
 
 // Create manual GCash downpayment with reference number
 exports.createGCashDownpayment = async (req, res) => {
@@ -165,14 +182,21 @@ exports.createGCashPaymentOnly = async (req, res) => {
                     user_id,
                     payment_type,
                     total_amount,
+                    verification_method,
                     created_at
-                ) VALUES (?, ?, ?, ?, 'pending_verification', ?, ?, 'full_payment', ?, NOW())`,
+                ) VALUES (?, ?, ?, ?, 'pending_verification', ?, ?, 'full_payment', ?, 'reference', NOW())`,
                 [
                     orderId,
                     tempReference,
                     gcashReference.trim(),
                     finalAmount,
-                    JSON.stringify({ items, discountId, packagingPreference, paymentMethod }),
+                    JSON.stringify({ 
+                        items, 
+                        discountId, 
+                        packagingPreference, 
+                        paymentMethod,
+                        verificationMethod: 'reference'
+                    }),
                     userId,
                     finalAmount
                 ]
@@ -217,6 +241,168 @@ exports.createGCashPaymentOnly = async (req, res) => {
     } catch (error) {
         console.error('Error creating GCash payment:', error);
         res.status(500).json({ message: 'Failed to create GCash payment' });
+    }
+};
+
+// Create GCash payment with receipt upload
+exports.createGCashPaymentWithReceipt = async (req, res) => {
+    try {
+        const { amount, items, discountId, packagingPreference, paymentMethod, gcashVerificationMethod } = req.body;
+        const userId = req.user.id;
+        
+        // Parse items if it's a string (from FormData)
+        let parsedItems;
+        try {
+            parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
+        } catch (error) {
+            return res.status(400).json({ message: 'Invalid items format' });
+        }
+        
+        // Validate receipt file
+        if (!req.file) {
+            return res.status(400).json({ message: 'GCash receipt screenshot is required' });
+        }
+        
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        if (!allowedTypes.includes(req.file.mimetype)) {
+            return res.status(400).json({ message: 'Invalid file type. Please upload an image file (JPG, PNG, GIF)' });
+        }
+        
+        // Validate file size (5MB limit)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (req.file.size > maxSize) {
+            return res.status(400).json({ message: 'File size too large. Maximum size is 5MB' });
+        }
+        
+        // Generate a temporary payment reference
+        const tempReference = `temp_${Date.now()}_${userId}`;
+        
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+            
+            // Apply discount if provided
+            let finalAmount = amount;
+            let appliedDiscount = 0;
+            
+            if (discountId) {
+                try {
+                    const Reward = require('../models/rewardModel');
+                    appliedDiscount = await Reward.applyDiscount(userId, null, discountId);
+                    finalAmount = Math.max(0, amount - appliedDiscount);
+                } catch (error) {
+                    console.error('Error applying discount:', error);
+                }
+            }
+            
+            // Create order
+            const Order = require('../models/orderModel');
+            const orderId = await Order.create(
+                userId, 
+                parsedItems, 
+                finalAmount, 
+                packagingPreference, 
+                paymentMethod, 
+                'to verify' // Set to 'to verify' for GCash payments
+            );
+            
+            // Store payment info in database with order ID and receipt info
+            // Use the actual filename that multer generated and saved
+            const receiptFileName = req.file.filename; // This is the actual saved filename
+            const receiptPath = req.file.path; // This is the full path where the file was saved
+            
+            // Read the image file data to store in database
+            const imageBuffer = fs.readFileSync(receiptPath);
+            
+            await connection.execute(
+                `INSERT INTO payment_intents (
+                    order_id,
+                    reference_number,
+                    amount, 
+                    status,
+                    order_data,
+                    user_id,
+                    payment_type,
+                    total_amount,
+                    gcash_reference,
+                    receipt_image,
+                    receipt_filename,
+                    receipt_mimetype,
+                    receipt_filesize,
+                    verification_method,
+                    created_at
+                ) VALUES (?, ?, ?, 'pending_verification', ?, ?, 'full_payment', ?, ?, ?, ?, ?, ?, 'receipt', NOW())`,
+                [
+                    orderId,
+                    tempReference,
+                    finalAmount,
+                    JSON.stringify({ 
+                        items: parsedItems, 
+                        discountId, 
+                        packagingPreference, 
+                        paymentMethod,
+                        verificationMethod: 'receipt',
+                        receiptFileName: receiptFileName,
+                        receiptPath: receiptPath,
+                        originalFileName: req.file.originalname,
+                        fileSize: req.file.size,
+                        mimeType: req.file.mimetype
+                    }),
+                    userId,
+                    finalAmount,
+                    receiptFileName, // Store as gcash_reference for backward compatibility
+                    imageBuffer, // Store the actual image data
+                    req.file.originalname, // Store original filename
+                    req.file.mimetype, // Store MIME type
+                    req.file.size // Store file size
+                ]
+            );
+            
+            // Create notification for the user
+            const Notification = require('../models/notificationModel');
+            try {
+                await Notification.create({
+                    customId: `order-${orderId}-pending`,
+                    userId: userId,
+                    title: 'Order Update',
+                    message: `Order #${orderId} has been placed and is pending.`,
+                    type: 'order',
+                    icon: 'fas fa-hourglass-half',
+                    relatedOrderId: orderId,
+                    actionUrl: `/order-details/${orderId}`
+                });
+            } catch (error) {
+                console.error('Error creating notification:', error);
+            }
+            
+            await connection.commit();
+            
+            res.json({
+                orderId: orderId,
+                paymentId: tempReference,
+                referenceNumber: tempReference,
+                amount: finalAmount,
+                status: 'pending_verification',
+                message: 'Order created and GCash receipt submitted for verification. Your order is now visible in track orders.'
+            });
+            
+        } catch (error) {
+            await connection.rollback();
+            
+            // Clean up uploaded file if transaction fails
+            if (req.file && req.file.path) {
+                cleanupUploadedFile(req.file.path);
+            }
+            
+            throw error;
+        } finally {
+            connection.release();
+        }
+        
+    } catch (error) {
+        console.error('Error creating GCash payment with receipt:', error);
+        res.status(500).json({ message: 'Failed to create GCash payment with receipt' });
     }
 };
 

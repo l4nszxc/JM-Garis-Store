@@ -55,7 +55,9 @@ app.use(cors({
     optionsSuccessStatus: 200 // For legacy browser support
 }));
 
-app.use(express.json());
+// Configure express with larger limits for file uploads
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Session middleware with environment-based secret
 app.use(session({

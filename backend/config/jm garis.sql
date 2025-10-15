@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Oct 14, 2025 at 09:21 PM
+-- Generation Time: Oct 15, 2025 at 09:03 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -36,13 +36,6 @@ CREATE TABLE `available_discounts` (
   `used` tinyint(1) DEFAULT '0',
   `order_id` char(7) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `available_discounts`
---
-
-INSERT INTO `available_discounts` (`id`, `user_id`, `amount`, `created_at`, `expires_at`, `used`, `order_id`) VALUES
-(68, 1014, 5.00, '2025-10-07 08:45:12', '2025-11-06 08:45:12', 1, '0440898');
 
 -- --------------------------------------------------------
 
@@ -111,57 +104,15 @@ CREATE TABLE `notifications` (
 --
 
 INSERT INTO `notifications` (`id`, `custom_id`, `user_id`, `title`, `message`, `type`, `icon`, `is_read`, `is_deleted`, `created_at`, `updated_at`, `related_order_id`, `action_url`) VALUES
-(62, 'order-0619440-pending', 1014, 'Order Update', 'Order #0619440 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-09-15 02:28:34', '2025-10-14 20:06:44', '0619440', '/order-details/0619440'),
-(63, 'order-0619440-cancelled', 1014, 'Order Update', 'Order #0619440 status updated to cancelled.', 'order', 'fas fa-bell', 1, 0, '2025-09-15 02:28:50', '2025-10-14 20:06:44', '0619440', '/order-details/0619440'),
-(66, 'order-5587250-pending', 1014, 'Order Update', 'Order #5587250 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-09-16 05:50:43', '2025-10-14 20:06:44', '5587250', '/order-details/5587250'),
-(67, 'order-5587250-ready for pickup', 1014, 'Order Update', 'Order #5587250 is ready for pickup!', 'order', 'fas fa-check-circle', 1, 0, '2025-09-16 05:51:43', '2025-10-14 20:06:44', '5587250', '/order-details/5587250'),
-(69, 'order-5587250-paid', 1014, 'Order Update', 'Order #5587250 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 1, 0, '2025-09-16 05:53:43', '2025-10-14 20:06:44', '5587250', '/order-details/5587250'),
-(70, 'order-8329578-paid', 1014, 'Order Update', 'Order #8329578 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 1, 0, '2025-09-16 05:55:31', '2025-10-14 20:06:44', '8329578', '/order-details/8329578'),
-(73, 'order-8329578-ready for pickup', 1014, 'Order Update', 'Order #8329578 is ready for pickup!', 'order', 'fas fa-check-circle', 1, 0, '2025-09-16 05:58:31', '2025-10-14 20:06:44', '8329578', '/order-details/8329578'),
-(90, 'order-6393957-pending', 1014, 'Order Update', 'Order #6393957 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-09-16 08:26:28', '2025-10-14 20:06:44', '6393957', '/order-details/6393957'),
-(91, 'order-PO00002-ready for pickup', 1016, 'Order Update', 'Order #PO00002 is ready for pickup!', 'order', 'fas fa-check-circle', 0, 0, '2025-09-16 08:28:57', '2025-09-16 08:28:57', 'PO00002', '/order-details/PO00002'),
-(92, 'order-PO00001-paid', 1016, 'Order Update', 'Order #PO00001 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-09-16 08:28:57', '2025-09-16 08:28:57', 'PO00001', '/order-details/PO00001'),
-(93, 'order-6393957-preparing', 1014, 'Order Update', 'Order #6393957 is now being prepared.', 'order', 'fas fa-utensils', 1, 0, '2025-09-16 08:29:29', '2025-10-14 20:06:44', '6393957', '/order-details/6393957'),
-(94, 'order-6393957-paid', 1014, 'Order Update', 'Order #6393957 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 1, 0, '2025-09-16 08:30:29', '2025-10-14 20:06:44', '6393957', '/order-details/6393957'),
-(98, 'order-PO00007-paid', 1016, 'Order Update', 'Order #PO00007 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-07 08:27:32', '2025-10-07 08:27:32', 'PO00007', '/order-details/PO00007'),
-(99, 'order-PO00006-paid', 1016, 'Order Update', 'Order #PO00006 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-07 08:27:32', '2025-10-07 08:27:32', 'PO00006', '/order-details/PO00006'),
-(100, 'order-9248589-pending', 1014, 'Order Update', 'Order #9248589 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-10-07 08:44:09', '2025-10-14 20:06:44', '9248589', '/order-details/9248589'),
-(101, 'order-9248589-paid', 1014, 'Order Update', 'Order #9248589 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 1, 0, '2025-10-07 08:45:05', '2025-10-14 20:06:44', '9248589', '/order-details/9248589'),
-(103, 'order-0440898-pending', 1014, 'Order Update', 'Order #0440898 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-10-07 08:45:22', '2025-10-14 20:06:44', '0440898', '/order-details/0440898'),
-(104, 'order-0440898-paid', 1014, 'Order Update', 'Order #0440898 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 1, 0, '2025-10-07 08:46:31', '2025-10-14 20:06:44', '0440898', '/order-details/0440898'),
-(117, 'order-2145910-pending', 1014, 'Order Update', 'Order #2145910 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-10-07 21:58:41', '2025-10-14 20:06:44', '2145910', '/order-details/2145910'),
-(118, 'order-1411356-pending', 1014, 'Order Update', 'Order #1411356 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-10-07 21:59:00', '2025-10-14 20:06:44', '1411356', '/order-details/1411356'),
-(124, 'order-1448515-pending', 1014, 'Order Update', 'Order #1448515 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-10-07 22:07:59', '2025-10-14 20:06:44', '1448515', '/order-details/1448515'),
-(132, 'order-1448515-preparing', 1014, 'Order Update', 'Order #1448515 is now being prepared.', 'order', 'fas fa-utensils', 1, 0, '2025-10-07 22:18:51', '2025-10-14 20:06:44', '1448515', '/order-details/1448515'),
-(171, 'order-PO00041-paid', 1016, 'Order Update', 'Order #PO00041 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00041', '/order-details/PO00041'),
-(172, 'order-PO00040-paid', 1016, 'Order Update', 'Order #PO00040 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00040', '/order-details/PO00040'),
-(173, 'order-PO00039-paid', 1016, 'Order Update', 'Order #PO00039 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00039', '/order-details/PO00039'),
-(174, 'order-PO00038-paid', 1016, 'Order Update', 'Order #PO00038 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00038', '/order-details/PO00038'),
-(175, 'order-PO00037-paid', 1016, 'Order Update', 'Order #PO00037 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00037', '/order-details/PO00037'),
-(176, 'order-PO00036-paid', 1016, 'Order Update', 'Order #PO00036 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00036', '/order-details/PO00036'),
-(177, 'order-PO00035-paid', 1016, 'Order Update', 'Order #PO00035 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00035', '/order-details/PO00035'),
-(178, 'order-PO00034-paid', 1016, 'Order Update', 'Order #PO00034 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00034', '/order-details/PO00034'),
-(179, 'order-PO00033-paid', 1016, 'Order Update', 'Order #PO00033 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 0, 0, '2025-10-08 16:28:49', '2025-10-08 16:28:49', 'PO00033', '/order-details/PO00033'),
-(180, 'order-1448515-ready for pickup', 1014, 'Order Update', 'Order #1448515 is ready for pickup!', 'order', 'fas fa-check-circle', 1, 0, '2025-10-08 16:29:24', '2025-10-14 20:06:44', '1448515', '/order-details/1448515'),
-(181, 'order-1411356-preparing', 1014, 'Order Update', 'Order #1411356 is now being prepared.', 'order', 'fas fa-utensils', 1, 0, '2025-10-08 16:29:24', '2025-10-14 20:06:44', '1411356', '/order-details/1411356'),
-(183, 'order-1448515-paid', 1014, 'Order Update', 'Order #1448515 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 1, 0, '2025-10-08 16:30:24', '2025-10-14 20:06:44', '1448515', '/order-details/1448515'),
-(304, 'order-1411356-paid', 1014, 'Order Update', 'Order #1411356 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 1, 0, '2025-10-08 17:10:53', '2025-10-14 20:06:44', '1411356', '/order-details/1411356'),
-(311, 'order-2145910-ready for pickup', 1014, 'Order Update', 'Order #2145910 is ready for pickup!', 'order', 'fas fa-check-circle', 1, 0, '2025-10-08 17:12:53', '2025-10-14 20:06:44', '2145910', '/order-details/2145910'),
-(314, 'order-2145910-paid', 1014, 'Order Update', 'Order #2145910 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 1, 0, '2025-10-08 17:13:53', '2025-10-14 20:06:44', '2145910', '/order-details/2145910'),
-(405, 'order-1967882-pending', 1014, 'Order Update', 'Order #1967882 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-10-08 18:05:58', '2025-10-14 20:06:44', '1967882', '/order-details/1967882'),
-(425, 'order-8731696-pending', 1014, 'Order Update', 'Order #8731696 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-10-08 18:38:39', '2025-10-14 20:06:44', '8731696', '/order-details/8731696'),
-(426, 'order-8731696-ready for pickup', 1014, 'Order Update', 'Order #8731696 is ready for pickup!', 'order', 'fas fa-check-circle', 1, 0, '2025-10-09 18:34:22', '2025-10-14 20:06:44', '8731696', '/order-details/8731696'),
-(427, 'order-8731696-paid', 1014, 'Order Update', 'Order #8731696 has been paid and completed.', 'order', 'fas fa-money-bill-wave', 1, 0, '2025-10-09 18:35:22', '2025-10-14 20:06:44', '8731696', '/order-details/8731696'),
-(428, 'order-3839021-pending', 1014, 'Order Update', 'Order #3839021 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-10-14 19:40:37', '2025-10-14 20:06:44', '3839021', '/order-details/3839021'),
-(429, 'order-7713030-pending', 1014, 'Order Update', 'Order #7713030 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 1, 0, '2025-10-14 20:03:35', '2025-10-14 20:06:44', '7713030', '/order-details/7713030'),
-(432, 'order-1224994-pending', 1014, 'Order Update', 'Order #1224994 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-14 20:06:58', '2025-10-14 20:06:58', '1224994', '/order-details/1224994'),
-(447, 'order-6291140-pending', 1014, 'Order Update', 'Order #6291140 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-14 20:25:08', '2025-10-14 20:25:08', '6291140', '/order-details/6291140'),
-(452, 'order-9653453-to verify', 1014, 'Order Update', 'Order #9653453 status updated to to verify.', 'order', 'fas fa-bell', 0, 0, '2025-10-14 20:30:04', '2025-10-14 20:30:04', '9653453', '/order-details/9653453'),
-(453, 'order-9263964-pending', 1014, 'Order Update', 'Order #9263964 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-14 20:36:51', '2025-10-14 20:36:51', '9263964', '/order-details/9263964'),
-(454, 'order-9263964-cancelled', 1014, 'Order Update', 'Order #9263964 status updated to cancelled.', 'order', 'fas fa-bell', 0, 0, '2025-10-14 20:37:00', '2025-10-14 20:37:00', '9263964', '/order-details/9263964'),
-(455, 'order-6731656-to verify', 1014, 'Order Update', 'Order #6731656 status updated to to verify.', 'order', 'fas fa-bell', 0, 0, '2025-10-14 20:37:16', '2025-10-14 20:37:16', '6731656', '/order-details/6731656'),
-(457, 'order-6291140-preparing', 1014, 'Order Update', 'Order #6291140 is now being prepared.', 'order', 'fas fa-utensils', 0, 0, '2025-10-14 20:41:10', '2025-10-14 20:41:10', '6291140', '/order-details/6291140'),
-(459, 'order-0000809-to verify', 1014, 'Order Update', 'Order #0000809 status updated to to verify.', 'order', 'fas fa-bell', 0, 0, '2025-10-14 20:43:13', '2025-10-14 20:43:13', '0000809', '/order-details/0000809');
+(460, 'order-2115444-to verify', 1014, 'Order Update', 'Order #2115444 status updated to to verify.', 'order', 'fas fa-bell', 0, 0, '2025-10-14 21:40:32', '2025-10-14 21:40:32', '2115444', '/order-details/2115444'),
+(461, 'order-2115444-pending', 1014, 'Order Update', 'Order #2115444 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-14 21:49:28', '2025-10-14 21:49:28', '2115444', '/order-details/2115444'),
+(462, 'order-2015022-to verify', 1014, 'Order Update', 'Order #2015022 status updated to to verify.', 'order', 'fas fa-bell', 0, 0, '2025-10-15 06:46:19', '2025-10-15 06:46:19', '2015022', '/order-details/2015022'),
+(464, 'order-2015022-cancelled', 1014, 'Order Update', 'Order #2015022 status updated to cancelled.', 'order', 'fas fa-bell', 0, 0, '2025-10-15 06:48:02', '2025-10-15 06:48:02', '2015022', '/order-details/2015022'),
+(465, 'order-0230512-pending', 1014, 'Order Update', 'Order #0230512 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-15 06:48:18', '2025-10-15 06:48:18', '0230512', '/order-details/0230512'),
+(466, 'order-5271472-to verify', 1014, 'Order Update', 'Order #5271472 status updated to to verify.', 'order', 'fas fa-bell', 0, 0, '2025-10-15 06:48:44', '2025-10-15 06:48:44', '5271472', '/order-details/5271472'),
+(469, 'order-5271472-pending', 1014, 'Order Update', 'Order #5271472 has been placed and is pending.', 'order', 'fas fa-hourglass-half', 0, 0, '2025-10-15 19:57:54', '2025-10-15 19:57:54', '5271472', '/order-details/5271472'),
+(471, 'order-4421119-to verify', 1014, 'Order Update', 'Order #4421119 status updated to to verify.', 'order', 'fas fa-bell', 0, 0, '2025-10-15 20:15:33', '2025-10-15 20:15:33', '4421119', '/order-details/4421119'),
+(484, 'order-5385188-to verify', 1014, 'Order Update', 'Order #5385188 status updated to to verify.', 'order', 'fas fa-bell', 0, 0, '2025-10-15 20:52:19', '2025-10-15 20:52:19', '5385188', '/order-details/5385188');
 
 -- --------------------------------------------------------
 
@@ -194,23 +145,13 @@ CREATE TABLE `orders` (
 --
 
 INSERT INTO `orders` (`order_id`, `user_id`, `total_amount`, `status`, `payment_status`, `created_at`, `updated_at`, `cancel_reason`, `accepted_by`, `accepted_at`, `cash_amount`, `change_amount`, `customer_name`, `is_physical_order`, `packaging_preference`, `payment_intent_id`, `payment_method`) VALUES
-('0000809', 1014, 189.00, 'to verify', 'pending', '2025-10-14 20:43:11', '2025-10-14 20:43:11', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', 'temp_1760474591547_1014', 'gcash'),
-('0619440', 1014, 301.00, 'cancelled', 'pending', '2025-09-15 02:28:34', '2025-09-15 02:28:46', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
-('1224994', 1014, 649.00, 'pending', 'pending', '2025-10-14 20:06:56', '2025-10-14 20:06:56', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', 'temp_1760472416420_1014', 'gcash'),
-('3839021', 1014, 301.00, 'pending', 'pending', '2025-10-14 19:40:37', '2025-10-14 19:40:37', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
-('5587250', 1014, 234.00, 'paid', 'pending', '2025-09-16 05:50:43', '2025-09-16 05:53:20', NULL, 1016, '2025-09-16 13:50:58', 4000.00, 3766.00, NULL, 0, 'eco', NULL, 'cash'),
-('6291140', 1014, 140.00, 'preparing', 'pending', '2025-10-14 20:25:07', '2025-10-14 20:41:03', NULL, 1016, '2025-10-15 04:41:03', NULL, NULL, NULL, 0, 'eco', 'temp_1760473507462_1014', 'gcash'),
-('6393957', 1014, 50.00, 'paid', 'pending', '2025-09-16 08:26:28', '2025-09-16 08:29:56', NULL, 1016, '2025-09-16 16:29:21', 50.00, 0.00, NULL, 0, 'eco', NULL, 'cash'),
-('6731656', 1014, 649.00, 'to verify', 'pending', '2025-10-14 20:37:14', '2025-10-14 20:37:14', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', 'temp_1760474234384_1014', 'gcash'),
-('7713030', 1014, 234.00, 'pending', 'pending', '2025-10-14 20:03:33', '2025-10-14 20:03:33', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', 'temp_1760472213487_1014', 'gcash'),
-('8329578', 1014, 649.00, 'paid', 'pending', '2025-09-16 05:54:37', '2025-09-16 06:02:39', NULL, 1016, '2025-09-16 13:54:45', 1000.00, 351.00, NULL, 0, 'eco', NULL, 'hatid'),
-('9263964', 1014, 234.00, 'cancelled', 'pending', '2025-10-14 20:36:51', '2025-10-14 20:36:58', 'Changed my mind', NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
-('9653453', 1014, 22.50, 'to verify', 'pending', '2025-10-14 20:30:03', '2025-10-14 20:30:03', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', 'temp_1760473803038_1014', 'gcash'),
-('PO00001', 1016, 936.00, 'paid', 'pending', '2025-09-16 05:51:25', '2025-09-16 05:52:46', NULL, 1016, '2025-09-16 13:51:25', 1000.00, 64.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash'),
-('PO00002', 1016, 843.00, 'paid', 'pending', '2025-09-16 06:29:43', '2025-10-07 08:07:16', NULL, 1016, '2025-09-16 14:29:43', 1000.00, 157.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash'),
-('PO00003', 1016, 255.00, 'paid', 'pending', '2025-09-16 08:44:48', '2025-10-02 02:57:00', NULL, 1016, '2025-09-16 16:44:48', 300.00, 45.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash'),
-('PO00004', 1016, 72.00, 'paid', 'pending', '2025-10-01 07:04:58', '2025-10-01 07:05:09', NULL, 1016, '2025-10-01 15:04:58', 100.00, 28.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash'),
-('PO00005', 1016, 95.00, 'paid', 'pending', '2025-10-01 07:10:23', '2025-10-01 07:10:42', NULL, 1016, '2025-10-01 15:10:23', 95.00, 0.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash');
+('0230512', 1014, 234.00, 'pending', 'pending', '2025-10-15 06:48:18', '2025-10-15 06:48:18', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', NULL, 'cash'),
+('2015022', 1014, 234.00, 'cancelled', 'failed', '2025-10-15 06:46:05', '2025-10-15 06:47:46', 'GCash payment verification failed', NULL, NULL, NULL, NULL, NULL, 0, 'eco', 'temp_1760510765243_1014', 'gcash'),
+('2115444', 1014, 140.00, 'pending', 'paid', '2025-10-14 21:40:24', '2025-10-14 21:49:21', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', 'temp_1760478024553_1014', 'gcash'),
+('4421119', 1014, 950.00, 'to verify', 'pending', '2025-10-15 20:15:32', '2025-10-15 20:15:32', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', 'temp_1760559332401_1014', 'gcash'),
+('5271472', 1014, 270.00, 'pending', 'paid', '2025-10-15 06:48:40', '2025-10-15 06:51:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', 'temp_1760510920812_1014', 'gcash'),
+('5385188', 1014, 649.00, 'to verify', 'pending', '2025-10-15 20:52:17', '2025-10-15 20:52:17', NULL, NULL, NULL, NULL, NULL, NULL, 0, 'eco', 'temp_1760561537762_1014', 'gcash'),
+('PO00001', 1016, 301.00, 'paid', 'pending', '2025-10-15 20:02:08', '2025-10-15 20:09:01', NULL, 1016, '2025-10-16 04:02:08', 301.00, 0.00, 'Walk-in Customer', 1, 'eco', NULL, 'cash');
 
 -- --------------------------------------------------------
 
@@ -232,23 +173,14 @@ CREATE TABLE `order_items` (
 --
 
 INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `price`, `choice_id`) VALUES
-(4262, '0619440', 31, 1, 301.00, NULL),
-(4263, '5587250', 32, 1, 234.00, NULL),
-(4264, 'PO00001', 32, 4, 234.00, NULL),
-(4265, '8329578', 33, 1, 649.00, NULL),
-(4266, 'PO00002', 72, 1, 843.00, 104),
-(4267, '6393957', 178, 1, 50.00, 264),
-(4268, 'PO00003', 72, 1, 255.00, 99),
-(4269, 'PO00004', 79, 1, 72.00, NULL),
-(4270, 'PO00005', 83, 1, 95.00, NULL),
-(4325, '3839021', 31, 1, 301.00, NULL),
-(4326, '7713030', 32, 1, 234.00, NULL),
-(4327, '1224994', 33, 1, 649.00, NULL),
-(4328, '6291140', 36, 1, 140.00, NULL),
-(4329, '9653453', 41, 1, 22.50, NULL),
-(4330, '9263964', 32, 1, 234.00, NULL),
-(4331, '6731656', 33, 1, 649.00, NULL),
-(4332, '0000809', 34, 1, 189.00, 258);
+(4333, '2115444', 36, 1, 140.00, NULL),
+(4334, '2015022', 32, 1, 234.00, NULL),
+(4335, '0230512', 32, 1, 234.00, NULL),
+(4336, '5271472', 52, 1, 270.00, NULL),
+(4337, 'PO00001', 31, 1, 301.00, NULL),
+(4338, '4421119', 31, 1, 301.00, NULL),
+(4339, '4421119', 33, 1, 649.00, NULL),
+(4340, '5385188', 33, 1, 649.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -306,23 +238,24 @@ CREATE TABLE `payment_intents` (
   `total_amount` decimal(10,2) DEFAULT NULL,
   `remaining_amount` decimal(10,2) DEFAULT NULL,
   `gcash_reference` varchar(255) DEFAULT NULL,
-  `verified_at` timestamp NULL DEFAULT NULL
+  `verified_at` timestamp NULL DEFAULT NULL,
+  `receipt_image` longblob COMMENT 'GCash receipt image data',
+  `receipt_filename` varchar(255) DEFAULT NULL COMMENT 'Original filename of the receipt',
+  `receipt_mimetype` varchar(100) DEFAULT NULL COMMENT 'MIME type of the receipt image (e.g., image/jpeg)',
+  `receipt_filesize` int DEFAULT NULL COMMENT 'File size in bytes',
+  `verification_method` enum('reference','receipt') DEFAULT 'reference' COMMENT 'Payment verification method: reference number or receipt upload'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `payment_intents`
 --
 
-INSERT INTO `payment_intents` (`id`, `order_id`, `amount`, `status`, `created_at`, `updated_at`, `reference_number`, `paid_at`, `order_data`, `user_id`, `payment_type`, `total_amount`, `remaining_amount`, `gcash_reference`, `verified_at`) VALUES
-(69, NULL, 301.00, 'pending_verification', '2025-10-14 19:21:37', '2025-10-14 19:21:37', 'temp_1760469697864_1014', NULL, '{\"items\":[{\"id\":2491925,\"product_id\":31,\"quantity\":1,\"price\":301,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 301.00, NULL, '000000', NULL),
-(70, NULL, 234.00, 'pending_verification', '2025-10-14 19:41:27', '2025-10-14 19:41:27', 'temp_1760470887794_1014', NULL, '{\"items\":[{\"id\":2491926,\"product_id\":32,\"quantity\":1,\"price\":234,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 234.00, NULL, '0032131', NULL),
-(71, NULL, 234.00, 'pending_verification', '2025-10-14 19:56:04', '2025-10-14 19:56:04', 'temp_1760471764251_1014', NULL, '{\"items\":[{\"id\":2491926,\"product_id\":32,\"quantity\":1,\"price\":234,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 234.00, NULL, '32131232', NULL),
-(72, '7713030', 234.00, 'pending_verification', '2025-10-14 20:03:33', '2025-10-14 20:03:33', 'temp_1760472213487_1014', NULL, '{\"items\":[{\"id\":2491926,\"product_id\":32,\"quantity\":1,\"price\":234,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 234.00, NULL, '312312', NULL),
-(73, '1224994', 649.00, 'pending_verification', '2025-10-14 20:06:56', '2025-10-14 20:06:56', 'temp_1760472416420_1014', NULL, '{\"items\":[{\"id\":2491927,\"product_id\":33,\"quantity\":1,\"price\":649,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 649.00, NULL, '312312312', NULL),
-(74, '6291140', 140.00, 'pending_verification', '2025-10-14 20:25:07', '2025-10-14 20:25:07', 'temp_1760473507462_1014', NULL, '{\"items\":[{\"id\":2491928,\"product_id\":36,\"quantity\":1,\"price\":140,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 140.00, NULL, '3213123333', NULL),
-(75, '9653453', 22.50, 'pending_verification', '2025-10-14 20:30:03', '2025-10-14 20:30:03', 'temp_1760473803038_1014', NULL, '{\"items\":[{\"id\":2491929,\"product_id\":41,\"quantity\":1,\"price\":22.5,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 22.50, NULL, '32131231', NULL),
-(76, '6731656', 649.00, 'pending_verification', '2025-10-14 20:37:14', '2025-10-14 20:37:14', 'temp_1760474234384_1014', NULL, '{\"items\":[{\"id\":2491931,\"product_id\":33,\"quantity\":1,\"price\":649,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 649.00, NULL, '6575755', NULL),
-(77, '0000809', 189.00, 'pending_verification', '2025-10-14 20:43:11', '2025-10-14 20:43:11', 'temp_1760474591547_1014', NULL, '{\"items\":[{\"id\":2491932,\"product_id\":34,\"quantity\":1,\"price\":189,\"choice_id\":258}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 189.00, NULL, '7544656', NULL);
+INSERT INTO `payment_intents` (`id`, `order_id`, `amount`, `status`, `created_at`, `updated_at`, `reference_number`, `paid_at`, `order_data`, `user_id`, `payment_type`, `total_amount`, `remaining_amount`, `gcash_reference`, `verified_at`, `receipt_image`, `receipt_filename`, `receipt_mimetype`, `receipt_filesize`, `verification_method`) VALUES
+(78, '2115444', 140.00, 'verified', '2025-10-14 21:40:24', '2025-10-14 21:49:21', 'temp_1760478024553_1014', NULL, '{\"items\":[{\"id\":2491933,\"product_id\":36,\"quantity\":1,\"price\":140,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 140.00, NULL, '5534313', '2025-10-14 21:49:21', NULL, NULL, NULL, NULL, 'reference'),
+(79, '2015022', 234.00, 'rejected', '2025-10-15 06:46:05', '2025-10-15 06:47:46', 'temp_1760510765243_1014', NULL, '{\"items\":[{\"id\":2491934,\"product_id\":32,\"quantity\":1,\"price\":234,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 234.00, NULL, '234567', NULL, NULL, NULL, NULL, NULL, 'reference'),
+(80, '5271472', 270.00, 'verified', '2025-10-15 06:48:40', '2025-10-15 06:51:00', 'temp_1760510920812_1014', NULL, '{\"items\":[{\"id\":2491936,\"product_id\":52,\"quantity\":1,\"price\":270,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 270.00, NULL, '0987654321', '2025-10-15 06:51:00', NULL, NULL, NULL, NULL, 'reference'),
+(81, '4421119', 950.00, 'pending_verification', '2025-10-15 20:15:32', '2025-10-15 20:15:32', 'temp_1760559332401_1014', NULL, '{\"items\":[{\"id\":2491937,\"product_id\":31,\"quantity\":1,\"price\":301,\"choice_id\":null},{\"id\":2491938,\"product_id\":33,\"quantity\":1,\"price\":649,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\"}', 1014, 'full_payment', 950.00, NULL, '3214155', NULL, NULL, NULL, NULL, NULL, 'reference'),
+(82, '5385188', 649.00, 'pending_verification', '2025-10-15 20:52:17', '2025-10-15 20:52:17', 'temp_1760561537762_1014', NULL, '{\"items\":[{\"id\":2491939,\"product_id\":33,\"quantity\":1,\"price\":649,\"choice_id\":null}],\"discountId\":\"\",\"packagingPreference\":\"eco\",\"paymentMethod\":\"gcash\",\"verificationMethod\":\"reference\"}', 1014, 'full_payment', 649.00, NULL, '31231232', NULL, NULL, NULL, NULL, NULL, 'reference');
 
 -- --------------------------------------------------------
 
@@ -349,7 +282,7 @@ CREATE TABLE `payment_settings` (
 --
 
 INSERT INTO `payment_settings` (`id`, `gcash_enabled`, `gcash_public_key`, `gcash_secret_key`, `gcash_environment`, `downpayment_enabled`, `downpayment_percentage`, `min_order_amount`, `created_at`, `updated_at`, `updated_by`) VALUES
-(1, 1, NULL, NULL, 'test', 0, 30.00, 500.00, '2025-09-09 17:29:41', '2025-10-14 19:02:45', 20);
+(1, 1, NULL, NULL, 'test', 1, 30.00, 500.00, '2025-09-09 17:29:41', '2025-10-15 19:59:45', 20);
 
 -- --------------------------------------------------------
 
@@ -374,11 +307,11 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_quantity`, `category`, `image`, `created_at`, `updated_at`) VALUES
-(31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 895, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-03-31 23:21:29', '2025-10-14 19:40:37'),
-(32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 929, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-03-31 23:22:15', '2025-10-14 20:36:58'),
-(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 925, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-03-31 23:22:59', '2025-10-14 20:37:14'),
+(31, 'Alfonso 1 1Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 301.00, 893, 'Beverages', 'https://i.ibb.co/jPyMQ6tH/2bf48b084634.png', '2025-03-31 23:21:29', '2025-10-15 20:15:32'),
+(32, 'Alfonso 1 700mL', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 234.00, 927, 'Beverages', 'https://i.ibb.co/wjnnCRK/7928f679733c.png', '2025-03-31 23:22:15', '2025-10-15 06:48:18'),
+(33, 'Alfonso 1 1.75Liter', 'brandy-type spirit prepared with medium and high-strength wine spirits, 77% and 94% Alc./Vol. aged in oak casks. ', 649.00, 923, 'Beverages', 'https://i.ibb.co/N2t2GD8s/5da50a598cd4.png', '2025-03-31 23:22:59', '2025-10-15 20:52:17'),
 (34, 'GSM Mojito', 'offers a refreshing blend of gin infused with mint and lime flavors, reminiscent of a traditional Mojito cocktail. It tends to have a crisp and citrusy profile with a hint of herbal notes from the mint.', 0.00, 72, 'Beverages', 'https://i.ibb.co/60Bw2QX7/6a76cc18e196.png', '2025-03-31 23:28:23', '2025-07-03 18:59:39'),
-(36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 71, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-03-31 23:34:49', '2025-10-14 20:25:07'),
+(36, 'Primera Light 750mL', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 140.00, 70, 'Beverages', 'https://i.ibb.co/0pCHgRnP/6b834d85cc3b.png', '2025-03-31 23:34:49', '2025-10-14 21:40:24'),
 (37, 'Primera Light 1Liter', 'A unique 55-proof brandy liqueur masterpiece made with fine imported ingredients from Spain. It is exquisitely blended with Solera Gran Reserva Brandy concentrate. Gives a distinctly flavorful aroma and exceptional taste. Delivering a light character and smooth throat-feel.', 189.00, 91, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-03-31 23:35:27', '2025-10-07 14:19:16'),
 (38, 'Lucky 7 Corned Beef ', 'organic-free corned beef multipack', 0.00, 196, 'Canned Goods', 'https://i.ibb.co/MD9MDJ5q/d66d18901a73.png', '2025-03-31 23:37:33', '2025-07-03 18:36:10'),
 (41, 'Lucky 7 Meat Loaf 150g', 'organic-free corned beef multipack', 22.50, 49, 'Canned Goods', 'https://i.ibb.co/tTMm9hg9/bf73f6e95a5d.png', '2025-03-31 23:42:51', '2025-10-14 20:30:03'),
@@ -387,7 +320,7 @@ INSERT INTO `products` (`products_id`, `name`, `description`, `price`, `stock_qu
 (48, 'Argentina Corned Beef', 'No. 1 corned beef brand that has the food qualities consumer most value', 0.00, 100, 'Canned Goods', 'https://i.ibb.co/W46GfnGB/d19d7b986670.png', '2025-04-01 01:32:37', '2025-07-03 18:28:05'),
 (50, 'Primera Light 1Liter', 'a unique 55-proof brandy liqueur masterpiece', 185.00, 15, 'Beverages', 'https://i.ibb.co/ZjVBQQm/54ecebf9dc9f.png', '2025-04-01 01:41:56', '2025-08-07 02:33:00'),
 (51, 'May Sparkle Red', 'A non-alcoholic beverage from freshly-pressed and carefully-selected Belgium Grapes.', 0.00, 6, 'Beverages', 'https://i.ibb.co/Wv5gFDjr/d75fc84e5138.png', '2025-04-01 01:43:28', '2025-04-01 09:04:28'),
-(52, 'Novellino 750mL', 'Novellino Wild Blackberry is a casual wine vinified from choice vitis vinifera grapes in the tradition of fine Italian winemaking', 270.00, 6, 'Beverages', 'https://i.ibb.co/278v021y/05b8707b2772.png', '2025-04-01 01:45:11', '2025-09-16 05:38:45'),
+(52, 'Novellino 750mL', 'Novellino Wild Blackberry is a casual wine vinified from choice vitis vinifera grapes in the tradition of fine Italian winemaking', 270.00, 5, 'Beverages', 'https://i.ibb.co/278v021y/05b8707b2772.png', '2025-04-01 01:45:11', '2025-10-15 06:48:40'),
 (53, 'The Bar Dry Gin 335mL ', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 6, 'Beverages', 'https://i.ibb.co/jkNpPRn2/4cd7e58417a4.png', '2025-04-01 01:46:37', '2025-04-16 23:31:00'),
 (54, 'The Bar Pink 335mL', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 58, 'Beverages', 'https://i.ibb.co/hxGrvfmq/a6f137b5983c.png', '2025-04-01 01:47:16', '2025-05-18 22:14:33'),
 (55, 'The Bar Lime 335mL', ' a world-class gin infused with imported botanicals from Spain that gives it a delicious burst of flavor not found in local gin products', 55.00, 6, 'Beverages', 'https://i.ibb.co/8gggkGVx/49ad7f791839.png', '2025-04-01 01:47:46', '2025-08-07 00:31:29'),
@@ -920,7 +853,7 @@ CREATE TABLE `user_loyalty_status` (
 --
 
 INSERT INTO `user_loyalty_status` (`id`, `user_id`, `loyalty_tier_id`, `current_month_spend`, `last_month_spend`, `two_months_ago_spend`, `tier_start_date`, `tier_end_date`, `last_updated`) VALUES
-(10, 1014, 2, 16371.00, 0.00, 0.00, '2025-10-15', '2026-01-14', '2025-10-14 20:36:51');
+(11, 1014, 1, 535.00, 0.00, 0.00, '2025-10-15', '2026-01-15', '2025-10-15 20:39:23');
 
 -- --------------------------------------------------------
 
@@ -942,25 +875,8 @@ CREATE TABLE `user_rewards` (
 --
 
 INSERT INTO `user_rewards` (`id`, `user_id`, `order_id`, `points`, `description`, `created_at`) VALUES
-(584, 1014, '0619440', 3, 'Earned points from order #0619440 (₱301.00)', '2025-09-15 02:28:34'),
-(585, 1014, '5587250', 1, 'Earned points from order #5587250 (₱234.00)', '2025-09-16 05:50:43'),
-(586, 1014, '8329578', 3, 'Earned points from order #8329578 (₱649.00)', '2025-09-16 05:54:37'),
-(587, 1014, '9248589', 39, 'Earned points from order #9248589 (₱3960.00)', '2025-10-07 08:44:08'),
-(588, 1014, '9248589', 3, 'Bronzezxc loyalty bonus (+10.00%)', '2025-10-07 08:44:08'),
-(589, 1014, NULL, -10, 'Redeemed for Bronze Rewardz - ₱5.00 discount', '2025-10-07 08:45:12'),
-(590, 1014, '0440898', 2, 'Earned points from order #0440898 (₱229.00)', '2025-10-07 08:45:22'),
-(591, 1014, 'PO00030', 3, 'Earned points from order #PO00030 (₱301.00)', '2025-10-07 15:42:29'),
-(592, 1014, 'PO00033', 3, 'Earned points from order #PO00033 (₱301.00)', '2025-10-07 18:49:07'),
-(593, 1014, 'PO00034', 3, 'Earned points from order #PO00034 (₱301.00)', '2025-10-07 18:53:20'),
-(594, 1014, '2145910', 43, 'Earned points from order #2145910 (₱4362.00)', '2025-10-07 21:58:41'),
-(595, 1014, '2145910', 4, 'Bronzezxc loyalty bonus (+10.00%)', '2025-10-07 21:58:41'),
-(596, 1014, '1411356', 3, 'Earned points from order #1411356 (₱301.00)', '2025-10-07 21:59:00'),
-(597, 1014, '1448515', 3, 'Earned points from order #1448515 (₱301.00)', '2025-10-07 22:07:59'),
-(598, 1014, '1967882', 2, 'Earned points from order #1967882 (₱234.00)', '2025-10-08 18:05:57'),
-(599, 1014, '8731696', 43, 'Earned points from order #8731696 (₱4362.00)', '2025-10-08 18:38:39'),
-(600, 1014, '8731696', 4, 'Bronzezxc loyalty bonus (+10.00%)', '2025-10-08 18:38:39'),
-(601, 1014, '3839021', 3, 'Earned points from order #3839021 (₱301.00)', '2025-10-14 19:40:37'),
-(602, 1014, '9263964', 2, 'Earned points from order #9263964 (₱234.00)', '2025-10-14 20:36:51');
+(603, 1014, '0230512', 2, 'Earned points from order #0230512 (₱234.00)', '2025-10-15 06:48:18'),
+(604, 1014, 'PO00001', 3, 'Earned points from order #PO00001 (₱301.00)', '2025-10-15 20:39:23');
 
 --
 -- Indexes for dumped tables
@@ -1038,7 +954,10 @@ ALTER TABLE `order_reviews`
 ALTER TABLE `payment_intents`
   ADD PRIMARY KEY (`id`),
   ADD KEY `order_id` (`order_id`),
-  ADD KEY `idx_reference_number` (`reference_number`);
+  ADD KEY `idx_reference_number` (`reference_number`),
+  ADD KEY `idx_verification_method` (`verification_method`),
+  ADD KEY `idx_receipt_filename` (`receipt_filename`),
+  ADD KEY `idx_status_verification` (`status`,`verification_method`);
 
 --
 -- Indexes for table `payment_settings`
@@ -1131,7 +1050,7 @@ ALTER TABLE `available_discounts`
 -- AUTO_INCREMENT for table `cart`
 --
 ALTER TABLE `cart`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491933;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2491940;
 
 --
 -- AUTO_INCREMENT for table `loyalty_tiers`
@@ -1143,13 +1062,13 @@ ALTER TABLE `loyalty_tiers`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=460;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=489;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4333;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4341;
 
 --
 -- AUTO_INCREMENT for table `order_reports`
@@ -1167,7 +1086,7 @@ ALTER TABLE `order_reviews`
 -- AUTO_INCREMENT for table `payment_intents`
 --
 ALTER TABLE `payment_intents`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=78;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=83;
 
 --
 -- AUTO_INCREMENT for table `payment_settings`
@@ -1221,13 +1140,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_loyalty_status`
 --
 ALTER TABLE `user_loyalty_status`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `user_rewards`
 --
 ALTER TABLE `user_rewards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=603;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=605;
 
 --
 -- Constraints for dumped tables
