@@ -51,8 +51,8 @@
                                     <span>{{ order.payment_type === 'downpayment' ? 'Downpayment' : 'Full Payment' }}</span>
                                 </div>
 
-                                <!-- Reference Number -->
-                                <div v-if="order.gcash_reference" class="gcash-reference-info">
+                                <!-- Reference Number (only for reference verification) -->
+                                <div v-if="order.gcash_reference && order.verification_method === 'reference'" class="gcash-reference-info">
                                     <i class="fab fa-google-pay"></i>
                                     <div class="gcash-details">
                                         <span class="gcash-label">GCash Reference:</span>
@@ -532,11 +532,11 @@ export default {
                         return orderWithEstimate;
                     });
 
-                    // Load receipt images for GCash orders
-                    console.log('🔍 Looking for GCash orders to load receipt images...');
+                    // Load receipt images for GCash orders and downpayments
+                    console.log('🔍 Looking for GCash/Downpayment orders to load receipt images...');
                     for (const order of this.orders) {
-                        if (order.payment_method === 'gcash') {
-                            console.log(`📱 Loading receipt image for GCash order ${order.order_id}`);
+                        if (order.payment_method === 'gcash' || order.payment_type === 'downpayment') {
+                            console.log(`📱 Loading receipt image for order ${order.order_id} (payment_method: ${order.payment_method}, payment_type: ${order.payment_type})`);
                             await this.loadOrderReceiptImage(order.order_id);
                         }
                     }
