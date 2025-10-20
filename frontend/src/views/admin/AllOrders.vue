@@ -325,37 +325,37 @@
                                 <div class="verification-method-info">
                                     <div v-if="selectedOrder.verification_method === 'receipt'" class="method-info">
                                         <p><strong>Verification Method:</strong> Receipt Upload</p>
-                                        <p v-if="selectedOrder.receipt_filename">
-                                            <strong>Receipt File:</strong> 
-                                            <a href="#" @click.prevent="viewReceipt(selectedOrder)" class="receipt-link">
-                                                View Receipt Image
-                                            </a>
-                                        </p>
-                                        <p v-if="selectedOrder.gcash_reference && selectedOrder.gcash_reference !== selectedOrder.receipt_filename">
-                                            <strong>Receipt Storage Reference:</strong> 
-                                            <span class="reference-number">{{ selectedOrder.gcash_reference }}</span>
-                                        </p>
+                                        <!-- Receipt file displays removed for cleaner UI -->
                                         
-                                        <!-- Receipt Image Display -->
-                                        <div v-if="selectedOrder.receipt_filename" class="receipt-image-container">
-                                            <p><strong>Receipt Image:</strong></p>
-                                            <div class="receipt-image-wrapper">
-                                                <img 
-                                                    v-if="receiptImageUrl" 
-                                                    :src="receiptImageUrl" 
-                                                    alt="Payment Receipt" 
-                                                    class="receipt-image"
-                                                    @error="handleReceiptImageError"
-                                                    @click="openReceiptImageModal"
-                                                    title="Click to view full size"
-                                                />
-                                                <div v-else-if="receiptImageError" class="receipt-error">
-                                                    <i class="fas fa-exclamation-triangle text-warning"></i>
-                                                    <span>Unable to load receipt image</span>
-                                                </div>
-                                                <div v-else class="receipt-loading">
-                                                    <i class="fas fa-spinner fa-spin"></i>
-                                                    <span>Loading receipt...</span>
+                                        <!-- Receipt Image Display with Toggle -->
+                                        <div v-if="selectedOrder.receipt_filename" class="receipt-section">
+                                            <button 
+                                                @click="toggleReceiptDisplay" 
+                                                class="receipt-toggle-btn"
+                                            >
+                                                <i class="fas fa-receipt"></i>
+                                                {{ showReceiptInModal ? 'Hide Receipt' : 'View Receipt' }}
+                                                <i :class="['fas', showReceiptInModal ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
+                                            </button>
+                                            <div v-show="showReceiptInModal" class="receipt-image-container">
+                                                <div class="receipt-image-wrapper">
+                                                    <img 
+                                                        v-if="receiptImageUrl" 
+                                                        :src="receiptImageUrl" 
+                                                        alt="Payment Receipt" 
+                                                        class="receipt-image"
+                                                        @error="handleReceiptImageError"
+                                                        @click="openReceiptImageModal"
+                                                        title="Click to view full size"
+                                                    />
+                                                    <div v-else-if="receiptImageError" class="receipt-error">
+                                                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                                                        <span>Unable to load receipt image</span>
+                                                    </div>
+                                                    <div v-else class="receipt-loading">
+                                                        <i class="fas fa-spinner fa-spin"></i>
+                                                        <span>Loading receipt...</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -373,12 +373,7 @@
                                             <strong>Reference/File:</strong> 
                                             <span class="reference-number">{{ selectedOrder.gcash_reference }}</span>
                                         </p>
-                                        <p v-if="selectedOrder.receipt_filename && selectedOrder.receipt_filename !== selectedOrder.gcash_reference">
-                                            <strong>Receipt File:</strong> 
-                                            <a href="#" @click.prevent="viewReceipt(selectedOrder)" class="receipt-link">
-                                                View Receipt Image
-                                            </a>
-                                        </p>
+                                        <!-- Receipt file display removed for cleaner UI -->
                                     </div>
                                     <div v-else class="method-info">
                                         <p><strong>Verification Method:</strong> <span class="text-muted">Not specified</span></p>
@@ -1276,6 +1271,7 @@ export default {
             receiptImageUrl: null,
             receiptImageError: false,
             showReceiptImageModal: false,
+            showReceiptInModal: false,
             
             // Pagination
             currentPage: 1,
@@ -2264,6 +2260,10 @@ export default {
             this.showReceiptImageModal = false;
         },
         
+        toggleReceiptDisplay() {
+            this.showReceiptInModal = !this.showReceiptInModal;
+        },
+        
         async viewReceipt(order) {
             // Set the selected order if not already set
             if (!this.selectedOrder || this.selectedOrder.id !== order.id) {
@@ -2288,6 +2288,7 @@ export default {
         closeOrderDetails() {
             this.cleanupReceiptImage();
             this.closeReceiptImageModal();
+            this.showReceiptInModal = false;
             this.selectedOrder = null;
         },
         
@@ -3554,8 +3555,39 @@ th {
 }
 
 /* Receipt Image Styles */
-.receipt-image-container {
+.receipt-section {
     margin-top: 1rem;
+}
+
+.receipt-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.75rem;
+    background: white;
+    border: 2px solid rgba(52, 152, 219, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #3498db;
+    transition: all 0.2s ease;
+    margin-bottom: 0.5rem;
+}
+
+.receipt-toggle-btn:hover {
+    background-color: rgba(52, 152, 219, 0.05);
+    border-color: rgba(52, 152, 219, 0.4);
+    transform: translateY(-1px);
+}
+
+.receipt-toggle-btn i:first-child {
+    margin-right: 0.5rem;
+}
+
+.receipt-image-container {
+    margin-top: 0.5rem;
     padding: 1rem;
     background-color: white;
     border: 1px solid #e9ecef;
@@ -3576,6 +3608,7 @@ th {
     border: 2px dashed #dee2e6;
     border-radius: 6px;
     padding: 1rem;
+    margin-top: 10px;
 }
 
 .receipt-image {

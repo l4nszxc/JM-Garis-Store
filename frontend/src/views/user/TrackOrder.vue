@@ -74,12 +74,16 @@
                                         <i :class="['fas', order.showReceipt ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
                                     </button>
                                     <div v-show="order.showReceipt" class="receipt-image-container">
-                                        <img 
-                                            :src="order.receiptImageUrl" 
-                                            alt="GCash Payment Receipt"
-                                            class="receipt-image"
-                                            @error="handleImageError"
-                                        />
+                                        <div class="receipt-image-wrapper">
+                                            <img 
+                                                :src="order.receiptImageUrl" 
+                                                alt="GCash Payment Receipt"
+                                                class="receipt-image"
+                                                @error="handleImageError"
+                                                @click="openReceiptModal(order)"
+                                                title="Click to view full size"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -215,6 +219,43 @@
             </div>
         </div>
 
+        <!-- Receipt Modal -->
+        <div v-if="showReceiptModal" class="modal-overlay" @click="closeReceiptModal">
+            <div class="modal-content receipt-modal" @click.stop>
+                <div class="modal-header">
+                    <h3><i class="fas fa-receipt"></i> Payment Receipt</h3>
+                    <button @click="closeReceiptModal" class="close-modal-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div v-if="selectedReceiptOrder" class="receipt-info">
+                        <div class="order-info-header">
+                            <strong>Order #{{ selectedReceiptOrder.order_id }}</strong>
+                            <span class="order-date">{{ formatDate(selectedReceiptOrder.created_at) }}</span>
+                        </div>
+                        <div v-if="selectedReceiptOrder.gcash_reference" class="gcash-ref">
+                            <i class="fab fa-google-pay"></i>
+                            <span>Ref: {{ selectedReceiptOrder.gcash_reference }}</span>
+                        </div>
+                    </div>
+                    <div class="receipt-image-wrapper">
+                        <img 
+                            v-if="selectedReceiptOrder && selectedReceiptOrder.receiptImageUrl"
+                            :src="selectedReceiptOrder.receiptImageUrl" 
+                            alt="GCash Payment Receipt"
+                            class="receipt-modal-image"
+                            @error="handleImageError"
+                        />
+                        <div v-else class="no-receipt">
+                            <i class="fas fa-image"></i>
+                            <p>Receipt image not available</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <LogoutModal 
             :show="showLogoutModal"
             @confirm="handleLogout"
@@ -244,7 +285,9 @@ export default {
             cancelReason: '',
             otherReason: '',
             expandedOrders: new Set(), // Add this line
-            isLoadingOrders: false
+            isLoadingOrders: false,
+            showReceiptModal: false,
+            selectedReceiptOrder: null
         }
     },
     computed: {
@@ -354,6 +397,14 @@ export default {
             if (order) {
                 order.showReceipt = !order.showReceipt;
             }
+        },
+        openReceiptModal(order) {
+            this.selectedReceiptOrder = order;
+            this.showReceiptModal = true;
+        },
+        closeReceiptModal() {
+            this.showReceiptModal = false;
+            this.selectedReceiptOrder = null;
         },
         formatDate(date) {
             if (!date) return 'Not available';
@@ -1058,6 +1109,125 @@ export default {
     color: white;
 }
 
+/* Receipt Modal Styles */
+.receipt-modal {
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.close-modal-btn:hover {
+    background-color: #f8f9fa;
+    color: #495057;
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.receipt-info {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.order-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.order-info-header strong {
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.order-date {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.gcash-ref {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #28a745;
+    font-weight: 500;
+}
+
+.gcash-ref i {
+    font-size: 1.1rem;
+}
+
+.receipt-image-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    background-color: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.receipt-modal-image {
+    max-width: 100%;
+    max-height: 60vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.no-receipt {
+    text-align: center;
+    color: #6c757d;
+}
+
+.no-receipt i {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.no-receipt p {
+    margin: 0;
+    font-size: 1rem;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .view-order-content {
@@ -1156,6 +1326,117 @@ export default {
     .items-list,
     .order-summary {
         padding: 0.75rem;
+    }
+    /* Receipt Modal Mobile Styles */
+    .receipt-modal {
+        max-width: 95vw;
+        max-height: 95vh;
+        margin: 0.5rem;
+    }
+    
+    .modal-header {
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .receipt-info {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .order-info-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .receipt-image-wrapper {
+        min-height: 150px;
+        padding: 0.75rem;
+    }
+    
+    .receipt-modal-image {
+        max-height: 50vh;
+    }
+}
+
+/* Receipt Display Styles */
+.receipt-image-container {
+    margin-top: 0.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: white;
+    border: 2px solid rgba(25, 118, 210, 0.2);
+    border-radius: 8px;
+    padding: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.receipt-image-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.receipt-image {
+    max-width: 100%;
+    max-height: 150px;
+    width: auto;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease;
+    cursor: pointer;
+}
+
+.receipt-image:hover {
+    transform: scale(1.02);
+}
+
+/* Mobile styles for receipt display */
+@media (max-width: 768px) {
+    .receipt-image {
+        max-height: 120px;
+    }
+    
+    .receipt-image-container {
+        padding: 0.4rem;
+        margin-top: 0.4rem;
+    }
+    
+    .receipt-toggle-btn {
+        font-size: 0.8rem;
+        padding: 0.5rem;
+    }
+    
+    .gcash-receipt-section {
+        margin-top: 0.4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .receipt-image {
+        max-height: 100px;
+    }
+    
+    .receipt-image-container {
+        padding: 0.3rem;
+        margin-top: 0.3rem;
+    }
+    
+    .receipt-toggle-btn {
+        font-size: 0.75rem;
+        padding: 0.4rem;
+    }
+    
+    .gcash-receipt-section {
+        margin-top: 0.3rem;
     }
 }
 
@@ -1285,9 +1566,7 @@ export default {
 
 /* GCash Receipt Image Styles */
 .gcash-receipt-section {
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid rgba(25, 118, 210, 0.2);
+    margin-top: 0.5rem;
 }
 
 .receipt-toggle-btn {
@@ -1295,7 +1574,7 @@ export default {
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.6rem;
     background: white;
     border: 2px solid rgba(25, 118, 210, 0.2);
     border-radius: 8px;
@@ -1304,7 +1583,7 @@ export default {
     font-weight: 500;
     color: #1976d2;
     transition: all 0.2s ease;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
 }
 
 .receipt-toggle-btn:hover {
@@ -1331,59 +1610,5 @@ export default {
     color: #1976d2;
 }
 
-.receipt-image-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: white;
-    border: 2px solid rgba(25, 118, 210, 0.2);
-    border-radius: 8px;
-    padding: 0.75rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
 
-.receipt-image {
-    max-width: 100%;
-    max-height: 150px;
-    width: auto;
-    height: auto;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    transition: transform 0.2s ease;
-    cursor: pointer;
-}
-
-.receipt-image:hover {
-    transform: scale(1.02);
-}
-
-@media (max-width: 768px) {
-    .receipt-image {
-        max-height: 120px;
-    }
-    
-    .receipt-image-container {
-        padding: 0.5rem;
-    }
-    
-    .receipt-toggle-btn {
-        font-size: 0.8rem;
-        padding: 0.5rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .receipt-image {
-        max-height: 100px;
-    }
-    
-    .receipt-image-container {
-        padding: 0.375rem;
-    }
-    
-    .receipt-toggle-btn {
-        font-size: 0.75rem;
-        padding: 0.375rem;
-    }
-}
 </style>
