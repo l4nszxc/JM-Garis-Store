@@ -118,7 +118,7 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <div v-if="order.payment_method === 'gcash'" class="payment-verification">
+                                    <div v-if="order.payment_method === 'gcash' || order.payment_type === 'downpayment'" class="payment-verification">
                                         <div v-if="order.payment_status === 'verified'" class="verification-item verified">
                                             <i class="fas fa-check-circle text-success"></i>
                                             <span class="verification-text">Verified</span>
@@ -294,8 +294,8 @@
                             </span>
                         </p>
                         
-                        <!-- Payment Verification Details for GCash (hide if status is "to verify") -->
-                        <div v-if="selectedOrder.payment_method === 'gcash' && selectedOrder.status !== 'to verify'" class="payment-verification-details">
+                        <!-- Payment Verification Details for GCash or Downpayment (hide if status is "to verify") -->
+                        <div v-if="(selectedOrder.payment_method === 'gcash' || selectedOrder.payment_type === 'downpayment') && selectedOrder.status !== 'to verify'" class="payment-verification-details">
                             <p><strong>Payment Verification Details:</strong></p>
                             <div class="verification-details-content">
                                 <div v-if="selectedOrder.payment_status === 'verified'" class="verification-status verified">
@@ -2040,8 +2040,8 @@ export default {
                     this.receiptImageUrl = null;
                     this.receiptImageError = false;
                     
-                    // Load receipt image for GCash orders with receipt verification (except "to verify" status)
-                    if (orderData.payment_method === 'gcash' && 
+                    // Load receipt image for GCash/Downpayment orders with receipt verification (except "to verify" status)
+                    if ((orderData.payment_method === 'gcash' || orderData.payment_type === 'downpayment') && 
                         orderData.verification_method === 'receipt' && 
                         orderData.status !== 'to verify' &&
                         orderData.payment_intent_id) {
@@ -2049,8 +2049,8 @@ export default {
                         await this.loadOrderReceiptImage(orderData.payment_intent_id);
                     }
                     
-                    // Fetch payment intent data for "to verify" orders
-                    if (orderData.status === 'to verify' && orderData.payment_method === 'gcash') {
+                    // Fetch payment intent data for "to verify" orders (GCash or Downpayment)
+                    if (orderData.status === 'to verify' && (orderData.payment_method === 'gcash' || orderData.payment_type === 'downpayment')) {
                         await this.fetchPaymentIntent(orderData.order_id);
                     } else {
                         this.paymentIntent = null; // Clear any previous payment intent data
