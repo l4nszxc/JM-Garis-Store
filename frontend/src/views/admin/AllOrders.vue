@@ -52,7 +52,7 @@
                             <input 
                                 type="text" 
                                 v-model="searchQuery" 
-                                placeholder="Search by order ID or customer name..."
+                                placeholder="Search by order ID, customer name, or payment method..."
                             >
                         </div>
                         
@@ -98,10 +98,8 @@
                                 <td>
                                     <span :class="['status-badge', order.status.toLowerCase().replace(/ /g, '-')]">
                                         <i v-if="order.status === 'pending'" class="fas fa-clock"></i>
-                                        <i v-else-if="order.status === 'pending_pickup'" class="fas fa-hand-holding"></i>
                                         <i v-else-if="order.status === 'pending_delivery'" class="fas fa-truck"></i>
                                         <i v-else-if="order.status === 'to verify'" class="fas fa-search"></i>
-                                        <i v-else-if="order.status === 'paid using gcash'" class="fas fa-mobile-alt"></i>
                                         <i v-else-if="order.status === 'preparing'" class="fas fa-utensils"></i>
                                         <i v-else-if="order.status === 'ready for pickup'" class="fas fa-check-circle"></i>
                                         <i v-else-if="order.status === 'paid'" class="fas fa-check-double"></i>
@@ -276,9 +274,7 @@
                         <p><strong>Status:</strong> 
                             <span :class="['status-badge', selectedOrder.status.toLowerCase().replace(/ /g, '-')]">
                                 <i v-if="selectedOrder.status === 'pending'" class="fas fa-clock"></i>
-                                <i v-else-if="selectedOrder.status === 'pending_pickup'" class="fas fa-hand-holding"></i>
                                 <i v-else-if="selectedOrder.status === 'pending_delivery'" class="fas fa-truck"></i>
-                                <i v-else-if="selectedOrder.status === 'paid using gcash'" class="fas fa-mobile-alt"></i>
                                 <i v-else-if="selectedOrder.status === 'preparing'" class="fas fa-utensils"></i>
                                 <i v-else-if="selectedOrder.status === 'ready for pickup'" class="fas fa-check-circle"></i>
                                 <i v-else-if="selectedOrder.status === 'paid'" class="fas fa-check-double"></i>
@@ -1201,10 +1197,8 @@ export default {
             statusFilters: [
                 { label: 'All Status', value: '' },
                 { label: 'Pending', value: 'pending' },
-                { label: 'Pending Pickup', value: 'pending_pickup' },
                 { label: 'Pending Delivery', value: 'pending_delivery' },
                 { label: 'To Verify', value: 'to verify' },
-                { label: 'Paid via GCash', value: 'paid using gcash' },
                 { label: 'Preparing', value: 'preparing' },
                 { label: 'Ready for Pickup', value: 'ready for pickup' },
                 { label: 'Paid', value: 'paid' },
@@ -1295,7 +1289,8 @@ export default {
             return this.orders.filter(order => {
                 const searchMatch = !this.searchQuery || 
                     order.order_id.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                    order.customer_name.toLowerCase().includes(this.searchQuery.toLowerCase());
+                    order.customer_name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    order.payment_method.toLowerCase().includes(this.searchQuery.toLowerCase());
                 
                 const statusMatch = !this.selectedStatus || order.status === this.selectedStatus;
                 
@@ -1954,10 +1949,8 @@ export default {
         getStatusDisplay(status) {
             const displayMap = {
                 'pending': 'Pending',
-                'pending_pickup': 'Pending Pickup (Downpayment)',
                 'pending_delivery': 'Pending Delivery',
                 'to verify': 'To Verify',
-                'paid using gcash': 'Paid via GCash',
                 'preparing': 'Preparing',
                 'ready for pickup': 'Ready for Pickup',
                 'paid': 'Paid',
@@ -3064,16 +3057,6 @@ export default {
     border: 1px solid #e2e8f0;
 }
 
-.filter-btn.pending_pickup:hover {
-    background-color: #fff3cd;
-    color: #856404;
-}
-
-.filter-btn.pending_pickup.active {
-    background-color: #ffc107;
-    color: #212529;
-}
-
 .filter-btn.pending_delivery {
     background-color: #f8f9fa;
     color: #2c3e50;
@@ -3088,39 +3071,6 @@ export default {
 .filter-btn.pending_delivery.active {
     background-color: #ffc107;
     color: #212529;
-}
-
-.filter-btn.paid-using-gcash {
-    background-color: #f8f9fa;
-    color: #2c3e50;
-    border: 1px solid #e2e8f0;
-}
-
-.filter-btn.paid-using-gcash:hover {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-}
-
-.filter-btn.paid-using-gcash.active {
-    background-color: #c8e6c9;
-    color: #1b5e20;
-}
-
-/* Handle "paid using gcash" with spaces - creates .paid, .using, .gcash classes */
-.filter-btn.paid.using.gcash {
-    background-color: #f8f9fa;
-    color: #2c3e50;
-    border: 1px solid #e2e8f0;
-}
-
-.filter-btn.paid.using.gcash:hover {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-}
-
-.filter-btn.paid.using.gcash.active {
-    background-color: #c8e6c9;
-    color: #1b5e20;
 }
 
 .filter-btn.active {
@@ -3276,11 +3226,6 @@ th {
     color: #92400e;
 }
 
-.pending_pickup, .pending-pickup {
-    background-color: #e0f2fe;
-    color: #0277bd;
-}
-
 .pending_delivery, .pending-delivery {
     background-color: #e8f5e9;
     color: #2e7d32;
@@ -3289,11 +3234,6 @@ th {
 .to-verify {
     background-color: #fff3cd;
     color: #856404;
-}
-
-.paid-using-gcash {
-    background-color: #cff4fc;
-    color: #055160;
 }
 
 .preparing {
