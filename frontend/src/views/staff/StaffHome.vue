@@ -15,10 +15,13 @@
                             v-for="status in statusFilters" 
                             :key="status.value"
                             @click="statusFilter = status.value"
-                            :class="['filter-btn', statusFilter === status.value ? 'active' : '', status.value]"
+                            :class="['filter-btn', statusFilter === status.value ? 'active' : '', (status.value || 'all-status').replace(/ /g, '-')]"
                             :title="status.value === 'pending' ? 'Shows all orders awaiting acceptance: Pending, Pending Pickup, Pending Delivery, and Paid via GCash' : ''"
                         >
                             {{ status.label }}
+                            <span class="status-count" v-if="statusCounts[status.value] !== undefined">
+                                {{ statusCounts[status.value] }}
+                            </span>
                         </button>
                     </div>
                     
@@ -52,7 +55,7 @@
                             <input 
                                 type="text" 
                                 v-model="searchQuery" 
-                                placeholder="Search by order ID or customer name..."
+                                placeholder="Search by order ID, customer name, or payment method..."
                             >
                         </div>
                         
@@ -97,7 +100,6 @@
                                 <td>
                                     <span :class="['status-badge', order.status.toLowerCase().replace(/ /g, '-')]">
                                         <i v-if="order.status === 'pending'" class="fas fa-clock"></i>
-                                        <i v-else-if="order.status === 'pending_pickup'" class="fas fa-hand-holding"></i>
                                         <i v-else-if="order.status === 'pending_delivery'" class="fas fa-truck"></i>
                                         <i v-else-if="order.status === 'to verify'" class="fas fa-search"></i>
                                         <i v-else-if="order.status === 'paid using gcash'" class="fas fa-mobile-alt"></i>
@@ -263,7 +265,6 @@
                         <p><strong>Status:</strong> 
                             <span :class="['status-badge', selectedOrder.status.replace(/ /g, '-')]">
                                 <i v-if="selectedOrder.status === 'pending'" class="fas fa-clock"></i>
-                                <i v-else-if="selectedOrder.status === 'pending_pickup'" class="fas fa-hand-holding"></i>
                                 <i v-else-if="selectedOrder.status === 'pending_delivery'" class="fas fa-truck"></i>
                                 <i v-else-if="selectedOrder.status === 'paid using gcash'" class="fas fa-mobile-alt"></i>
                                 <i v-else-if="selectedOrder.status === 'preparing'" class="fas fa-utensils"></i>
@@ -446,7 +447,7 @@
                 </div>
                 <div class="modal-actions">
                     <button 
-                        v-if="['pending', 'pending_pickup', 'pending_delivery', 'paid using gcash'].includes(selectedOrder.status)"
+                        v-if="['pending', 'pending_delivery', 'paid using gcash'].includes(selectedOrder.status)"
                         @click="acceptOrder(selectedOrder.order_id)" 
                         class="accept-btn"
                         :disabled="isAcceptingOrder"
@@ -536,9 +537,7 @@ export default {
             statusFilters: [
                 { label: 'All Status', value: '' },
                 { label: 'Pending (All)', value: 'pending' },
-                { label: 'Pending Pickup', value: 'pending_pickup' },
                 { label: 'Pending Delivery', value: 'pending_delivery' },
-                { label: 'Paid via GCash', value: 'paid using gcash' },
                 { label: 'Preparing', value: 'preparing' },
                 { label: 'Ready for Pickup', value: 'ready for pickup' },
                 { label: 'Paid', value: 'paid' },
@@ -575,7 +574,7 @@ export default {
                 if (this.statusFilter) {
                     if (this.statusFilter === 'pending') {
                         // Show all statuses that need to be accepted
-                        const pendingStatuses = ['pending', 'pending_pickup', 'pending_delivery', 'paid using gcash'];
+                        const pendingStatuses = ['pending', 'pending_delivery', 'paid using gcash'];
                         statusMatch = pendingStatuses.includes(order.status);
                     } else {
                         statusMatch = order.status === this.statusFilter;
@@ -624,14 +623,15 @@ export default {
             return this.orders.filter(order => {
                 const searchMatch = !this.searchQuery || 
                     order.order_id.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                    order.customer_name.toLowerCase().includes(this.searchQuery.toLowerCase());
+                    order.customer_name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    order.payment_method.toLowerCase().includes(this.searchQuery.toLowerCase());
                 
                 // Status filter logic - if "pending" is selected, show all pending statuses that need acceptance
                 let statusMatch = true;
                 if (this.statusFilter) {
                     if (this.statusFilter === 'pending') {
                         // Show all statuses that need to be accepted
-                        const pendingStatuses = ['pending', 'pending_pickup', 'pending_delivery', 'paid using gcash'];
+                        const pendingStatuses = ['pending', 'pending_delivery', 'paid using gcash'];
                         statusMatch = pendingStatuses.includes(order.status);
                     } else {
                         statusMatch = order.status === this.statusFilter;
@@ -695,6 +695,36 @@ export default {
             const startIndex = (this.currentPage - 1) * this.itemsPerPage;
             const endIndex = startIndex + this.itemsPerPage;
             return filtered.slice(startIndex, endIndex);
+        },
+        statusCounts() {
+            const counts = {};
+            
+            // Initialize counts for all status filters
+            this.statusFilters.forEach(filter => {
+                if (filter.value === '') {
+                    counts[''] = this.orders.length; // All orders count
+                } else {
+                    counts[filter.value] = 0;
+                }
+            });
+            
+            // Count orders by status with special handling for "pending" filter
+            this.orders.forEach(order => {
+                // Handle "pending" filter - should count all orders that need acceptance
+                if (counts.hasOwnProperty('pending')) {
+                    const pendingStatuses = ['pending', 'pending_delivery', 'paid using gcash'];
+                    if (pendingStatuses.includes(order.status)) {
+                        counts['pending']++;
+                    }
+                }
+                
+                // Handle individual status counts
+                if (counts.hasOwnProperty(order.status)) {
+                    counts[order.status]++;
+                }
+            });
+            
+            return counts;
         }
     },
     watch: {
@@ -972,7 +1002,6 @@ export default {
         getStatusDisplay(status) {
             const displayMap = {
                 'pending': 'Pending',
-                'pending_pickup': 'Pending Pickup (Downpayment)',
                 'pending_delivery': 'Pending Delivery',
                 'paid using gcash': 'Paid via GCash',
                 'preparing': 'Preparing',
@@ -1226,97 +1255,187 @@ export default {
 
 .filter-btn {
     padding: 0.5rem 1rem;
-    background-color: #f8f9fa;
+    background-color: white !important;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
+    color: #2c3e50 !important;
+}
+
+.filter-btn:hover {
+    background-color: #f8f9fa !important;
+    border-color: #d1d5db;
+    transform: translateY(-1px);
 }
 
 .filter-btn.active {
+    background-color: #3b82f6 !important;
+    border-color: #3b82f6;
+    color: white !important;
     transform: scale(1.05);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
-.filter-btn.pending {
-    background-color: #fef3c7;
-    color: #92400e;
+.filter-btn.active:hover {
+    background-color: #2563eb !important;
+    border-color: #2563eb;
 }
 
+/* Override active state for specific status filters */
 .filter-btn.pending.active {
-    background-color: #f59e0b;
-    color: white;
-}
-
-.filter-btn.pending_pickup {
-    background-color: #e0f2fe;
-    color: #0277bd;
-}
-
-.filter-btn.pending_pickup.active {
-    background-color: #0277bd;
-    color: white;
-}
-
-.filter-btn.pending_delivery {
-    background-color: #e8f5e9;
-    color: #2e7d32;
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2) !important;
 }
 
 .filter-btn.pending_delivery.active {
-    background-color: #2e7d32;
-    color: white;
-}
-
-.filter-btn.paid-using-gcash {
-    background-color: #cff4fc;
-    color: #055160;
-}
-
-.filter-btn.paid-using-gcash.active {
-    background-color: #007bff;
-    color: white;
-}
-
-.filter-btn.preparing {
-    background-color: #cce5ff;
-    color: #004085;
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2) !important;
 }
 
 .filter-btn.preparing.active {
-    background-color: #0d6efd;
-    color: white;
-}
-
-.filter-btn.ready-for-pickup {
-    background-color: #e3f5e9;
-    color: #0f7840;
+    background-color: #2196f3 !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2) !important;
 }
 
 .filter-btn.ready-for-pickup.active {
-    background-color: #38a169;
-    color: white;
+    background-color: #4caf50 !important;
+    border-color: #4caf50 !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2) !important;
 }
 
-.filter-btn.paid {
-    background-color: #d1e7dd;
-    color: #0f5132;
+.filter-btn.ready-for-pickup.active:hover {
+    background-color: #45a049 !important;
+    border-color: #45a049 !important;
 }
 
 .filter-btn.paid.active {
-    background-color: #20c997;
-    color: white;
+    background-color: #4caf50 !important;
+    border-color: #4caf50 !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2) !important;
 }
 
-.filter-btn.cancelled {
-    background-color: #fee2e2;
-    color: #b91c1c;
+.filter-btn.paid.active:hover {
+    background-color: #45a049 !important;
+    border-color: #45a049 !important;
 }
 
 .filter-btn.cancelled.active {
-    background-color: #dc3545;
+    background-color: #f44336 !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(244, 67, 54, 0.2) !important;
+}
+
+.status-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+    padding: 0 0.4rem;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.filter-btn.active .status-count {
+    background-color: rgba(255, 255, 255, 0.2);
     color: white;
+    border-color: rgba(255, 255, 255, 0.3);
+    font-weight: 700;
+}
+
+/* Status-specific filter button styles */
+.filter-btn.pending {
+    background-color: white !important;
+    color: #2c3e50 !important;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-btn.pending:hover {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+}
+
+.filter-btn.pending_delivery {
+    background-color: white !important;
+    color: #2c3e50 !important;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-btn.pending_delivery:hover {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+}
+
+.filter-btn.preparing {
+    background-color: white !important;
+    color: #2c3e50 !important;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-btn.preparing:hover {
+    background-color: #e3f2fd !important;
+    color: #1565c0 !important;
+}
+
+.filter-btn.ready-for-pickup {
+    background-color: white !important;
+    color: #2c3e50 !important;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-btn.ready-for-pickup:hover {
+    background-color: #d1e7dd !important;
+    color: #0f5132 !important;
+}
+
+.filter-btn.paid {
+    background-color: white !important;
+    color: #2c3e50 !important;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-btn.paid:hover {
+    background-color: #e8f5e9 !important;
+    color: #2e7d32 !important;
+}
+
+.filter-btn.cancelled {
+    background-color: white !important;
+    color: #2c3e50 !important;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-btn.cancelled:hover {
+    background-color: #ffebee !important;
+    color: #c62828 !important;
+}
+
+.filter-btn.all-status {
+    background-color: white !important;
+    color: #2c3e50 !important;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-btn.all-status:hover {
+    background-color: #f8f9fa !important;
+    color: #2c3e50 !important;
+}
+
+.filter-btn.all-status.active {
+    background-color: #6c757d !important;
+    color: white !important;
 }
 
 .table-container {
@@ -1351,44 +1470,60 @@ th {
     font-weight: 500;
 }
 
-.pending {
-    background-color: #fef3c7;
-    color: #92400e;
+/* Status-specific badge colors */
+.status-badge.pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
 }
 
-.pending_pickup {
-    background-color: #e0f2fe;
-    color: #0277bd;
+.status-badge.pending-delivery,
+.status-badge.pending_delivery {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
 }
 
-.pending_delivery {
-    background-color: #e8f5e9;
-    color: #2e7d32;
+.status-badge.paid-using-gcash {
+    background-color: #cfe2ff;
+    color: #084298;
+    border: 1px solid #b6d4fe;
 }
 
-.paid-using-gcash {
-    background-color: #cff4fc;
-    color: #055160;
+.status-badge.to-verify {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
 }
 
-.preparing {
-    background-color: #cce5ff;
-    color: #004085;
+.status-badge.preparing {
+    background-color: #cfe2ff;
+    color: #084298;
+    border: 1px solid #b6d4fe;
 }
 
-.ready-for-pickup {
-    background-color: #e3f5e9;
-    color: #0f7840;
-}
-
-.paid {
+.status-badge.ready-for-pickup {
     background-color: #d1e7dd;
     color: #0f5132;
+    border: 1px solid #badbcc;
 }
 
-.cancelled {
-    background-color: #fee2e2;
-    color: #b91c1c;
+.status-badge.paid {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #badbcc;
+}
+
+.status-badge.cancelled {
+    background-color: #f8d7da;
+    color: #842029;
+    border: 1px solid #f5c2c7;
+}
+
+.status-badge.completed {
+    background-color: #e7f1ff;
+    color: #004085;
+    border: 1px solid #b8daff;
 }
 
 .payment-method {
@@ -2236,7 +2371,7 @@ tfoot tr td {
     color: #166534;
     padding: 0.3rem 0.6rem;
     border-radius: 20px;
-    font-size: 0.875rem;
+    font-size:  0.875rem;
     width: fit-content;
     border: 1px solid #dcfce7;
 }

@@ -11,9 +11,12 @@
                             v-for="status in statusFilters" 
                             :key="status.value"
                             @click="selectedStatus = status.value"
-                            :class="['filter-btn', selectedStatus === status.value ? 'active' : '', status.value.replace(/ /g, '-')]"
+                            :class="['filter-btn', selectedStatus === status.value ? 'active' : '', (status.value || 'all-status').replace(/ /g, '-')]"
                         >
                             {{ status.label }}
+                            <span class="status-count" v-if="statusCounts[status.value] !== undefined">
+                                {{ statusCounts[status.value] }}
+                            </span>
                         </button>
                     </div>
                     
@@ -47,7 +50,7 @@
                             <input 
                                 type="text" 
                                 v-model="searchQuery" 
-                                placeholder="Search by order ID or customer..."
+                                placeholder="Search by order ID, customer name, or payment method..."
                             >
                         </div>
                         
@@ -584,7 +587,8 @@ export default {
                 // Search filter
                 const searchMatch = !this.searchQuery || 
                     order.order_id.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                    order.customer_name.toLowerCase().includes(this.searchQuery.toLowerCase());
+                    order.customer_name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                    order.payment_method.toLowerCase().includes(this.searchQuery.toLowerCase());
                 
                 // Date filter
                 let dateMatch = true;
@@ -657,6 +661,37 @@ export default {
             const startIndex = (this.currentPage - 1) * this.itemsPerPage;
             const endIndex = startIndex + this.itemsPerPage;
             return filtered.slice(startIndex, endIndex);
+        },
+        statusCounts() {
+            const counts = {};
+            
+            // Initialize counts for all status filters
+            this.statusFilters.forEach(filter => {
+                if (filter.value === '') {
+                    counts[''] = this.acceptedOrders.length; // All orders count
+                } else {
+                    counts[filter.value] = 0;
+                }
+            });
+            
+            // Count orders by status with special handling for "past-due"
+            this.acceptedOrders.forEach(order => {
+                // Handle "past-due" filter - orders that are past their estimated time
+                if (counts.hasOwnProperty('past-due')) {
+                    if (this.isPastDue(order.estimatedPickupTime) && 
+                        order.status !== 'ready for pickup' && 
+                        order.status !== 'paid') {
+                        counts['past-due']++;
+                    }
+                }
+                
+                // Handle individual status counts
+                if (counts.hasOwnProperty(order.status)) {
+                    counts[order.status]++;
+                }
+            });
+            
+            return counts;
         }
     },
     watch: {
@@ -1203,57 +1238,193 @@ export default {
 
 .filter-btn {
     padding: 0.5rem 1rem;
-    background-color: #f8f9fa;
+    background-color: white !important;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
+    color: #2c3e50 !important;
+}
+
+.filter-btn:hover {
+    background-color: #f8f9fa !important;
+    border-color: #d1d5db;
+    transform: translateY(-1px);
 }
 
 .filter-btn.active {
+    background-color: #3b82f6 !important;
+    border-color: #3b82f6;
+    color: white !important;
     transform: scale(1.05);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
-.filter-btn.preparing {
-    background-color: #cce5ff;
-    color: #004085;
+.filter-btn.active:hover {
+    background-color: #2563eb !important;
+    border-color: #2563eb;
 }
 
+/* Override active state for specific status filters */
 .filter-btn.preparing.active {
-    background-color: #0d6efd;
-    color: white;
+    background-color: #2196f3 !important;
+    border-color: #2196f3 !important;
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2) !important;
 }
 
-.filter-btn.ready-for-pickup {
-    background-color: #e3f5e9;
-    color: #0f7840;
+.filter-btn.preparing.active:hover {
+    background-color: #1976d2 !important;
+    border-color: #1976d2 !important;
 }
 
 .filter-btn.ready-for-pickup.active {
-    background-color: #38a169;
-    color: white;
+    background-color: #4caf50 !important;
+    border-color: #4caf50 !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2) !important;
 }
 
-.filter-btn.paid {
-    background-color: #d1e7dd;
-    color: #0f5132;
+.filter-btn.ready-for-pickup.active:hover {
+    background-color: #45a049 !important;
+    border-color: #45a049 !important;
 }
 
 .filter-btn.paid.active {
-    background-color: #20c997;
+    background-color: #4caf50 !important;
+    border-color: #4caf50 !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2) !important;
+}
+
+.filter-btn.paid.active:hover {
+    background-color: #45a049 !important;
+    border-color: #45a049 !important;
+}
+
+.status-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+    padding: 0 0.4rem;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.filter-btn.active .status-count {
+    background-color: rgba(255, 255, 255, 0.2);
     color: white;
+    border-color: rgba(255, 255, 255, 0.3);
+    font-weight: 700;
+}
+
+/* Override active state for specific status filters */
+.filter-btn.preparing.active {
+    background-color: #2196f3 !important;
+    border-color: #2196f3 !important;
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2) !important;
+}
+
+.filter-btn.preparing.active:hover {
+    background-color: #1976d2 !important;
+    border-color: #1976d2 !important;
+}
+
+.filter-btn.ready-for-pickup.active {
+    background-color: #4caf50 !important;
+    border-color: #4caf50 !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2) !important;
+}
+
+.filter-btn.ready-for-pickup.active:hover {
+    background-color: #45a049 !important;
+    border-color: #45a049 !important;
+}
+
+.filter-btn.paid.active {
+    background-color: #4caf50 !important;
+    border-color: #4caf50 !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2) !important;
+}
+
+.filter-btn.paid.active:hover {
+    background-color: #45a049 !important;
+    border-color: #45a049 !important;
+}
+
+/* Status-specific filter button styles */
+.filter-btn.preparing {
+    background-color: white !important;
+    color: #2c3e50 !important;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-btn.preparing:hover {
+    background-color: #e3f2fd !important;
+    color: #1565c0 !important;
+}
+
+.filter-btn.ready-for-pickup {
+    background-color: white !important;
+    color: #2c3e50 !important;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-btn.ready-for-pickup:hover {
+    background-color: #d1e7dd !important;
+    color: #0f5132 !important;
+}
+
+.filter-btn.paid {
+    background-color: white !important;
+    color: #2c3e50 !important;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-btn.paid:hover {
+    background-color: #d1e7dd !important;
+    color: #0f5132 !important;
 }
 
 .filter-btn.past-due {
-    background-color: #fee2e2;
-    color: #b91c1c;
+    background-color: white !important;
+    color: #2c3e50 !important;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-btn.past-due:hover {
+    background-color: #ffebee !important;
+    color: #c62828 !important;
 }
 
 .filter-btn.past-due.active {
-    background-color: #dc3545;
-    color: white;
+    background-color: #ff9800 !important;
+    color: white !important;
+}
+
+.filter-btn.all-status {
+    background-color: white !important;
+    color: #2c3e50 !important;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-btn.all-status:hover {
+    background-color: #f8f9fa !important;
+    color: #2c3e50 !important;
+}
+
+.filter-btn.all-status.active {
+    background-color: #6c757d !important;
+    color: white !important;
 }
 
 .table-container {
@@ -1287,44 +1458,21 @@ th {
     width: 150px;
 }
 
-.pending {
-    background-color: #fef3c7;
-    color: #92400e;
+.status-select.preparing {
+    background-color: #cfe2ff;
+    color: #084298;
 }
 
-.pending_pickup {
-    background-color: #e0f2fe;
-    color: #0277bd;
-}
-
-.pending_delivery {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-}
-
-.paid-using-gcash {
-    background-color: #cff4fc;
-    color: #055160;
-}
-
-.preparing {
-    background-color: #cce5ff;
-    color: #004085;
-}
-
-.ready-for-pickup {
-    background-color: #e3f5e9;
-    color: #0f7840;
-}
-
-.paid {
+.status-select.ready-for-pickup {
     background-color: #d1e7dd;
     color: #0f5132;
+    font-weight: 500;
 }
 
-.cancelled {
-    background-color: #fee2e2;
-    color: #b91c1c;
+.status-select.paid {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    font-weight: 500;
 }
 
 .view-btn {
@@ -1424,6 +1572,63 @@ th {
     border-radius: 20px;
     font-size: 0.9rem;
     font-weight: 500;
+}
+
+/* Status-specific badge colors */
+.status-badge.pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.status-badge.pending-pickup,
+.status-badge.pending_pickup {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.status-badge.pending-delivery,
+.status-badge.pending_delivery {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.status-badge.paid-using-gcash {
+    background-color: #cfe2ff;
+    color: #084298;
+    border: 1px solid #b6d4fe;
+}
+
+.status-badge.preparing {
+    background-color: #cfe2ff;
+    color: #084298;
+    border: 1px solid #b6d4fe;
+}
+
+.status-badge.ready-for-pickup {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #badbcc;
+}
+
+.status-badge.paid {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #badbcc;
+}
+
+.status-badge.cancelled {
+    background-color: #f8d7da;
+    color: #842029;
+    border: 1px solid #f5c2c7;
+}
+
+.status-badge.completed {
+    background-color: #e7f1ff;
+    color: #004085;
+    border: 1px solid #b8daff;
 }
 
 .payment-method {
