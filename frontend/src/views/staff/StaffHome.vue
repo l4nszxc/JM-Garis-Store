@@ -125,7 +125,7 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <div v-if="order.payment_method === 'gcash'" class="payment-verification">
+                                    <div v-if="order.payment_method === 'gcash' || order.payment_type === 'downpayment'" class="payment-verification">
                                         <div v-if="order.payment_status === 'verified'" class="verification-item verified">
                                             <i class="fas fa-check-circle text-success"></i>
                                             <span class="verification-text">Verified</span>
@@ -386,7 +386,7 @@
                             <!-- Downpayment breakdown for cash on pickup -->
                             <div v-if="selectedOrder.payment_method === 'cash' && selectedOrder.payment_type === 'downpayment'" class="downpayment-breakdown">
                                 <p class="downpayment-info">
-                                    <i class="fas fa-hand-holding-usd"></i> Downpayment (25%): {{ formatPrice(getDownpaymentAmount(selectedOrder)) }}
+                                    <i class="fas fa-hand-holding-usd"></i> Downpayment Paid: {{ formatPrice(getDownpaymentAmount(selectedOrder)) }}
                                 </p>
                                 <p class="remaining-amount">
                                     <i class="fas fa-wallet"></i> Remaining to Pay: {{ formatPrice(getRemainingAmount(selectedOrder)) }}
@@ -982,8 +982,8 @@ export default {
         },
         getDownpaymentAmount(order) {
             if (order.payment_type === 'downpayment') {
-                const originalTotal = this.getOriginalTotal(order);
-                return originalTotal * 0.25;
+                // Use the actual paid_amount from payment_intents table
+                return order.paid_amount || 0;
             }
             return 0;
         },
