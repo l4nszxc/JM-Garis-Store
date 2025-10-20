@@ -43,8 +43,8 @@
                             </div>
                             
                             <!-- GCash Payment Details -->
-                            <div v-if="order.payment_method === 'gcash' && order.gcash_reference" class="gcash-payment-info">
-                                <div class="gcash-reference-info">
+                            <div v-if="order.payment_method === 'gcash'" class="gcash-payment-info">
+                                <div v-if="order.gcash_reference" class="gcash-reference-info">
                                     <i class="fab fa-google-pay"></i>
                                     <div class="gcash-details">
                                         <span class="gcash-label">GCash Reference:</span>
@@ -65,11 +65,15 @@
                                     <span>Payment verification failed</span>
                                 </div>
                                 <div v-if="order.receiptImageUrl" class="gcash-receipt-section">
-                                    <div class="receipt-label">
+                                    <button 
+                                        @click="toggleReceiptImage(order.order_id)" 
+                                        class="receipt-toggle-btn"
+                                    >
                                         <i class="fas fa-receipt"></i>
-                                        <span>Payment Receipt:</span>
-                                    </div>
-                                    <div class="receipt-image-container">
+                                        {{ order.showReceipt ? 'Hide Receipt' : 'View Receipt' }}
+                                        <i :class="['fas', order.showReceipt ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
+                                    </button>
+                                    <div v-show="order.showReceipt" class="receipt-image-container">
                                         <img 
                                             :src="order.receiptImageUrl" 
                                             alt="GCash Payment Receipt"
@@ -221,9 +225,11 @@
 <script>
 import Navbar from '../../components/Navbar.vue';
 import LogoutModal from '../../components/LogoutModal.vue';
+import { apiMixin } from '../../mixins/apiMixin.js';
 
 export default {
     name: 'TrackOrder',
+    mixins: [apiMixin],
     components: {
         Navbar,
         LogoutModal
@@ -343,6 +349,12 @@ export default {
                 this.expandedOrders.add(orderId);
             }
         },
+        toggleReceiptImage(orderId) {
+            const order = this.orders.find(o => o.order_id === orderId);
+            if (order) {
+                order.showReceipt = !order.showReceipt;
+            }
+        },
         formatDate(date) {
             if (!date) return 'Not available';
             
@@ -431,11 +443,14 @@ export default {
                     });
 
                     // Load receipt images for GCash orders
+                    console.log('🔍 Looking for GCash orders to load receipt images...');
                     for (const order of this.orders) {
                         if (order.payment_method === 'gcash') {
+                            console.log(`📱 Loading receipt image for GCash order ${order.order_id}`);
                             await this.loadOrderReceiptImage(order.order_id);
                         }
                     }
+                    console.log('✅ Finished loading receipt images');
                 }
             } catch (error) {
                 console.error('Error fetching orders:', error);
@@ -467,9 +482,11 @@ export default {
             }
         },
         async loadOrderReceiptImage(orderId) {
+            console.log(`🖼️ Loading receipt image for order ${orderId}...`);
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`/api/payment/user/payment-intent/${orderId}`, {
+                console.log(`📡 Fetching payment intent for order ${orderId}`);
+                const response = await this.$fetch(`/api/payment/user/payment-intent/${orderId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -479,10 +496,11 @@ export default {
                 if (response.ok) {
                     const paymentData = await response.json();
                     console.log(`Payment data for order ${orderId}:`, paymentData);
+                    console.log(`Verification method: ${paymentData.verification_method}, Has receipt: ${paymentData.has_receipt_image}`);
                     
                     if (paymentData.verification_method === 'receipt' && paymentData.has_receipt_image) {
                         // Load the receipt image
-                        const imageResponse = await fetch(`/api/payment/user/receipt/${paymentData.payment_intent_id}`, {
+                        const imageResponse = await this.$fetch(`/api/payment/user/receipt/${paymentData.payment_intent_id}`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`
                             }
@@ -495,8 +513,10 @@ export default {
                             // Find the order and add the receipt image URL
                             const order = this.orders.find(o => o.order_id === orderId);
                             if (order) {
+                                // Direct assignment works in Vue 3
                                 order.receiptImageUrl = imageUrl;
-                                console.log(`Receipt image loaded for order ${orderId}`);
+                                order.showReceipt = false; // Initialize as hidden
+                                console.log(`Receipt image loaded for order ${orderId}:`, imageUrl);
                             }
                         } else {
                             console.log(`No receipt image found for order ${orderId}`);
@@ -1270,6 +1290,32 @@ export default {
     border-top: 1px solid rgba(25, 118, 210, 0.2);
 }
 
+.receipt-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.75rem;
+    background: white;
+    border: 2px solid rgba(25, 118, 210, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1976d2;
+    transition: all 0.2s ease;
+    margin-bottom: 0.5rem;
+}
+
+.receipt-toggle-btn:hover {
+    background-color: rgba(25, 118, 210, 0.05);
+    border-color: rgba(25, 118, 210, 0.4);
+}
+
+.receipt-toggle-btn i:first-child {
+    margin-right: 0.5rem;
+}
+
 .receipt-label {
     display: flex;
     align-items: center;
@@ -1298,12 +1344,13 @@ export default {
 
 .receipt-image {
     max-width: 100%;
-    max-height: 200px;
+    max-height: 150px;
     width: auto;
     height: auto;
     border-radius: 6px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     transition: transform 0.2s ease;
+    cursor: pointer;
 }
 
 .receipt-image:hover {
@@ -1312,28 +1359,30 @@ export default {
 
 @media (max-width: 768px) {
     .receipt-image {
-        max-height: 150px;
+        max-height: 120px;
     }
     
     .receipt-image-container {
         padding: 0.5rem;
     }
     
-    .receipt-label {
+    .receipt-toggle-btn {
         font-size: 0.8rem;
-    }
-    
-    .receipt-label i {
-        font-size: 0.8rem;
+        padding: 0.5rem;
     }
 }
 
 @media (max-width: 480px) {
     .receipt-image {
-        max-height: 120px;
+        max-height: 100px;
     }
     
     .receipt-image-container {
+        padding: 0.375rem;
+    }
+    
+    .receipt-toggle-btn {
+        font-size: 0.75rem;
         padding: 0.375rem;
     }
 }
