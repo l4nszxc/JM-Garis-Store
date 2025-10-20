@@ -44,6 +44,7 @@ class Staff {
                     u.email,
                     s.username as staff_name,
                     pi.payment_type,
+                    pi.amount as paid_amount,
                     pi.total_amount as original_total,
                     pi.remaining_amount,
                     pi.gcash_reference,
@@ -82,6 +83,7 @@ class Staff {
                     o.payment_method,
                     u.email,
                     pi.payment_type,
+                    pi.amount as paid_amount,
                     pi.total_amount as original_total,
                     pi.remaining_amount,
                     pi.gcash_reference,
@@ -182,6 +184,7 @@ class Staff {
                     o.is_physical_order,
                     s.username as staff_name,
                     pi.payment_type,
+                    pi.amount as paid_amount,
                     pi.total_amount as original_total,
                     pi.remaining_amount,
                     pi.gcash_reference,
@@ -206,7 +209,7 @@ class Staff {
                 JOIN order_items oi ON o.order_id = oi.order_id
                 JOIN products p ON oi.product_id = p.products_id
                 WHERE o.accepted_by = ?
-                GROUP BY o.order_id, o.status, o.total_amount, o.created_at, o.accepted_at, o.accepted_by, o.payment_method, u.username, o.customer_name, o.is_physical_order, s.username, pi.payment_type, pi.total_amount, pi.remaining_amount, pi.gcash_reference, pi.status, pi.verified_at, pi.verification_method, pi.receipt_filename, pi.id
+                GROUP BY o.order_id, o.status, o.total_amount, o.created_at, o.accepted_at, o.accepted_by, o.payment_method, u.username, o.customer_name, o.is_physical_order, s.username, pi.payment_type, pi.amount, pi.total_amount, pi.remaining_amount, pi.gcash_reference, pi.status, pi.verified_at, pi.verification_method, pi.receipt_filename, pi.id
                 ORDER BY o.accepted_at DESC
             `, [staffId]);
     

@@ -405,7 +405,7 @@
                             <!-- Downpayment Information -->
                             <div v-if="selectedOrder.payment_type === 'downpayment'" class="downpayment-breakdown">
                                 <p class="downpayment-info">
-                                    <i class="fas fa-credit-card"></i> Downpayment (25%): {{ formatPrice(getDownpaymentAmount(selectedOrder)) }}
+                                    <i class="fas fa-credit-card"></i> Downpayment Paid: {{ formatPrice(getDownpaymentAmount(selectedOrder)) }}
                                 </p>
                                 <p class="remaining-amount">
                                     <i class="fas fa-money-bill-wave"></i> Remaining Amount: {{ formatPrice(getRemainingAmount(selectedOrder)) }}
@@ -616,8 +616,8 @@
                                 <span>{{ formatPrice(selectedOrder.total_amount) }}</span>
                             </div>
                             <div class="breakdown-item">
-                                <span>Downpayment Paid (25%):</span>
-                                <span>{{ formatPrice(selectedOrder.total_amount * 0.25) }}</span>
+                                <span>Downpayment Paid:</span>
+                                <span>{{ formatPrice(getDownpaymentAmount(selectedOrder)) }}</span>
                             </div>
                             <div class="breakdown-item remaining">
                                 <span>Remaining Amount Due:</span>
@@ -1444,8 +1444,8 @@ export default {
         },
         getDownpaymentAmount(order) {
             if (order.payment_type === 'downpayment') {
-                const originalTotal = this.getOriginalTotal(order);
-                return originalTotal * 0.25;
+                // Use the actual paid_amount from payment_intents table
+                return order.paid_amount || 0;
             }
             return 0;
         },
@@ -1882,7 +1882,7 @@ export default {
                             ${order.payment_type === 'downpayment' ? `
                             <div class="payment-breakdown">
                                 <div style="margin-top: 8px; padding-top: 4px; border-top: 1px dashed black;">
-                                    <div>Downpayment (25%): ${this.formatPrice(order.total_amount * 0.25)}</div>
+                                    <div>Downpayment Paid: ${this.formatPrice(this.getDownpaymentAmount(order))}</div>
                                     <div>Remaining Amount: ${this.formatPrice(this.getAmountToPay(order))}</div>
                                 </div>
                             </div>
