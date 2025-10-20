@@ -394,7 +394,7 @@ exports.createGCashPaymentWithReceipt = async (req, res) => {
                     finalAmount,
                     receiptFileName, // Store as gcash_reference for backward compatibility
                     imageBuffer, // Store the actual image data
-                    req.file.originalname, // Store original filename
+                    receiptFileName, // Store the actual saved filename (with timestamp prefix)
                     req.file.mimetype, // Store MIME type
                     req.file.size // Store file size
                 ]

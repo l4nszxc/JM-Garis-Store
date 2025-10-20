@@ -144,6 +144,44 @@ router.get('/receipt/:filename', authenticate, (req, res) => {
     res.sendFile(filePath);
 });
 
+// Route to find actual receipt filename for legacy records
+router.get('/find-receipt-file/:originalFilename', authenticate, (req, res) => {
+    try {
+        const originalFilename = req.params.originalFilename;
+        
+        // Security check: ensure filename doesn't contain path traversal
+        if (originalFilename.includes('..') || originalFilename.includes('/') || originalFilename.includes('\\')) {
+            return res.status(400).json({ message: 'Invalid filename' });
+        }
+        
+        // Read the directory and find files that end with the original filename
+        const files = fs.readdirSync(uploadsDir);
+        const matchingFile = files.find(file => 
+            file.endsWith(`_${originalFilename}`) || file === originalFilename
+        );
+        
+        if (matchingFile) {
+            return res.json({ 
+                success: true, 
+                actualFilename: matchingFile,
+                originalRequested: originalFilename 
+            });
+        } else {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Receipt file not found',
+                originalRequested: originalFilename 
+            });
+        }
+    } catch (error) {
+        console.error('Error finding receipt file:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Error searching for receipt file' 
+        });
+    }
+});
+
 // Route to serve receipt images from database (for admin verification)
 router.get('/receipt-db/:paymentId', authenticate, async (req, res) => {
     try {
