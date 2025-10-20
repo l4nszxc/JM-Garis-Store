@@ -485,31 +485,45 @@
                             <div class="info-row">
                                 <strong>Payment Method:</strong> GCash Receipt Image
                             </div>
-                            <div v-if="paymentIntent.receipt_image" class="receipt-preview">
-                                <div v-if="receiptImageBlob && !imageLoadError" class="image-container">
-                                    <img 
-                                        :src="receiptImageBlob" 
-                                        alt="GCash Receipt" 
-                                        class="receipt-image"
-                                        @click="openReceiptModal"
-                                    />
-                                    <p class="receipt-note">Click image to view full size</p>
-                                </div>
-                                <div v-else-if="imageLoadError" class="image-error-fallback">
-                                    <div class="error-icon">
-                                        <i class="fas fa-exclamation-triangle"></i>
+                            
+                            <!-- Receipt Image Display with Toggle -->
+                            <div v-if="paymentIntent.receipt_image" class="receipt-section">
+                                <button 
+                                    @click="toggleReceiptDisplay" 
+                                    class="receipt-toggle-btn"
+                                >
+                                    <i class="fas fa-receipt"></i>
+                                    {{ showReceiptInModal ? 'Hide Receipt' : 'View Receipt' }}
+                                    <i :class="['fas', showReceiptInModal ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
+                                </button>
+                                <div v-show="showReceiptInModal" class="receipt-image-container">
+                                    <div class="receipt-image-wrapper">
+                                        <div v-if="receiptImageBlob && !imageLoadError" class="image-container">
+                                            <img 
+                                                :src="receiptImageBlob" 
+                                                alt="GCash Receipt" 
+                                                class="receipt-image"
+                                                @click="openReceiptModal"
+                                            />
+                                            <p class="receipt-note">Click image to view full size</p>
+                                        </div>
+                                        <div v-else-if="imageLoadError" class="image-error-fallback">
+                                            <div class="error-icon">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                            </div>
+                                            <p><strong>Receipt image unavailable</strong></p>
+                                            <p class="error-details">The receipt image could not be loaded from the server.</p>
+                                            <button @click="retryImageLoad" class="retry-btn">
+                                                <i class="fas fa-redo"></i> Retry
+                                            </button>
+                                        </div>
+                                        <div v-else class="loading-container">
+                                            <div class="loading-spinner">
+                                                <i class="fas fa-spinner fa-spin"></i>
+                                            </div>
+                                            <p>Loading receipt image...</p>
+                                        </div>
                                     </div>
-                                    <p><strong>Receipt image unavailable</strong></p>
-                                    <p class="error-details">The receipt image could not be loaded from the server.</p>
-                                    <button @click="retryImageLoad" class="retry-btn">
-                                        <i class="fas fa-redo"></i> Retry
-                                    </button>
-                                </div>
-                                <div v-else class="loading-container">
-                                    <div class="loading-spinner">
-                                        <i class="fas fa-spinner fa-spin"></i>
-                                    </div>
-                                    <p>Loading receipt image...</p>
                                 </div>
                             </div>
                             <div v-else class="no-receipt-info">
