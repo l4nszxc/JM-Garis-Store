@@ -135,7 +135,11 @@
                                         </div>
                                         <div v-else-if="order.verification_method === 'receipt' && order.receipt_filename" class="verification-item pending">
                                             <i class="fas fa-receipt text-warning"></i>
-                                            <span class="verification-text">Receipt uploaded</span>
+                                            <span class="verification-text">
+                                                <a href="#" @click.prevent="viewReceipt(order)" class="receipt-link">
+                                                    View Receipt
+                                                </a>
+                                            </span>
                                         </div>
                                         <div v-else-if="order.verification_method === 'reference' && order.gcash_reference" class="verification-item pending">
                                             <i class="fas fa-hashtag text-blue"></i>
@@ -322,7 +326,10 @@
                                     <div v-if="selectedOrder.verification_method === 'receipt'" class="method-info">
                                         <p><strong>Verification Method:</strong> Receipt Upload</p>
                                         <p v-if="selectedOrder.receipt_filename">
-                                            <strong>Receipt File:</strong> {{ selectedOrder.receipt_filename }}
+                                            <strong>Receipt File:</strong> 
+                                            <a href="#" @click.prevent="viewReceipt(selectedOrder)" class="receipt-link">
+                                                View Receipt Image
+                                            </a>
                                         </p>
                                         <p v-if="selectedOrder.gcash_reference && selectedOrder.gcash_reference !== selectedOrder.receipt_filename">
                                             <strong>Receipt Storage Reference:</strong> 
@@ -367,7 +374,10 @@
                                             <span class="reference-number">{{ selectedOrder.gcash_reference }}</span>
                                         </p>
                                         <p v-if="selectedOrder.receipt_filename && selectedOrder.receipt_filename !== selectedOrder.gcash_reference">
-                                            <strong>Receipt File:</strong> {{ selectedOrder.receipt_filename }}
+                                            <strong>Receipt File:</strong> 
+                                            <a href="#" @click.prevent="viewReceipt(selectedOrder)" class="receipt-link">
+                                                View Receipt Image
+                                            </a>
                                         </p>
                                     </div>
                                     <div v-else class="method-info">
@@ -1110,10 +1120,64 @@
                 </div>
                 <div class="receipt-image-modal-footer">
                     <p v-if="selectedOrder?.receipt_filename">
-                        <strong>File:</strong> {{ selectedOrder.receipt_filename }}
+                        <strong>Receipt Image</strong> - Order #{{ selectedOrder.id }}
                     </p>
                     <button @click="closeReceiptImageModal" class="close-btn">Close</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verification Success Modal -->
+    <div v-if="showVerificationSuccessModal" class="modal-overlay">
+        <div class="modal-content verification-success-modal">
+            <div class="success-header">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2>Payment Verified Successfully!</h2>
+                <p class="success-subtitle">Order status has been updated</p>
+            </div>
+            
+            <div class="success-body">
+                <div class="order-summary-success">
+                    <h3><i class="fas fa-receipt"></i> Order Details</h3>
+                    <div class="order-info-success">
+                        <div class="info-row">
+                            <span class="label"><i class="fas fa-hashtag"></i> Order ID:</span>
+                            <span class="value">{{ selectedOrder?.order_id }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label"><i class="fas fa-user"></i> Customer:</span>
+                            <span class="value">{{ selectedOrder?.customer_name || selectedOrder?.user_name }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label"><i class="fas fa-credit-card"></i> Payment Method:</span>
+                            <span class="value">{{ getPaymentMethodLabel(selectedOrder?.payment_method) }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label"><i class="fas fa-clock"></i> Status:</span>
+                            <span class="value status-pending">Pending</span>
+                        </div>
+                        <div class="info-row total-row">
+                            <span class="label"><i class="fas fa-dollar-sign"></i> Total Amount:</span>
+                            <span class="value total-amount">{{ formatPrice(selectedOrder?.total_amount) }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="verification-message">
+                    <div class="message-box">
+                        <i class="fas fa-info-circle"></i>
+                        <p>The payment has been successfully verified and the order status has been updated to <strong>pending</strong>. The order will now appear in the pending orders list.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="success-actions">
+                <button @click="closeVerificationSuccessModal" class="done-btn">
+                    <i class="fas fa-check"></i> Done
+                </button>
             </div>
         </div>
     </div>
@@ -1203,6 +1267,10 @@ export default {
             showReceiptModal: false,
             imageLoadError: false,
             receiptImageBlob: null,
+            
+            // Verification success modal
+            showVerificationSuccessModal: false,
+            verifiedOrderData: null,
             
             // Receipt image for order details modal
             receiptImageUrl: null,
@@ -1499,6 +1567,24 @@ export default {
             // Clear the processed order data AFTER printing (moved to printReceiptAsync)
             // this.processedOrder = null;
             // this.paymentDetails = null;
+        },
+        
+        closeVerificationSuccessModal() {
+            this.showVerificationSuccessModal = false;
+            this.verifiedOrderData = null;
+            
+            // Close the order details modal as well
+            this.selectedOrder = null;
+            
+            // Close any other related modals
+            this.showVerificationConfirm = false;
+            this.showReceiptImageModal = false;
+            
+            // Clean up receipt image data
+            this.cleanupReceiptImage();
+            
+            // Refresh the orders list to show updated status
+            this.fetchOrders();
         },
         
         // Method to refresh receipt settings cache
@@ -2178,6 +2264,27 @@ export default {
             this.showReceiptImageModal = false;
         },
         
+        async viewReceipt(order) {
+            // Set the selected order if not already set
+            if (!this.selectedOrder || this.selectedOrder.id !== order.id) {
+                this.selectedOrder = order;
+            }
+            
+            try {
+                // Load the receipt image for this order
+                if (order.payment_intent_id) {
+                    await this.loadOrderReceiptImage(order.payment_intent_id);
+                }
+                
+                // Open the receipt modal
+                this.openReceiptImageModal();
+            } catch (error) {
+                console.error('Error loading receipt:', error);
+                // Still show the modal even if there's an error - the error handling will be shown in the modal
+                this.openReceiptImageModal();
+            }
+        },
+        
         closeOrderDetails() {
             this.cleanupReceiptImage();
             this.closeReceiptImageModal();
@@ -2228,8 +2335,14 @@ export default {
                     // Close confirmation modal
                     this.showVerificationConfirm = false;
                     
-                    // Show success message
-                    alert('Payment verified successfully! Order status updated to pending.');
+                    // Store verified order data for the success modal
+                    this.verifiedOrderData = {
+                        order_id: this.selectedOrder?.order_id,
+                        status: 'pending'
+                    };
+                    
+                    // Show verification success modal instead of alert
+                    this.showVerificationSuccessModal = true;
                     
                 } else {
                     console.error('Verification failed:', responseData);
@@ -5168,6 +5281,143 @@ tfoot tr td {
     }
 }
 
+/* Verification Success Modal Styles */
+.verification-success-modal {
+    max-width: 600px;
+    width: 90vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    animation: modalSlideIn 0.4s ease-out;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+.verification-success-modal .success-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+}
+
+.verification-success-modal .success-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+    background-size: 20px 20px;
+    opacity: 0.3;
+}
+
+.verification-success-modal .success-icon {
+    background: rgba(255, 255, 255, 0.2);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem auto;
+    position: relative;
+    z-index: 1;
+}
+
+.verification-success-modal .success-icon i {
+    font-size: 2.5rem;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.verification-success-modal .success-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.verification-success-modal .success-subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.verification-message {
+    margin-top: 1.5rem;
+    padding: 0 1.5rem;
+}
+
+.verification-message .message-box {
+    background: linear-gradient(135deg, #e8f5e8 0%, #f0f9f0 100%);
+    border: 2px solid #28a745;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.verification-message .message-box i {
+    color: #28a745;
+    font-size: 1.5rem;
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+}
+
+.verification-message .message-box p {
+    margin: 0;
+    line-height: 1.6;
+    color: #2d5a3d;
+}
+
+.verification-message .message-box strong {
+    color: #1e7e34;
+    font-weight: 600;
+}
+
+.status-pending {
+    color: #ffc107;
+    font-weight: 600;
+    background: #fff3cd;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #ffeaa7;
+}
+
+@media (max-width: 768px) {
+    .verification-success-modal {
+        width: 95vw;
+        margin: 1rem;
+    }
+    
+    .verification-success-modal .success-header {
+        padding: 1.5rem;
+    }
+    
+    .verification-success-modal .success-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .verification-message .message-box {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .verification-message .message-box i {
+        align-self: center;
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+    }
+}
+
 /* Verification Section Styles */
 .verification-section {
     margin-top: 1.5rem;
@@ -5889,5 +6139,70 @@ tfoot tr td {
     .full-size-receipt-image {
         max-height: 50vh;
     }
+}
+
+/* Receipt Link Styles */
+.receipt-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid transparent;
+}
+
+.receipt-link:hover {
+    color: #0056b3;
+    text-decoration: none;
+    border-bottom: 1px solid #0056b3;
+}
+
+.receipt-link:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Style for receipt links in verification items */
+.verification-item .receipt-link {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.verification-item .receipt-link:hover {
+    color: #1e7e34;
+    border-bottom-color: #1e7e34;
+}
+
+/* Receipt Modal Enhancement */
+.receipt-image-modal-overlay {
+    z-index: 1050;
+}
+
+.receipt-image-modal-content {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.receipt-image-modal-header {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.receipt-image-modal-footer {
+    border-top: 2px solid #e9ecef;
+    padding-top: 1rem;
+    margin-top: 1rem;
 }
 </style>

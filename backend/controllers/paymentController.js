@@ -205,16 +205,16 @@ exports.createGCashPaymentOnly = async (req, res) => {
             // Create notification for the user
             const Notification = require('../models/notificationModel');
             try {
-                await Notification.create({
-                    customId: `order-${orderId}-pending`,
-                    userId: userId,
-                    title: 'Order Update',
-                    message: `Order #${orderId} has been placed and is pending.`,
-                    type: 'order',
-                    icon: 'fas fa-hourglass-half',
-                    relatedOrderId: orderId,
-                    actionUrl: `/order-details/${orderId}`
-                });
+                await Notification.create(
+                    userId,
+                    'Order Update',
+                    `Order #${orderId} has been placed and is pending.`,
+                    'order',
+                    'fas fa-hourglass-half',
+                    orderId,
+                    `/order-details/${orderId}`,
+                    `order-${orderId}-pending`
+                );
             } catch (error) {
                 console.error('Error creating notification:', error);
             }
@@ -403,16 +403,16 @@ exports.createGCashPaymentWithReceipt = async (req, res) => {
             // Create notification for the user
             const Notification = require('../models/notificationModel');
             try {
-                await Notification.create({
-                    customId: `order-${orderId}-pending`,
-                    userId: userId,
-                    title: 'Order Update',
-                    message: `Order #${orderId} has been placed and is pending.`,
-                    type: 'order',
-                    icon: 'fas fa-hourglass-half',
-                    relatedOrderId: orderId,
-                    actionUrl: `/order-details/${orderId}`
-                });
+                await Notification.create(
+                    userId,
+                    'Order Update',
+                    `Order #${orderId} has been placed and is pending.`,
+                    'order',
+                    'fas fa-hourglass-half',
+                    orderId,
+                    `/order-details/${orderId}`,
+                    `order-${orderId}-pending`
+                );
             } catch (error) {
                 console.error('Error creating notification:', error);
             }
@@ -593,16 +593,16 @@ exports.verifyGCashPayment = async (req, res) => {
                 // Create notification for payment verification
                 const Notification = require('../models/notificationModel');
                 try {
-                    await Notification.create({
-                        customId: `order-${payment.order_id}-paid`,
-                        userId: payment.user_id,
-                        title: 'Order Update',
-                        message: `Order #${payment.order_id} has been paid and completed.`,
-                        type: 'order',
-                        icon: 'fas fa-money-bill-wave',
-                        relatedOrderId: payment.order_id,
-                        actionUrl: `/order-details/${payment.order_id}`
-                    });
+                    await Notification.create(
+                        payment.user_id,
+                        'Order Update',
+                        `Order #${payment.order_id} has been paid and completed.`,
+                        'order',
+                        'fas fa-money-bill-wave',
+                        payment.order_id,
+                        `/order-details/${payment.order_id}`,
+                        `order-${payment.order_id}-paid`
+                    );
                 } catch (error) {
                     console.error('Error creating notification:', error);
                 }
@@ -627,16 +627,16 @@ exports.verifyGCashPayment = async (req, res) => {
                 // Create notification for failed verification
                 const Notification = require('../models/notificationModel');
                 try {
-                    await Notification.create({
-                        customId: `order-${payment.order_id}-cancelled`,
-                        userId: payment.user_id,
-                        title: 'Order Update',
-                        message: `Order #${payment.order_id} has been cancelled due to payment verification failure.`,
-                        type: 'order',
-                        icon: 'fas fa-times-circle',
-                        relatedOrderId: payment.order_id,
-                        actionUrl: `/order-details/${payment.order_id}`
-                    });
+                    await Notification.create(
+                        payment.user_id,
+                        'Order Update',
+                        `Order #${payment.order_id} has been cancelled due to payment verification failure.`,
+                        'order',
+                        'fas fa-times-circle',
+                        payment.order_id,
+                        `/order-details/${payment.order_id}`,
+                        `order-${payment.order_id}-cancelled`
+                    );
                 } catch (error) {
                     console.error('Error creating notification:', error);
                 }
@@ -710,16 +710,16 @@ async function createOrderFromPayment(userId, orderData, amount, paymentId, paym
         
         // Create notification for the user
         try {
-            await Notification.create({
-                customId: `order-${orderId}-paid`,
-                userId: userId,
-                title: 'Order Update',
-                message: `Order #${orderId} has been paid and completed.`,
-                type: 'order',
-                icon: 'fas fa-money-bill-wave',
-                relatedOrderId: orderId,
-                actionUrl: `/order-details/${orderId}`
-            });
+            await Notification.create(
+                userId,
+                'Order Update',
+                `Order #${orderId} has been paid and completed.`,
+                'order',
+                'fas fa-money-bill-wave',
+                orderId,
+                `/order-details/${orderId}`,
+                `order-${orderId}-paid`
+            );
         } catch (error) {
             console.error('Error creating notification:', error);
         }
