@@ -459,4 +459,101 @@ router.post('/admin/test-receipt/:paymentId', async (req, res) => {
     }
 });
 
+// User route to get their own payment intent by order ID
+router.get('/user/payment-intent/:orderId', authenticate, async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const userId = req.user.id;
+        
+        console.log(`User ${userId} fetching payment intent for order: ${orderId}`);
+        
+        // Fetch the payment intent for the specific order belonging to the user
+        const [rows] = await require('../config/db').execute(
+            `SELECT 
+                pi.id as payment_intent_id,
+                pi.order_id,
+                pi.user_id,
+                pi.amount,
+                pi.status,
+                pi.verification_method,
+                pi.gcash_reference,
+                pi.receipt_filename,
+                pi.receipt_mimetype,
+                pi.receipt_filesize,
+                pi.created_at,
+                pi.updated_at,
+                CASE 
+                    WHEN pi.receipt_image IS NOT NULL THEN true
+                    ELSE false
+                END as has_receipt_image
+            FROM payment_intents pi
+            INNER JOIN orders o ON pi.order_id = o.order_id
+            WHERE pi.order_id = ? AND o.user_id = ?
+            ORDER BY pi.created_at DESC
+            LIMIT 1`,
+            [orderId, userId]
+        );
+        
+        console.log(`Found ${rows.length} payment intents for user ${userId}, order ${orderId}`);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ 
+                message: `Payment intent not found for order ${orderId}`,
+                code: 'PAYMENT_INTENT_NOT_FOUND'
+            });
+        }
+        
+        res.json(rows[0]);
+        
+    } catch (error) {
+        console.error('Error fetching user payment intent:', error);
+        res.status(500).json({ message: 'Error retrieving payment intent' });
+    }
+});
+
+// User route to get their own receipt image
+router.get('/user/receipt/:paymentId', authenticate, async (req, res) => {
+    try {
+        const { paymentId } = req.params;
+        const userId = req.user.id;
+        
+        console.log(`User ${userId} requesting receipt image for payment: ${paymentId}`);
+        
+        // Fetch receipt image for payment belonging to the user
+        const [rows] = await require('../config/db').execute(
+            `SELECT 
+                pi.receipt_image, 
+                pi.receipt_mimetype, 
+                pi.receipt_filename,
+                pi.order_id
+            FROM payment_intents pi
+            INNER JOIN orders o ON pi.order_id = o.order_id
+            WHERE pi.id = ? AND o.user_id = ?`,
+            [paymentId, userId]
+        );
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Receipt not found or access denied' });
+        }
+        
+        const receiptData = rows[0];
+        
+        if (!receiptData.receipt_image) {
+            return res.status(404).json({ message: 'No receipt image available' });
+        }
+        
+        // Set appropriate headers
+        res.setHeader('Content-Type', receiptData.receipt_mimetype || 'image/jpeg');
+        res.setHeader('Content-Disposition', `inline; filename="${receiptData.receipt_filename || 'receipt.jpg'}"`);
+        res.setHeader('Cache-Control', 'private, max-age=3600');
+        
+        // Send the image buffer
+        res.send(receiptData.receipt_image);
+        
+    } catch (error) {
+        console.error('Error serving user receipt image:', error);
+        res.status(500).json({ message: 'Error serving receipt image' });
+    }
+});
+
 module.exports = router;

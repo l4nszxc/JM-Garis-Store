@@ -1106,13 +1106,23 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 if (this.gcashVerificationMethod === 'receipt' && this.gcashReceiptFile) {
                     // Handle file upload for receipt method
                     const formData = new FormData();
-                    formData.append('amount', this.calculateTotal);
+                    formData.append('amount', String(this.calculateTotal));
                     formData.append('items', JSON.stringify(orderData.items));
-                    formData.append('discountId', orderData.discountId || '');
-                    formData.append('packagingPreference', orderData.packagingPreference);
+                    formData.append('discountId', orderData.discountId ? String(orderData.discountId) : '');
+                    formData.append('packagingPreference', String(orderData.packagingPreference || 'eco'));
                     formData.append('paymentMethod', 'gcash');
-                    formData.append('gcashVerificationMethod', this.gcashVerificationMethod);
+                    formData.append('gcashVerificationMethod', String(this.gcashVerificationMethod));
                     formData.append('gcashReceipt', this.gcashReceiptFile);
+                    
+                    // Debug logging
+                    console.log('🔍 FormData contents:');
+                    console.log('- amount:', this.calculateTotal);
+                    console.log('- items:', JSON.stringify(orderData.items));
+                    console.log('- discountId:', orderData.discountId || '');
+                    console.log('- packagingPreference:', orderData.packagingPreference || '');
+                    console.log('- paymentMethod:', 'gcash');
+                    console.log('- gcashVerificationMethod:', this.gcashVerificationMethod);
+                    console.log('- file:', this.gcashReceiptFile?.name, this.gcashReceiptFile?.size, 'bytes');
                     
                     console.log('🔍 Attempting file upload to backend...');
                     // Use the API mixin for consistent URL handling
@@ -1152,10 +1162,17 @@ Special Instructions: ${this.specialInstructions || ''}`;
                     let errorData;
                     try {
                         errorData = await paymentResponse.json();
+                        console.error('📥 Server error response:', errorData);
                     } catch (e) {
+                        console.error('📥 Failed to parse error response:', e);
                         errorData = { message: 'Server error occurred' };
                     }
-                    throw new Error(errorData.message || 'Failed to create GCash payment');
+                    
+                    // Log the full response for debugging
+                    console.error('📥 Full response status:', paymentResponse.status);
+                    console.error('📥 Full response headers:', Object.fromEntries(paymentResponse.headers.entries()));
+                    
+                    throw new Error(errorData.message || `Failed to create GCash payment (Status: ${paymentResponse.status})`);
                 }
 
                 const paymentData = await paymentResponse.json();

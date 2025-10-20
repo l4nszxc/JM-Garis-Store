@@ -42,11 +42,14 @@ export const apiMixin = {
         credentials: 'include',
       };
       
-      // Only set Content-Type for requests that have a body
+      // Only set Content-Type for requests that have a body, but not for FormData
       if (options.body || options.method === 'POST' || options.method === 'PUT' || options.method === 'PATCH') {
-        defaultOptions.headers = {
-          'Content-Type': 'application/json',
-        };
+        // Don't set Content-Type for FormData - let the browser set it with boundary
+        if (!(options.body instanceof FormData)) {
+          defaultOptions.headers = {
+            'Content-Type': 'application/json',
+          };
+        }
       }
       
       const mergedOptions = {

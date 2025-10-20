@@ -247,15 +247,49 @@ exports.createGCashPaymentOnly = async (req, res) => {
 // Create GCash payment with receipt upload
 exports.createGCashPaymentWithReceipt = async (req, res) => {
     try {
+        console.log('📥 Received GCash payment with receipt request');
+        console.log('📥 Request body:', req.body);
+        console.log('📥 Request file:', req.file ? { name: req.file.originalname, size: req.file.size, mimetype: req.file.mimetype } : 'No file');
+        console.log('📥 User:', req.user ? { id: req.user.id } : 'No user');
+        
         const { amount, items, discountId, packagingPreference, paymentMethod, gcashVerificationMethod } = req.body;
         const userId = req.user.id;
+        
+        // Validate required fields
+        if (!amount) {
+            return res.status(400).json({ message: 'Amount is required' });
+        }
+        
+        if (!items) {
+            return res.status(400).json({ message: 'Items are required' });
+        }
+        
+        if (!paymentMethod) {
+            return res.status(400).json({ message: 'Payment method is required' });
+        }
+        
+        if (!gcashVerificationMethod) {
+            return res.status(400).json({ message: 'GCash verification method is required' });
+        }
         
         // Parse items if it's a string (from FormData)
         let parsedItems;
         try {
             parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
         } catch (error) {
-            return res.status(400).json({ message: 'Invalid items format' });
+            console.error('📥 Error parsing items:', error);
+            return res.status(400).json({ message: 'Invalid items format: ' + error.message });
+        }
+        
+        // Validate parsed items
+        if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
+            return res.status(400).json({ message: 'Items must be a non-empty array' });
+        }
+        
+        // Validate amount is a valid number
+        const numericAmount = parseFloat(amount);
+        if (isNaN(numericAmount) || numericAmount <= 0) {
+            return res.status(400).json({ message: 'Amount must be a valid positive number' });
         }
         
         // Validate receipt file
@@ -269,10 +303,10 @@ exports.createGCashPaymentWithReceipt = async (req, res) => {
             return res.status(400).json({ message: 'Invalid file type. Please upload an image file (JPG, PNG, GIF)' });
         }
         
-        // Validate file size (5MB limit)
-        const maxSize = 5 * 1024 * 1024; // 5MB
+        // Validate file size (10MB limit to match multer config)
+        const maxSize = 10 * 1024 * 1024; // 10MB
         if (req.file.size > maxSize) {
-            return res.status(400).json({ message: 'File size too large. Maximum size is 5MB' });
+            return res.status(400).json({ message: 'File size too large. Maximum size is 10MB' });
         }
         
         // Generate a temporary payment reference
@@ -313,7 +347,14 @@ exports.createGCashPaymentWithReceipt = async (req, res) => {
             const receiptPath = req.file.path; // This is the full path where the file was saved
             
             // Read the image file data to store in database
-            const imageBuffer = fs.readFileSync(receiptPath);
+            let imageBuffer;
+            try {
+                imageBuffer = fs.readFileSync(receiptPath);
+                console.log('📥 Successfully read receipt file:', receiptPath, imageBuffer.length, 'bytes');
+            } catch (fileError) {
+                console.error('📥 Error reading receipt file:', fileError);
+                return res.status(400).json({ message: 'Error processing uploaded receipt file' });
+            }
             
             await connection.execute(
                 `INSERT INTO payment_intents (

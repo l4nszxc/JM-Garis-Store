@@ -56,8 +56,16 @@ app.use(cors({
 }));
 
 // Configure express with larger limits for file uploads
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Only parse JSON when content-type is application/json
+app.use(express.json({ 
+    limit: '10mb',
+    type: 'application/json'
+}));
+app.use(express.urlencoded({ 
+    extended: true, 
+    limit: '10mb',
+    type: 'application/x-www-form-urlencoded'
+}));
 
 // Session middleware with environment-based secret
 app.use(session({

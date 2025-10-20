@@ -64,6 +64,20 @@
                                     <i class="fas fa-times-circle"></i>
                                     <span>Payment verification failed</span>
                                 </div>
+                                <div v-if="order.receiptImageUrl" class="gcash-receipt-section">
+                                    <div class="receipt-label">
+                                        <i class="fas fa-receipt"></i>
+                                        <span>Payment Receipt:</span>
+                                    </div>
+                                    <div class="receipt-image-container">
+                                        <img 
+                                            :src="order.receiptImageUrl" 
+                                            alt="GCash Payment Receipt"
+                                            class="receipt-image"
+                                            @error="handleImageError"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- Cancel reason if applicable -->
@@ -415,6 +429,13 @@ export default {
                         
                         return orderWithEstimate;
                     });
+
+                    // Load receipt images for GCash orders
+                    for (const order of this.orders) {
+                        if (order.payment_method === 'gcash') {
+                            await this.loadOrderReceiptImage(order.order_id);
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching orders:', error);
@@ -443,6 +464,53 @@ export default {
                 console.error('Error during logout:', error);
             } finally {
                 this.showLogoutModal = false;
+            }
+        },
+        async loadOrderReceiptImage(orderId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/payment/user/payment-intent/${orderId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const paymentData = await response.json();
+                    console.log(`Payment data for order ${orderId}:`, paymentData);
+                    
+                    if (paymentData.verification_method === 'receipt' && paymentData.has_receipt_image) {
+                        // Load the receipt image
+                        const imageResponse = await fetch(`/api/payment/user/receipt/${paymentData.payment_intent_id}`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        if (imageResponse.ok) {
+                            const blob = await imageResponse.blob();
+                            const imageUrl = URL.createObjectURL(blob);
+                            
+                            // Find the order and add the receipt image URL
+                            const order = this.orders.find(o => o.order_id === orderId);
+                            if (order) {
+                                order.receiptImageUrl = imageUrl;
+                                console.log(`Receipt image loaded for order ${orderId}`);
+                            }
+                        } else {
+                            console.log(`No receipt image found for order ${orderId}`);
+                        }
+                    } else {
+                        console.log(`Order ${orderId} uses ${paymentData.verification_method} verification, no receipt image needed`);
+                    }
+                } else if (response.status === 404) {
+                    console.log(`Payment intent not found for order ${orderId} (this is normal for some orders)`);
+                } else {
+                    console.warn(`Error fetching payment intent for order ${orderId}: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error(`Error loading receipt image for order ${orderId}:`, error);
             }
         },
         async getUserData() {
@@ -1192,6 +1260,81 @@ export default {
     
     .verification-status small {
         font-size: 0.7rem;
+    }
+}
+
+/* GCash Receipt Image Styles */
+.gcash-receipt-section {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(25, 118, 210, 0.2);
+}
+
+.receipt-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1976d2;
+}
+
+.receipt-label i {
+    font-size: 0.875rem;
+    color: #1976d2;
+}
+
+.receipt-image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: white;
+    border: 2px solid rgba(25, 118, 210, 0.2);
+    border-radius: 8px;
+    padding: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.receipt-image {
+    max-width: 100%;
+    max-height: 200px;
+    width: auto;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease;
+}
+
+.receipt-image:hover {
+    transform: scale(1.02);
+}
+
+@media (max-width: 768px) {
+    .receipt-image {
+        max-height: 150px;
+    }
+    
+    .receipt-image-container {
+        padding: 0.5rem;
+    }
+    
+    .receipt-label {
+        font-size: 0.8rem;
+    }
+    
+    .receipt-label i {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .receipt-image {
+        max-height: 120px;
+    }
+    
+    .receipt-image-container {
+        padding: 0.375rem;
     }
 }
 </style>
