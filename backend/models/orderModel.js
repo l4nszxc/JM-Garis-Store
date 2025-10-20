@@ -266,12 +266,20 @@ class Order {
                     pi.gcash_reference,
                     pi.status as payment_status,
                     pi.verified_at,
+                    pi.payment_type,
+                    pi.amount as paid_amount,
+                    pi.total_amount as payment_total_amount,
+                    pi.remaining_amount,
+                    pi.verification_method,
+                    pi.receipt_image,
+                    pi.receipt_filename,
+                    pi.receipt_mimetype,
                     (SELECT SUM(oi.price * oi.quantity) 
                      FROM order_items oi 
                      WHERE oi.order_id = o.order_id) as subtotal
                 FROM orders o
                 LEFT JOIN available_discounts ad ON o.order_id = ad.order_id AND ad.used = TRUE
-                LEFT JOIN payment_intents pi ON o.payment_intent_id = pi.reference_number
+                LEFT JOIN payment_intents pi ON o.order_id = pi.order_id
                 WHERE o.user_id = ?
                 ORDER BY o.created_at DESC`,
                 [userId]

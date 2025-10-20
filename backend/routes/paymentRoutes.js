@@ -81,6 +81,7 @@ router.post('/gcash/create-payment-only', authenticate, paymentController.create
 router.post('/gcash/create-payment-with-receipt', authenticate, upload.single('gcashReceipt'), handleMulterError, paymentController.createGCashPaymentWithReceipt);
 router.post('/gcash/create', authenticate, paymentController.createGCashPayment);
 router.post('/gcash/create-downpayment', authenticate, paymentController.createGCashDownpayment);
+router.post('/gcash/create-downpayment-with-receipt', authenticate, upload.single('downpaymentReceipt'), handleMulterError, paymentController.createGCashDownpaymentWithReceipt);
 router.get('/status/:orderId', authenticate, paymentController.checkPaymentStatus);
 router.get('/status-by-payment-id/:paymentId', authenticate, paymentController.checkPaymentStatusByPaymentId);
 router.get('/downpayment-status/:paymentId', authenticate, paymentController.checkDownpaymentStatus);

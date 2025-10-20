@@ -42,8 +42,16 @@
                                 </span>
                             </div>
                             
-                            <!-- GCash Payment Details -->
-                            <div v-if="order.payment_method === 'gcash'" class="gcash-payment-info">
+                            
+                            <!-- GCash Payment Details (Full Payment or Downpayment) -->
+                            <div v-if="order.payment_method === 'gcash' || order.payment_type === 'downpayment'" class="gcash-payment-info">
+                                <!-- Payment Type Badge -->
+                                <div v-if="order.payment_type" class="payment-type-badge" :class="order.payment_type === 'downpayment' ? 'downpayment-badge' : 'fullpayment-badge'">
+                                    <i :class="order.payment_type === 'downpayment' ? 'fas fa-hand-holding-usd' : 'fas fa-wallet'"></i>
+                                    <span>{{ order.payment_type === 'downpayment' ? 'Downpayment' : 'Full Payment' }}</span>
+                                </div>
+
+                                <!-- Reference Number -->
                                 <div v-if="order.gcash_reference" class="gcash-reference-info">
                                     <i class="fab fa-google-pay"></i>
                                     <div class="gcash-details">
@@ -51,6 +59,35 @@
                                         <span class="gcash-reference">{{ order.gcash_reference }}</span>
                                     </div>
                                 </div>
+
+                                <!-- Downpayment Amount Details -->
+                                <div v-if="order.payment_type === 'downpayment'" class="downpayment-details">
+                                    <div class="payment-breakdown">
+                                        <div class="breakdown-item paid">
+                                            <i class="fas fa-check-circle"></i>
+                                            <div class="breakdown-info">
+                                                <span class="breakdown-label">Downpayment Paid</span>
+                                                <span class="breakdown-amount">{{ formatPrice(order.paid_amount || 0) }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="breakdown-item remaining">
+                                            <i class="fas fa-store"></i>
+                                            <div class="breakdown-info">
+                                                <span class="breakdown-label">Remaining (Pay at Store)</span>
+                                                <span class="breakdown-amount">{{ formatPrice(order.remaining_amount || 0) }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="breakdown-item total">
+                                            <i class="fas fa-calculator"></i>
+                                            <div class="breakdown-info">
+                                                <span class="breakdown-label">Total Order Amount</span>
+                                                <span class="breakdown-amount">{{ formatPrice(order.payment_total_amount || order.total_amount) }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Verification Status -->
                                 <div v-if="order.payment_status === 'pending_verification' || order.status === 'to verify'" class="verification-status pending">
                                     <i class="fas fa-clock"></i>
                                     <span>Payment verification pending</span>
@@ -64,6 +101,8 @@
                                     <i class="fas fa-times-circle"></i>
                                     <span>Payment verification failed</span>
                                 </div>
+
+                                <!-- Receipt Display -->
                                 <div v-if="order.receiptImageUrl" class="gcash-receipt-section">
                                     <button 
                                         @click="toggleReceiptImage(order.order_id)" 
@@ -1538,6 +1577,106 @@ export default {
     font-weight: normal;
 }
 
+/* Payment Type Badge Styles */
+.payment-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.payment-type-badge i {
+    font-size: 1rem;
+}
+
+.downpayment-badge {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    color: #e65100;
+    border: 1px solid #ffcc80;
+}
+
+.fullpayment-badge {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+}
+
+/* Downpayment Details Styles */
+.downpayment-details {
+    margin-top: 0.75rem;
+}
+
+.payment-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.breakdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem;
+    border-radius: 6px;
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.breakdown-item i {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.breakdown-item.paid {
+    border-left: 3px solid #4caf50;
+}
+
+.breakdown-item.paid i {
+    color: #4caf50;
+}
+
+.breakdown-item.remaining {
+    border-left: 3px solid #ff9800;
+}
+
+.breakdown-item.remaining i {
+    color: #ff9800;
+}
+
+.breakdown-item.total {
+    border-left: 3px solid #1976d2;
+    background: rgba(25, 118, 210, 0.05);
+}
+
+.breakdown-item.total i {
+    color: #1976d2;
+}
+
+.breakdown-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    flex: 1;
+}
+
+.breakdown-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.breakdown-amount {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
 @media (max-width: 768px) {
     .gcash-reference-info {
         flex-direction: column;
@@ -1560,6 +1699,28 @@ export default {
     }
     
     .verification-status small {
+        font-size: 0.7rem;
+    }
+
+    .payment-type-badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+
+    .breakdown-item {
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+
+    .breakdown-item i {
+        font-size: 1rem;
+    }
+
+    .breakdown-amount {
+        font-size: 0.9rem;
+    }
+
+    .breakdown-label {
         font-size: 0.7rem;
     }
 }

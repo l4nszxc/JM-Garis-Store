@@ -41,56 +41,347 @@ exports.createGCashDownpayment = async (req, res) => {
         // Generate a temporary payment reference for downpayment
         const tempReference = `downpay_${Date.now()}_${userId}`;
         
-        // Store payment info in database with order data for later use
-        const downpaymentData = {
-            items, 
-            discountId, 
-            packagingPreference, 
-            paymentMethod, 
-            totalAmount, 
-            remainingAmount, 
-            downpaymentAmount,
-            type: 'downpayment'
-        };
-        
-        await db.execute(
-            `INSERT INTO payment_intents (
-                reference_number,
-                gcash_reference,
-                amount, 
-                status,
-                order_data,
-                user_id,
-                payment_type,
-                total_amount,
-                remaining_amount,
-                created_at
-            ) VALUES (?, ?, ?, 'pending_verification', ?, ?, 'downpayment', ?, ?, NOW())`,
-            [
-                tempReference,
-                gcashReference.trim(),
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+            
+            // Apply discount if provided
+            const Reward = require('../models/rewardModel');
+            let finalAmount = totalAmount;
+            let appliedDiscount = 0;
+            if (discountId) {
+                try {
+                    appliedDiscount = await Reward.applyDiscount(userId, null, discountId);
+                    finalAmount = Math.max(0, finalAmount - appliedDiscount);
+                } catch (error) {
+                    console.error('Error applying discount:', error);
+                }
+            }
+            
+            // Create order immediately with "to verify" status for downpayment
+            const orderId = await createOrderWithConnection(
+                connection,
+                userId, 
+                items, 
+                finalAmount, 
+                packagingPreference, 
+                paymentMethod, 
+                'to verify', // Set to 'to verify' for downpayment
+                tempReference
+            );
+            
+            // Store payment info in database with order ID
+            const downpaymentData = {
+                items, 
+                discountId, 
+                packagingPreference, 
+                paymentMethod, 
+                totalAmount: finalAmount, 
+                remainingAmount, 
                 downpaymentAmount,
-                JSON.stringify(downpaymentData),
-                userId,
-                totalAmount,
-                remainingAmount
-            ]
-        );
-        
-        res.json({
-            paymentId: tempReference,
-            referenceNumber: tempReference,
-            gcashReference: gcashReference.trim(),
-            amount: downpaymentAmount,
-            downpaymentAmount,
-            remainingAmount,
-            status: 'pending_verification',
-            message: 'GCash payment submitted for verification. Please wait for admin confirmation.'
-        });
+                type: 'downpayment',
+                verificationMethod: 'reference'
+            };
+            
+            await connection.execute(
+                `INSERT INTO payment_intents (
+                    order_id,
+                    reference_number,
+                    gcash_reference,
+                    amount, 
+                    status,
+                    order_data,
+                    user_id,
+                    payment_type,
+                    total_amount,
+                    remaining_amount,
+                    verification_method,
+                    created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+                [
+                    orderId,
+                    tempReference,
+                    gcashReference.trim(),
+                    downpaymentAmount,
+                    'pending_verification',
+                    JSON.stringify(downpaymentData),
+                    userId,
+                    'downpayment',
+                    finalAmount,
+                    remainingAmount,
+                    'reference'
+                ]
+            );
+            
+            // Create notification for the user
+            const Notification = require('../models/notificationModel');
+            try {
+                await Notification.create(
+                    userId,
+                    'Order Update',
+                    `Order #${orderId} has been placed and is pending downpayment verification.`,
+                    'order',
+                    'fas fa-hourglass-half',
+                    orderId,
+                    `/order-details/${orderId}`,
+                    `order-${orderId}-pending`
+                );
+            } catch (error) {
+                console.error('Error creating notification:', error);
+            }
+            
+            await connection.commit();
+            
+            res.json({
+                orderId: orderId,
+                paymentId: tempReference,
+                referenceNumber: tempReference,
+                gcashReference: gcashReference.trim(),
+                amount: downpaymentAmount,
+                downpaymentAmount,
+                remainingAmount,
+                status: 'pending_verification',
+                message: 'Order created and downpayment submitted for verification. Your order is now visible in track orders.'
+            });
+            
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
         
     } catch (error) {
         console.error('Error creating downpayment:', error);
         res.status(500).json({ message: 'Failed to create downpayment' });
+    }
+};
+
+// Create GCash downpayment with receipt upload
+exports.createGCashDownpaymentWithReceipt = async (req, res) => {
+    try {
+        console.log('📥 Received GCash downpayment with receipt request');
+        console.log('📥 Request body:', req.body);
+        console.log('📥 Request file:', req.file ? { name: req.file.originalname, size: req.file.size, mimetype: req.file.mimetype } : 'No file');
+        console.log('📥 User:', req.user ? { id: req.user.id } : 'No user');
+        
+        const { downpaymentAmount, totalAmount, remainingAmount, items, discountId, packagingPreference, paymentMethod, downpaymentVerificationMethod } = req.body;
+        const userId = req.user.id;
+        
+        // Validate required fields
+        if (!downpaymentAmount) {
+            return res.status(400).json({ message: 'Downpayment amount is required' });
+        }
+        
+        if (!totalAmount) {
+            return res.status(400).json({ message: 'Total amount is required' });
+        }
+        
+        if (!items) {
+            return res.status(400).json({ message: 'Items are required' });
+        }
+        
+        if (!paymentMethod) {
+            return res.status(400).json({ message: 'Payment method is required' });
+        }
+        
+        if (!downpaymentVerificationMethod) {
+            return res.status(400).json({ message: 'Downpayment verification method is required' });
+        }
+        
+        // Parse items if it's a string (from FormData)
+        let parsedItems;
+        try {
+            parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
+        } catch (error) {
+            console.error('📥 Error parsing items:', error);
+            return res.status(400).json({ message: 'Invalid items format: ' + error.message });
+        }
+        
+        // Validate parsed items
+        if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
+            return res.status(400).json({ message: 'Items must be a non-empty array' });
+        }
+        
+        // Validate amounts are valid numbers
+        const numericDownpaymentAmount = parseFloat(downpaymentAmount);
+        const numericTotalAmount = parseFloat(totalAmount);
+        const numericRemainingAmount = parseFloat(remainingAmount);
+        
+        if (isNaN(numericDownpaymentAmount) || numericDownpaymentAmount <= 0) {
+            return res.status(400).json({ message: 'Downpayment amount must be a valid positive number' });
+        }
+        
+        if (isNaN(numericTotalAmount) || numericTotalAmount <= 0) {
+            return res.status(400).json({ message: 'Total amount must be a valid positive number' });
+        }
+        
+        // Validate receipt file
+        if (!req.file) {
+            return res.status(400).json({ message: 'GCash downpayment receipt screenshot is required' });
+        }
+        
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        if (!allowedTypes.includes(req.file.mimetype)) {
+            return res.status(400).json({ message: 'Invalid file type. Please upload an image file (JPG, PNG, GIF)' });
+        }
+        
+        // Validate file size (10MB limit to match multer config)
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (req.file.size > maxSize) {
+            return res.status(400).json({ message: 'File size too large. Maximum size is 10MB' });
+        }
+        
+        // Generate a temporary payment reference for downpayment
+        const tempReference = `downpay_${Date.now()}_${userId}`;
+        
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+            
+            // Apply discount if provided
+            let finalAmount = numericTotalAmount;
+            let appliedDiscount = 0;
+            
+            if (discountId) {
+                try {
+                    const Reward = require('../models/rewardModel');
+                    appliedDiscount = await Reward.applyDiscount(userId, null, discountId);
+                    finalAmount = Math.max(0, numericTotalAmount - appliedDiscount);
+                } catch (error) {
+                    console.error('Error applying discount:', error);
+                }
+            }
+            
+            // Create order immediately with "to verify" status for downpayment
+            const orderId = await createOrderWithConnection(
+                connection,
+                userId, 
+                parsedItems, 
+                finalAmount, 
+                packagingPreference, 
+                paymentMethod, 
+                'to verify', // Set to 'to verify' for downpayment
+                tempReference
+            );
+            
+            // Store payment info in database with order ID and receipt info
+            const downpaymentData = {
+                items: parsedItems, 
+                discountId, 
+                packagingPreference, 
+                paymentMethod, 
+                totalAmount: finalAmount, 
+                remainingAmount: numericRemainingAmount, 
+                downpaymentAmount: numericDownpaymentAmount,
+                type: 'downpayment',
+                verificationMethod: 'receipt',
+                receiptFileName: req.file.filename,
+                receiptPath: req.file.path,
+                originalFileName: req.file.originalname,
+                fileSize: req.file.size,
+                mimeType: req.file.mimetype
+            };
+            
+            // Use the actual filename that multer generated and saved
+            const receiptFileName = req.file.filename;
+            const receiptPath = req.file.path;
+            
+            // Read the image file data to store in database
+            let imageBuffer;
+            try {
+                imageBuffer = fs.readFileSync(receiptPath);
+                console.log('📥 Successfully read downpayment receipt file:', receiptPath, imageBuffer.length, 'bytes');
+            } catch (fileError) {
+                console.error('📥 Error reading downpayment receipt file:', fileError);
+                return res.status(400).json({ message: 'Error processing uploaded receipt file' });
+            }
+            
+            await connection.execute(
+                `INSERT INTO payment_intents (
+                    order_id,
+                    reference_number,
+                    amount, 
+                    status,
+                    order_data,
+                    user_id,
+                    payment_type,
+                    total_amount,
+                    remaining_amount,
+                    gcash_reference,
+                    receipt_image,
+                    receipt_filename,
+                    receipt_mimetype,
+                    receipt_filesize,
+                    verification_method,
+                    created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+                [
+                    orderId,
+                    tempReference,
+                    numericDownpaymentAmount,
+                    'pending_verification',
+                    JSON.stringify(downpaymentData),
+                    userId,
+                    'downpayment',
+                    finalAmount,
+                    numericRemainingAmount,
+                    receiptFileName, // Store as gcash_reference for backward compatibility
+                    imageBuffer, // Store the actual image data
+                    receiptFileName, // Store the actual saved filename (with timestamp prefix)
+                    req.file.mimetype, // Store MIME type
+                    req.file.size, // Store file size
+                    'receipt'
+                ]
+            );
+            
+            // Create notification for the user
+            const Notification = require('../models/notificationModel');
+            try {
+                await Notification.create(
+                    userId,
+                    'Order Update',
+                    `Order #${orderId} has been placed and is pending downpayment verification.`,
+                    'order',
+                    'fas fa-hourglass-half',
+                    orderId,
+                    `/order-details/${orderId}`,
+                    `order-${orderId}-pending`
+                );
+            } catch (error) {
+                console.error('Error creating notification:', error);
+            }
+            
+            await connection.commit();
+            
+            res.json({
+                orderId: orderId,
+                paymentId: tempReference,
+                referenceNumber: tempReference,
+                amount: numericDownpaymentAmount,
+                downpaymentAmount: numericDownpaymentAmount,
+                remainingAmount: numericRemainingAmount,
+                status: 'pending_verification',
+                message: 'Order created and downpayment receipt submitted for verification. Your order is now visible in track orders.'
+            });
+            
+        } catch (error) {
+            await connection.rollback();
+            
+            // Clean up uploaded file if transaction fails
+            if (req.file && req.file.path) {
+                cleanupUploadedFile(req.file.path);
+            }
+            
+            throw error;
+        } finally {
+            connection.release();
+        }
+        
+    } catch (error) {
+        console.error('Error creating downpayment with receipt:', error);
+        res.status(500).json({ message: 'Failed to create downpayment with receipt' });
     }
 };
 

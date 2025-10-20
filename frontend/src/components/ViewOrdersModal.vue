@@ -265,13 +265,51 @@
                         <div class="instruction-step">
                             <div class="step-number">2</div>
                             <div class="step-content">
-                                <h5>Enter your GCash Reference Number</h5>
-                                <p>After sending payment, enter the reference number from your GCash transaction</p>
+                                <h5>Provide Payment Proof</h5>
+                                <p>Choose to either enter your reference number or upload a screenshot of your GCash receipt</p>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="reference-input-section">
+                    <!-- Downpayment Verification Method Selection -->
+                    <div class="verification-method-section">
+                        <h4 class="section-title">
+                            <i class="fas fa-check-circle"></i>
+                            Choose Verification Method
+                        </h4>
+                        <div class="verification-methods">
+                            <label class="verification-option">
+                                <input 
+                                    type="radio" 
+                                    value="reference" 
+                                    v-model="downpaymentVerificationMethod"
+                                    name="downpaymentVerificationMethod"
+                                >
+                                <div class="verification-card">
+                                    <i class="fas fa-keyboard"></i>
+                                    <span>Type Reference Number</span>
+                                    <small>Enter the reference number from your GCash transaction</small>
+                                </div>
+                            </label>
+                            
+                            <label class="verification-option">
+                                <input 
+                                    type="radio" 
+                                    value="receipt" 
+                                    v-model="downpaymentVerificationMethod"
+                                    name="downpaymentVerificationMethod"
+                                >
+                                <div class="verification-card">
+                                    <i class="fas fa-camera"></i>
+                                    <span>Upload Receipt Screenshot</span>
+                                    <small>Take a screenshot of your GCash transaction receipt</small>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Reference Number Input (shown when reference method is selected) -->
+                    <div v-if="downpaymentVerificationMethod === 'reference'" class="reference-input-section">
                         <label for="downpaymentGcashReference" class="input-label">
                             <i class="fas fa-receipt"></i>
                             Downpayment GCash Reference Number
@@ -290,6 +328,62 @@
                             <i class="fas fa-exclamation-triangle"></i>
                             {{ downpaymentGcashReferenceError }}
                         </div>
+                    </div>
+                    
+                    <!-- Downpayment Receipt Upload Section (shown when receipt method is selected) -->
+                    <div v-if="downpaymentVerificationMethod === 'receipt'" class="receipt-upload-section">
+                        <label for="downpaymentGcashReceipt" class="input-label">
+                            <i class="fas fa-image"></i>
+                            Upload Downpayment GCash Receipt Screenshot
+                        </label>
+                        
+                        <div class="upload-area" :class="{ 'drag-over': isDownpaymentDragOver, 'has-file': downpaymentReceiptFile }"
+                             @click="triggerDownpaymentFileInput"
+                             @dragover.prevent="isDownpaymentDragOver = true"
+                             @dragleave.prevent="isDownpaymentDragOver = false"
+                             @drop.prevent="handleDownpaymentFileDrop">
+                            
+                            <input 
+                                type="file" 
+                                id="downpaymentGcashReceipt"
+                                ref="downpaymentReceiptInput"
+                                accept="image/*"
+                                @change="handleDownpaymentFileSelect"
+                                style="display: none;"
+                            >
+                            
+                            <div v-if="!downpaymentReceiptFile" class="upload-placeholder">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <h5>Click to upload or drag & drop</h5>
+                                <p>Upload a screenshot of your downpayment GCash receipt</p>
+                                <small>Supported formats: JPG, PNG, GIF, WEBP (Max: 10MB)</small>
+                            </div>
+                            
+                            <div v-if="downpaymentReceiptFile" class="uploaded-file">
+                                <div class="file-preview">
+                                    <img v-if="downpaymentReceiptPreview" :src="downpaymentReceiptPreview" alt="Receipt preview" class="receipt-preview">
+                                    <i v-else class="fas fa-file-image file-icon"></i>
+                                </div>
+                                <div class="file-details">
+                                    <h6>{{ downpaymentReceiptFile.name }}</h6>
+                                    <p>{{ formatFileSize(downpaymentReceiptFile.size) }}</p>
+                                    <button @click.stop="removeDownpaymentReceiptFile" class="remove-file-btn">
+                                        <i class="fas fa-times"></i>
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div v-if="downpaymentReceiptError" class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            {{ downpaymentReceiptError }}
+                        </div>
+                        
+                        <small class="input-help">
+                            <i class="fas fa-info-circle"></i>
+                            Please ensure the receipt clearly shows the transaction amount, reference number, and timestamp
+                        </small>
                     </div>
                     
                     <div class="verification-notice">
@@ -571,18 +665,18 @@
             
             <div class="payment-status-body">
                 <div class="success-message">
-                    <p>Your GCash payment reference has been submitted successfully.</p>
+                    <p>Your GCash payment has been submitted successfully.</p>
                     <div v-if="currentOrderId" class="order-info">
-                        <p><strong>Payment Reference:</strong> #{{ currentOrderId }}</p>
-                        <p><strong>Amount:</strong> {{ formatPrice(currentAmount) }}</p>
-                        <p>Your payment is pending verification. You will receive an email confirmation once verified.</p>
+                        <p><strong>Order ID:</strong> #{{ currentOrderId }}</p>
+                        <p><strong>Amount Paid:</strong> {{ formatPrice(currentAmount) }}</p>
+                        <p>Your payment is pending verification. You will receive a notification once verified.</p>
                     </div>
                     
                     <div class="verification-steps">
                         <h4>What happens next?</h4>
                         <ol>
                             <li>Our admin team will verify your GCash payment</li>
-                            <li>You'll receive an email confirmation once verified</li>
+                            <li>You'll receive a notification once verified</li>
                             <li>Your order will then be processed for pickup/delivery</li>
                         </ol>
                     </div>
@@ -679,6 +773,11 @@ export default {
             isDragOver: false,
             downpaymentGcashReference: '',
             downpaymentGcashReferenceError: '',
+            downpaymentVerificationMethod: 'reference', // 'reference' or 'receipt' for downpayment
+            downpaymentReceiptFile: null,
+            downpaymentReceiptPreview: null,
+            downpaymentReceiptError: '',
+            isDownpaymentDragOver: false,
             processingPayment: false,
             showPaymentStatus: false,
             currentOrderId: null,
@@ -850,10 +949,18 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 }
             }
             
-            // Cash with downpayment validation
+            // Cash with downpayment validation based on verification method
             if (this.selectedPaymentMethod === 'cash' && this.paymentSettings.downpayment_enabled) {
-                if (!this.downpaymentGcashReference.trim() || this.downpaymentGcashReferenceError) {
-                    return false;
+                if (this.downpaymentVerificationMethod === 'reference') {
+                    // Reference number validation
+                    if (!this.downpaymentGcashReference.trim() || this.downpaymentGcashReferenceError) {
+                        return false;
+                    }
+                } else if (this.downpaymentVerificationMethod === 'receipt') {
+                    // Receipt upload validation
+                    if (!this.downpaymentReceiptFile || this.downpaymentReceiptError) {
+                        return false;
+                    }
                 }
             }
             
@@ -981,6 +1088,11 @@ Special Instructions: ${this.specialInstructions || ''}`;
             this.isDragOver = false;
             this.downpaymentGcashReference = '';
             this.downpaymentGcashReferenceError = '';
+            this.downpaymentVerificationMethod = 'reference';
+            this.downpaymentReceiptFile = null;
+            this.downpaymentReceiptPreview = null;
+            this.downpaymentReceiptError = '';
+            this.isDownpaymentDragOver = false;
         },
         handleImageError(e) {
             e.target.src = '/img/placeholder.jpg';
@@ -1408,29 +1520,103 @@ Special Instructions: ${this.specialInstructions || ''}`;
         
         async processCashWithDownpayment(orderData) {
             try {
-                // Create GCash downpayment with manual reference
                 const token = localStorage.getItem('token');
-                const paymentResponse = await this.$fetch('/api/payment/gcash/create-downpayment', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        downpaymentAmount: this.downpaymentAmount,
-                        totalAmount: this.calculateTotal,
-                        remainingAmount: this.remainingAmount,
-                        items: orderData.items,
-                        discountId: orderData.discountId,
-                        packagingPreference: orderData.packagingPreference,
-                        paymentMethod: 'cash',
-                        gcashReference: this.downpaymentGcashReference.trim()
-                    })
-                });
+                
+                // Quick backend health check
+                console.log('🔍 Backend URL:', this.API_BASE_URL);
+                
+                try {
+                    const healthCheck = await this.$fetch('/health');
+                    console.log('💓 Backend health check:', healthCheck.status);
+                } catch (healthError) {
+                    console.error('❌ Backend not reachable:', healthError);
+                    throw new Error('Cannot connect to backend server. Please try again.');
+                }
+                
+                let paymentResponse;
+                
+                if (this.downpaymentVerificationMethod === 'receipt' && this.downpaymentReceiptFile) {
+                    // Handle file upload for receipt method
+                    const formData = new FormData();
+                    formData.append('downpaymentAmount', String(this.downpaymentAmount));
+                    formData.append('totalAmount', String(this.calculateTotal));
+                    formData.append('remainingAmount', String(this.remainingAmount));
+                    formData.append('items', JSON.stringify(orderData.items));
+                    formData.append('discountId', orderData.discountId ? String(orderData.discountId) : '');
+                    formData.append('packagingPreference', String(orderData.packagingPreference || 'eco'));
+                    formData.append('paymentMethod', 'cash');
+                    formData.append('downpaymentVerificationMethod', String(this.downpaymentVerificationMethod));
+                    formData.append('downpaymentReceipt', this.downpaymentReceiptFile);
+                    
+                    // Debug logging
+                    console.log('🔍 FormData contents for downpayment:');
+                    console.log('- downpaymentAmount:', this.downpaymentAmount);
+                    console.log('- totalAmount:', this.calculateTotal);
+                    console.log('- remainingAmount:', this.remainingAmount);
+                    console.log('- items:', JSON.stringify(orderData.items));
+                    console.log('- discountId:', orderData.discountId || '');
+                    console.log('- packagingPreference:', orderData.packagingPreference || 'eco');
+                    console.log('- paymentMethod:', 'cash');
+                    console.log('- downpaymentVerificationMethod:', this.downpaymentVerificationMethod);
+                    console.log('- file:', this.downpaymentReceiptFile?.name, this.downpaymentReceiptFile?.size, 'bytes');
+                    
+                    console.log('🔍 Attempting downpayment receipt upload to backend...');
+                    console.log('📤 Upload URL:', `${this.API_BASE_URL}/api/payment/gcash/create-downpayment-with-receipt`);
+                    
+                    const response = await this.$fetch('/api/payment/gcash/create-downpayment-with-receipt', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+                    
+                    console.log('📥 Upload response status:', response.status);
+                    
+                    if (response.status === 404) {
+                        throw new Error('Downpayment service not found. Please ensure the backend server is running on port 7904.');
+                    } else if (response.status === 413) {
+                        throw new Error('File size too large. Please upload an image smaller than 10MB.');
+                    }
+                    
+                    paymentResponse = response;
+                    
+                } else {
+                    // Handle reference method
+                    paymentResponse = await this.$fetch('/api/payment/gcash/create-downpayment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            downpaymentAmount: this.downpaymentAmount,
+                            totalAmount: this.calculateTotal,
+                            remainingAmount: this.remainingAmount,
+                            items: orderData.items,
+                            discountId: orderData.discountId,
+                            packagingPreference: orderData.packagingPreference,
+                            paymentMethod: 'cash',
+                            gcashReference: this.downpaymentGcashReference.trim()
+                        })
+                    });
+                }
 
                 if (!paymentResponse.ok) {
-                    const errorData = await paymentResponse.json();
-                    throw new Error(errorData.message || 'Failed to create downpayment');
+                    let errorData;
+                    try {
+                        errorData = await paymentResponse.json();
+                        console.error('📥 Server error response:', errorData);
+                    } catch (e) {
+                        console.error('📥 Failed to parse error response:', e);
+                        errorData = { message: 'Server error occurred' };
+                    }
+                    
+                    // Log the full response for debugging
+                    console.error('📥 Full response status:', paymentResponse.status);
+                    console.error('📥 Full response headers:', Object.fromEntries(paymentResponse.headers.entries()));
+                    
+                    throw new Error(errorData.message || `Failed to create downpayment (Status: ${paymentResponse.status})`);
                 }
 
                 const paymentData = await paymentResponse.json();
@@ -1440,7 +1626,23 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 
             } catch (error) {
                 console.error('Cash with downpayment error:', error);
-                throw error;
+                
+                // Handle specific error types
+                if (error.message && error.message.includes('404')) {
+                    throw new Error('Downpayment service is not available. Please ensure the backend server is running.');
+                } else if (error.message && error.message.includes('413')) {
+                    throw new Error('File size too large. Please upload an image smaller than 10MB.');
+                } else if (error.message && error.message.includes('Payload Too Large')) {
+                    throw new Error('File size too large. Please upload an image smaller than 10MB.');
+                } else if (error.message && error.message.includes('Unexpected token')) {
+                    throw new Error('Server error. Please try again or contact support.');
+                } else if (error.name === 'SyntaxError') {
+                    throw new Error('Server communication error. Please try again.');
+                } else if (error.message && error.message.includes('Failed to fetch')) {
+                    throw new Error('Cannot connect to server. Please check your connection and try again.');
+                } else {
+                    throw error;
+                }
             }
         },
         
@@ -1448,9 +1650,10 @@ Special Instructions: ${this.specialInstructions || ''}`;
             this.processingPayment = false;
             this.verifyingPayment = false;
             
-            // Store payment reference for display
-            this.currentOrderId = paymentData.referenceNumber;
+            // Store order ID and amount for display
+            this.currentOrderId = paymentData.orderId || paymentData.referenceNumber;
             this.currentAmount = paymentData.downpaymentAmount;
+            this.successOrderId = paymentData.orderId;
             
             // Close main modal and show success modal
             this.$emit('close');
@@ -1458,6 +1661,12 @@ Special Instructions: ${this.specialInstructions || ''}`;
             
             // Clear the cart
             this.$emit('clear-cart');
+            
+            // Emit success event
+            this.$emit('payment-success', {
+                message: `Downpayment successful! Order #${this.currentOrderId} has been placed and is pending verification.`,
+                orderId: this.currentOrderId
+            });
         },
 
         monitorDownpaymentWindow(paymentWindow, paymentId, orderData) {
@@ -1807,6 +2016,63 @@ Special Instructions: ${this.specialInstructions || ''}`;
             this.gcashReceiptError = '';
             if (this.$refs.gcashReceiptInput) {
                 this.$refs.gcashReceiptInput.value = '';
+            }
+        },
+        
+        // Downpayment file upload methods
+        triggerDownpaymentFileInput() {
+            this.$refs.downpaymentReceiptInput.click();
+        },
+        
+        handleDownpaymentFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.validateAndSetDownpaymentFile(file);
+            }
+        },
+        
+        handleDownpaymentFileDrop(event) {
+            this.isDownpaymentDragOver = false;
+            const file = event.dataTransfer.files[0];
+            if (file) {
+                this.validateAndSetDownpaymentFile(file);
+            }
+        },
+        
+        validateAndSetDownpaymentFile(file) {
+            // Reset previous errors
+            this.downpaymentReceiptError = '';
+            
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                this.downpaymentReceiptError = 'Please upload an image file (JPG, PNG, GIF, WEBP)';
+                return;
+            }
+            
+            // Check file size (10MB limit to match backend)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > maxSize) {
+                this.downpaymentReceiptError = `File size must be less than 10MB. Current file is ${this.formatFileSize(file.size)}`;
+                return;
+            }
+            
+            // Set the file
+            this.downpaymentReceiptFile = file;
+            
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.downpaymentReceiptPreview = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        },
+        
+        removeDownpaymentReceiptFile() {
+            this.downpaymentReceiptFile = null;
+            this.downpaymentReceiptPreview = null;
+            this.downpaymentReceiptError = '';
+            if (this.$refs.downpaymentReceiptInput) {
+                this.$refs.downpaymentReceiptInput.value = '';
             }
         },
         
