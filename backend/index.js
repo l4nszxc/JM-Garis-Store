@@ -55,7 +55,17 @@ app.use(cors({
     optionsSuccessStatus: 200 // For legacy browser support
 }));
 
-app.use(express.json());
+// Configure express with larger limits for file uploads
+// Only parse JSON when content-type is application/json
+app.use(express.json({ 
+    limit: '10mb',
+    type: 'application/json'
+}));
+app.use(express.urlencoded({ 
+    extended: true, 
+    limit: '10mb',
+    type: 'application/x-www-form-urlencoded'
+}));
 
 // Session middleware with environment-based secret
 app.use(session({

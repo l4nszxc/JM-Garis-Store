@@ -65,7 +65,7 @@
                     <div class="setting-row">
                         <div class="setting-info">
                             <h3><i class="fas fa-mobile-alt"></i> Enable GCash Payments</h3>
-                            <p>Allow customers to pay using GCash through PayMongo integration</p>
+                            <p>Allow customers to pay using manual GCash reference numbers</p>
                         </div>
                         <div class="setting-control">
                             <label class="toggle-switch">
@@ -81,13 +81,14 @@
 
                     <div class="setting-row" v-if="paymentSettings.gcash_enabled">
                         <div class="setting-info">
-                            <h3><i class="fas fa-cog"></i> GCash Configuration</h3>
-                            <p>Payment gateway settings and API configuration</p>
+                            <h3><i class="fas fa-info-circle"></i> GCash Information</h3>
+                            <p>Manual GCash payment processing is now active. Customers will provide reference numbers for verification.</p>
                         </div>
                         <div class="setting-control">
-                            <button class="config-btn" @click="showGCashConfig = true">
-                                <i class="fas fa-edit"></i> Configure
-                            </button>
+                            <div class="status-indicator active">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Manual Processing</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -219,59 +220,6 @@
             </div>
         </div>
 
-        <!-- GCash Configuration Modal -->
-        <div v-if="showGCashConfig" class="modal-overlay" @click.self="showGCashConfig = false">
-            <div class="modal-content gcash-config-modal">
-                <div class="modal-header">
-                    <h3><i class="fab fa-cc-mastercard"></i> GCash Configuration</h3>
-                    <button class="close-btn" @click="showGCashConfig = false">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                
-                <div class="modal-body">
-                    <div class="config-form">
-                        <div class="form-group">
-                            <label><i class="fas fa-key"></i> PayMongo Public Key</label>
-                            <input 
-                                type="text" 
-                                v-model="gcashConfig.public_key"
-                                placeholder="pk_test_..."
-                                class="form-input"
-                            >
-                        </div>
-                        
-                        <div class="form-group">
-                            <label><i class="fas fa-lock"></i> PayMongo Secret Key</label>
-                            <input 
-                                type="password" 
-                                v-model="gcashConfig.secret_key"
-                                placeholder="sk_test_..."
-                                class="form-input"
-                            >
-                        </div>
-                        
-                        <div class="form-group">
-                            <label><i class="fas fa-globe"></i> Environment</label>
-                            <select v-model="gcashConfig.environment" class="form-select">
-                                <option value="test">Test/Sandbox</option>
-                                <option value="live">Live/Production</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="modal-actions">
-                    <button class="cancel-btn" @click="showGCashConfig = false">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                    <button class="save-btn" @click="saveGCashConfig">
-                        <i class="fas fa-save"></i> Save Configuration
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <!-- Logout Modal -->
         <LogoutModal 
             v-if="showLogoutModal" 
@@ -304,7 +252,6 @@ export default {
         return {
             username: '',
             showLogoutModal: false,
-            showGCashConfig: false,
             isSaving: false,
             showMessage: false,
             message: '',
@@ -314,11 +261,6 @@ export default {
                 downpayment_enabled: true,
                 downpayment_percentage: 25,
                 min_order_amount: 500
-            },
-            gcashConfig: {
-                public_key: '',
-                secret_key: '',
-                environment: 'test'
             }
         }
     },
@@ -428,31 +370,6 @@ export default {
             } catch (error) {
                 console.error('Error updating downpayment settings:', error);
                 this.showToast('Failed to update downpayment settings', 'error');
-            }
-        },
-
-        async saveGCashConfig() {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await this.$fetch('/api/admin/payment-settings/gcash-config', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(this.gcashConfig)
-                });
-                
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    this.showToast('GCash configuration saved successfully', 'success');
-                    this.showGCashConfig = false;
-                } else {
-                    throw new Error(data.message || 'Failed to save GCash configuration');
-                }
-            } catch (error) {
-                console.error('Error saving GCash config:', error);
-                this.showToast('Failed to save GCash configuration', 'error');
             }
         },
 
@@ -859,6 +776,33 @@ input:checked + .slider:before {
 .config-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+/* Status Indicator */
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.status-indicator.active {
+    background: linear-gradient(135deg, #e8f5e8 0%, #f0f9ff 100%);
+    color: #28a745;
+    border: 1px solid #c3e6cb;
+}
+
+.status-indicator.inactive {
+    background: linear-gradient(135deg, #fef5e7 0%, #fff2e8 100%);
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-indicator i {
+    font-size: 1rem;
 }
 
 /* Preview Card - Enhanced */

@@ -369,11 +369,7 @@ export default {
       rewardHistory: [],
       availableRewards: [],
       loyaltyStatus: null,
-      loyaltyTiers: [
-        { name: 'Bronze', min_spend: 10000, max_spend: 15000, bonus_percentage: 5, has_free_product: false },
-        { name: 'Silver', min_spend: 16000, max_spend: 20000, bonus_percentage: 10, has_free_product: false },
-        { name: 'Gold', min_spend: 21000, max_spend: null, bonus_percentage: 15, has_free_product: true }
-      ],
+      loyaltyTiers: [],
       showRedeemModal: false,
       showLogoutModal: false,
       showConfirmModal: false,
@@ -493,7 +489,8 @@ export default {
           this.fetchUserPoints(),
           this.fetchRewardHistory(),
           this.fetchAvailableRewards(),
-          this.fetchLoyaltyStatus()
+          this.fetchLoyaltyStatus(),
+          this.fetchLoyaltyTiers()
         ]);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -562,6 +559,35 @@ export default {
       }
     },
 
+    async fetchLoyaltyTiers() {
+      // Set default tiers immediately to prevent "Loading..." state
+      this.loyaltyTiers = [
+        { name: 'Bronze', min_spend: 10000, max_spend: 15000, bonus_percentage: 5, has_free_product: false },
+        { name: 'Silver', min_spend: 16000, max_spend: 20000, bonus_percentage: 10, has_free_product: false },
+        { name: 'Gold', min_spend: 21000, max_spend: null, bonus_percentage: 15, has_free_product: true }
+      ];
+      
+      // Try to fetch from API (admin endpoint may not be accessible to regular users)
+      try {
+        const response = await this.$fetch('/api/admin/loyalty/tiers', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const apiTiers = await response.json();
+          if (apiTiers && apiTiers.length > 0) {
+            this.loyaltyTiers = apiTiers;
+            console.log('Loaded loyalty tiers from API:', this.loyaltyTiers);
+          }
+        }
+      } catch (error) {
+        console.log('Using default loyalty tiers (API not accessible)');
+      }
+    },
+
     getTierClass(tierName) {
       const classes = {
         'Bronze': 'bronze',
@@ -583,32 +609,15 @@ export default {
     getCurrentTierName() {
         console.log('Current loyalty status:', this.loyaltyStatus);
         
+        // Always use the tier from the database (server-side calculation is authoritative)
         if (this.loyaltyStatus && this.loyaltyStatus.tier_name) {
             console.log('Using database tier:', this.loyaltyStatus.tier_name);
             return this.loyaltyStatus.tier_name;
         }
 
-        if (!this.loyaltyStatus || !this.loyaltyStatus.current_month_spend) {
-            console.log('No loyalty status or spending data, returning Member');
-            return 'Member';
-        }
-
-        const spend = parseFloat(this.loyaltyStatus.current_month_spend);
-        console.log('Calculating tier for spend:', spend);
-        
-        if (spend >= 21000) {
-            console.log('Qualifies for Gold');
-            return 'Gold';
-        } else if (spend >= 16000) {
-            console.log('Qualifies for Silver');
-            return 'Silver';
-        } else if (spend >= 10000) {
-            console.log('Qualifies for Bronze');
-            return 'Bronze';
-        } else {
-            console.log('Member tier');
-            return 'Member';
-        }
+        // If no tier assigned in database, user is a Member (no tier)
+        console.log('No tier assigned, returning Member');
+        return 'Member';
     },
 
     getCurrentTierBonus() {
@@ -628,29 +637,40 @@ export default {
     },
 
     getTierProgress() {
-        if (!this.loyaltyStatus || !this.loyaltyStatus.current_month_spend) return 0;
+        // Return 0 if data not loaded yet
+        if (!this.loyaltyStatus || this.loyaltyTiers.length === 0) return 0;
         
-        const currentSpend = this.loyaltyStatus.current_month_spend;
+        const currentSpend = parseFloat(this.loyaltyStatus.current_month_spend || 0);
         const currentTier = this.getCurrentTierName();
         
-        if (currentTier === 'Gold') return 100;
+        // Find current and next tier from loaded tiers
+        const sortedTiers = [...this.loyaltyTiers].sort((a, b) => a.min_spend - b.min_spend);
         
-        let nextTierMin = 0;
+        if (sortedTiers.length === 0) return 0;
+        
+        const highestTier = sortedTiers[sortedTiers.length - 1];
+        
+        // If at highest tier, show 100%
+        if (currentTier === highestTier.name) return 100;
+        
+        // Find next tier user is working towards
+        let nextTier = null;
         let currentTierMin = 0;
         
         if (currentTier === 'Member') {
+            nextTier = sortedTiers[0]; // First tier
             currentTierMin = 0;
-            nextTierMin = 10000;
-        } else if (currentTier === 'Bronze') {
-            currentTierMin = 10000;
-            nextTierMin = 16000;
-        } else if (currentTier === 'Silver') {
-            currentTierMin = 16000;
-            nextTierMin = 21000;
+        } else {
+            const currentTierIndex = sortedTiers.findIndex(t => t.name === currentTier);
+            if (currentTierIndex >= 0 && currentTierIndex < sortedTiers.length - 1) {
+                nextTier = sortedTiers[currentTierIndex + 1];
+                currentTierMin = parseFloat(sortedTiers[currentTierIndex].min_spend);
+            }
         }
         
-        if (nextTierMin === 0) return 100;
+        if (!nextTier) return 100;
         
+        const nextTierMin = parseFloat(nextTier.min_spend);
         const progressRange = nextTierMin - currentTierMin;
         const currentProgress = Math.max(0, currentSpend - currentTierMin);
         
@@ -658,36 +678,47 @@ export default {
     },
 
     getNextTierInfo() {
-        if (!this.loyaltyStatus) return 'Spend ₱10,000 for Bronze tier';
+        // Check if data is available
+        if (!this.loyaltyStatus) return 'Loading loyalty status...';
+        if (this.loyaltyTiers.length === 0) return 'Loading tiers...';
         
-        const currentSpend = this.loyaltyStatus.current_month_spend;
+        const currentSpend = parseFloat(this.loyaltyStatus.current_month_spend || 0);
         const currentTier = this.getCurrentTierName();
         
-        if (currentTier === 'Gold') {
+        // Find next tier from loaded tiers
+        const sortedTiers = [...this.loyaltyTiers].sort((a, b) => a.min_spend - b.min_spend);
+        
+        if (sortedTiers.length === 0) return 'No tiers available';
+        
+        const highestTier = sortedTiers[sortedTiers.length - 1];
+        
+        // If at highest tier
+        if (currentTier === highestTier.name) {
             return 'Highest tier achieved!';
         }
         
-        let nextTierName = '';
-        let nextTierMin = 0;
+        // Find next tier
+        let nextTier = null;
         
         if (currentTier === 'Member') {
-            nextTierName = 'Bronze';
-            nextTierMin = 10000;
-        } else if (currentTier === 'Bronze') {
-            nextTierName = 'Silver';
-            nextTierMin = 16000;
-        } else if (currentTier === 'Silver') {
-            nextTierName = 'Gold';
-            nextTierMin = 21000;
+            nextTier = sortedTiers[0]; // First tier
+        } else {
+            const currentTierIndex = sortedTiers.findIndex(t => t.name === currentTier);
+            if (currentTierIndex >= 0 && currentTierIndex < sortedTiers.length - 1) {
+                nextTier = sortedTiers[currentTierIndex + 1];
+            }
         }
         
+        if (!nextTier) return 'Highest tier achieved!';
+        
+        const nextTierMin = parseFloat(nextTier.min_spend);
         const needed = nextTierMin - currentSpend;
         
         if (needed <= 0) {
-            return `Qualified for ${nextTierName}!`;
+            return `Qualified for ${nextTier.name}!`;
         }
         
-        return `₱${this.formatNumber(needed)} to ${nextTierName}`;
+        return `₱${this.formatNumber(needed)} to ${nextTier.name}`;
     },
 
     showRedemptionConfirmation(reward) {

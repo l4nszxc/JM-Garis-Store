@@ -66,6 +66,156 @@
                 </div>
             </div>
 
+            <!-- GCash Reference Input -->
+            <div v-if="selectedPaymentMethod === 'gcash'" class="gcash-reference-section">
+                <h4 class="section-title">
+                    <i class="fab fa-google-pay"></i>
+                    GCash Payment Details
+                </h4>
+                <div class="gcash-instructions">
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h5>Send payment to JM Garis Store GCash</h5>
+                            <p>Amount: <strong>{{ formatPrice(calculateTotal) }}</strong></p>
+                            <p>Please send the exact amount to our GCash account</p>
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h5>Provide Payment Proof</h5>
+                            <p>Choose to either enter your reference number or upload a screenshot of your GCash receipt</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Payment Verification Method Selection -->
+                <div class="verification-method-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-check-circle"></i>
+                        Choose Verification Method
+                    </h4>
+                    <div class="verification-methods">
+                        <label class="verification-option">
+                            <input 
+                                type="radio" 
+                                value="reference" 
+                                v-model="gcashVerificationMethod"
+                                name="gcashVerificationMethod"
+                            >
+                            <div class="verification-card">
+                                <i class="fas fa-keyboard"></i>
+                                <span>Type Reference Number</span>
+                                <small>Enter the reference number from your GCash transaction</small>
+                            </div>
+                        </label>
+                        
+                        <label class="verification-option">
+                            <input 
+                                type="radio" 
+                                value="receipt" 
+                                v-model="gcashVerificationMethod"
+                                name="gcashVerificationMethod"
+                            >
+                            <div class="verification-card">
+                                <i class="fas fa-camera"></i>
+                                <span>Upload Receipt Screenshot</span>
+                                <small>Take a screenshot of your GCash transaction receipt</small>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Reference Number Input (shown when reference method is selected) -->
+                <div v-if="gcashVerificationMethod === 'reference'" class="reference-input-section">
+                    <label for="gcashReference" class="input-label">
+                        <i class="fas fa-receipt"></i>
+                        GCash Reference Number
+                    </label>
+                    <input 
+                        type="text" 
+                        id="gcashReference"
+                        v-model="gcashReference"
+                        placeholder="Enter GCash reference number (e.g., 1234567890)"
+                        class="reference-input"
+                        maxlength="20"
+                        @input="validateGCashReference"
+                    >
+                    <small class="input-help">Enter the reference number exactly as shown in your GCash transaction</small>
+                    <div v-if="gcashReferenceError" class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ gcashReferenceError }}
+                    </div>
+                </div>
+                
+                <!-- Receipt Upload Section (shown when receipt method is selected) -->
+                <div v-if="gcashVerificationMethod === 'receipt'" class="receipt-upload-section">
+                    <label for="gcashReceipt" class="input-label">
+                        <i class="fas fa-image"></i>
+                        Upload GCash Receipt Screenshot
+                    </label>
+                    
+                    <div class="upload-area" :class="{ 'drag-over': isDragOver, 'has-file': gcashReceiptFile }"
+                         @click="triggerFileInput"
+                         @dragover.prevent="isDragOver = true"
+                         @dragleave.prevent="isDragOver = false"
+                         @drop.prevent="handleFileDrop">
+                        
+                        <input 
+                            type="file" 
+                            id="gcashReceipt"
+                            ref="gcashReceiptInput"
+                            accept="image/*"
+                            @change="handleFileSelect"
+                            style="display: none;"
+                        >
+                        
+                        <div v-if="!gcashReceiptFile" class="upload-placeholder">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h5>Click to upload or drag & drop</h5>
+                            <p>Upload a screenshot of your GCash receipt</p>
+                            <small>Supported formats: JPG, PNG, GIF, WEBP (Max: 10MB)</small>
+                        </div>
+                        
+                        <div v-if="gcashReceiptFile" class="uploaded-file">
+                            <div class="file-preview">
+                                <img v-if="gcashReceiptPreview" :src="gcashReceiptPreview" alt="Receipt preview" class="receipt-preview">
+                                <i v-else class="fas fa-file-image file-icon"></i>
+                            </div>
+                            <div class="file-details">
+                                <h6>{{ gcashReceiptFile.name }}</h6>
+                                <p>{{ formatFileSize(gcashReceiptFile.size) }}</p>
+                                <button @click.stop="removeReceiptFile" class="remove-file-btn">
+                                    <i class="fas fa-times"></i>
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div v-if="gcashReceiptError" class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ gcashReceiptError }}
+                    </div>
+                    
+                    <small class="input-help">
+                        <i class="fas fa-info-circle"></i>
+                        Please ensure the receipt clearly shows the transaction amount, reference number, and timestamp
+                    </small>
+                </div>
+                
+                <div class="verification-notice">
+                    <div class="notice-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="notice-content">
+                        <h6>Payment Verification</h6>
+                        <p>Your payment will be verified by our admin team. You will receive an email confirmation once your payment is verified and your order is processed.</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Cash on Pickup Info -->
             <div v-if="selectedPaymentMethod === 'cash' && paymentSettings.downpayment_enabled" class="downpayment-info-section">
                 <div class="downpayment-info">
@@ -93,6 +243,156 @@
                                 <span>Total Order:</span>
                                 <span class="amount total-amount">{{ formatPrice(calculateTotal) }}</span>
                             </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Downpayment GCash Reference -->
+                <div class="downpayment-gcash-section">
+                    <h4 class="section-title">
+                        <i class="fab fa-google-pay"></i>
+                        Pay Downpayment via GCash
+                    </h4>
+                    <div class="downpayment-instructions">
+                        <div class="instruction-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h5>Send downpayment to JM Garis Store GCash</h5>
+                                <p>Amount: <strong>{{ formatPrice(downpaymentAmount) }}</strong></p>
+                                <p>Please send the exact downpayment amount to our GCash account</p>
+                            </div>
+                        </div>
+                        <div class="instruction-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h5>Provide Payment Proof</h5>
+                                <p>Choose to either enter your reference number or upload a screenshot of your GCash receipt</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Downpayment Verification Method Selection -->
+                    <div class="verification-method-section">
+                        <h4 class="section-title">
+                            <i class="fas fa-check-circle"></i>
+                            Choose Verification Method
+                        </h4>
+                        <div class="verification-methods">
+                            <label class="verification-option">
+                                <input 
+                                    type="radio" 
+                                    value="reference" 
+                                    v-model="downpaymentVerificationMethod"
+                                    name="downpaymentVerificationMethod"
+                                >
+                                <div class="verification-card">
+                                    <i class="fas fa-keyboard"></i>
+                                    <span>Type Reference Number</span>
+                                    <small>Enter the reference number from your GCash transaction</small>
+                                </div>
+                            </label>
+                            
+                            <label class="verification-option">
+                                <input 
+                                    type="radio" 
+                                    value="receipt" 
+                                    v-model="downpaymentVerificationMethod"
+                                    name="downpaymentVerificationMethod"
+                                >
+                                <div class="verification-card">
+                                    <i class="fas fa-camera"></i>
+                                    <span>Upload Receipt Screenshot</span>
+                                    <small>Take a screenshot of your GCash transaction receipt</small>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Reference Number Input (shown when reference method is selected) -->
+                    <div v-if="downpaymentVerificationMethod === 'reference'" class="reference-input-section">
+                        <label for="downpaymentGcashReference" class="input-label">
+                            <i class="fas fa-receipt"></i>
+                            Downpayment GCash Reference Number
+                        </label>
+                        <input 
+                            type="text" 
+                            id="downpaymentGcashReference"
+                            v-model="downpaymentGcashReference"
+                            placeholder="Enter GCash reference number for downpayment"
+                            class="reference-input"
+                            maxlength="20"
+                            @input="validateDownpaymentGCashReference"
+                        >
+                        <small class="input-help">Enter the reference number exactly as shown in your GCash transaction</small>
+                        <div v-if="downpaymentGcashReferenceError" class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            {{ downpaymentGcashReferenceError }}
+                        </div>
+                    </div>
+                    
+                    <!-- Downpayment Receipt Upload Section (shown when receipt method is selected) -->
+                    <div v-if="downpaymentVerificationMethod === 'receipt'" class="receipt-upload-section">
+                        <label for="downpaymentGcashReceipt" class="input-label">
+                            <i class="fas fa-image"></i>
+                            Upload Downpayment GCash Receipt Screenshot
+                        </label>
+                        
+                        <div class="upload-area" :class="{ 'drag-over': isDownpaymentDragOver, 'has-file': downpaymentReceiptFile }"
+                             @click="triggerDownpaymentFileInput"
+                             @dragover.prevent="isDownpaymentDragOver = true"
+                             @dragleave.prevent="isDownpaymentDragOver = false"
+                             @drop.prevent="handleDownpaymentFileDrop">
+                            
+                            <input 
+                                type="file" 
+                                id="downpaymentGcashReceipt"
+                                ref="downpaymentReceiptInput"
+                                accept="image/*"
+                                @change="handleDownpaymentFileSelect"
+                                style="display: none;"
+                            >
+                            
+                            <div v-if="!downpaymentReceiptFile" class="upload-placeholder">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <h5>Click to upload or drag & drop</h5>
+                                <p>Upload a screenshot of your downpayment GCash receipt</p>
+                                <small>Supported formats: JPG, PNG, GIF, WEBP (Max: 10MB)</small>
+                            </div>
+                            
+                            <div v-if="downpaymentReceiptFile" class="uploaded-file">
+                                <div class="file-preview">
+                                    <img v-if="downpaymentReceiptPreview" :src="downpaymentReceiptPreview" alt="Receipt preview" class="receipt-preview">
+                                    <i v-else class="fas fa-file-image file-icon"></i>
+                                </div>
+                                <div class="file-details">
+                                    <h6>{{ downpaymentReceiptFile.name }}</h6>
+                                    <p>{{ formatFileSize(downpaymentReceiptFile.size) }}</p>
+                                    <button @click.stop="removeDownpaymentReceiptFile" class="remove-file-btn">
+                                        <i class="fas fa-times"></i>
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div v-if="downpaymentReceiptError" class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            {{ downpaymentReceiptError }}
+                        </div>
+                        
+                        <small class="input-help">
+                            <i class="fas fa-info-circle"></i>
+                            Please ensure the receipt clearly shows the transaction amount, reference number, and timestamp
+                        </small>
+                    </div>
+                    
+                    <div class="verification-notice">
+                        <div class="notice-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="notice-content">
+                            <h6>Downpayment Verification</h6>
+                            <p>Your downpayment will be verified by our admin team. Once verified, your order will be prepared for pickup with the remaining balance to be paid on pickup.</p>
                         </div>
                     </div>
                 </div>
@@ -365,10 +665,20 @@
             
             <div class="payment-status-body">
                 <div class="success-message">
-                    <p>Your GCash payment has been processed successfully.</p>
-                    <div v-if="successOrderId" class="order-info">
-                        <p><strong>Order ID:</strong> #{{ successOrderId }}</p>
-                        <p>Your order has been created and is now being processed.</p>
+                    <p>Your GCash payment has been submitted successfully.</p>
+                    <div v-if="currentOrderId" class="order-info">
+                        <p><strong>Order ID:</strong> #{{ currentOrderId }}</p>
+                        <p><strong>Amount Paid:</strong> {{ formatPrice(currentAmount) }}</p>
+                        <p>Your payment is pending verification. You will receive a notification once verified.</p>
+                    </div>
+                    
+                    <div class="verification-steps">
+                        <h4>What happens next?</h4>
+                        <ol>
+                            <li>Our admin team will verify your GCash payment</li>
+                            <li>You'll receive a notification once verified</li>
+                            <li>Your order will then be processed for pickup/delivery</li>
+                        </ol>
                     </div>
                 </div>
                 
@@ -424,10 +734,13 @@
 
 <script>
 import PaymentStatusModal from './PaymentStatusModal.vue';
+import { apiMixin } from '@/mixins/apiMixin.js';
+import { apiUpload } from '@/config/api.js';
 
 export default {
     name: 'ViewOrdersModal',
-    emits: ['close', 'place-order', 'payment-error', 'payment-success'],
+    mixins: [apiMixin],
+    emits: ['close', 'place-order', 'payment-error', 'payment-success', 'clear-cart'],
     props: {
         show: Boolean,
         selectedItems: Array,
@@ -451,6 +764,20 @@ export default {
             selectedDiscountId: '',
             packagingPreference: false,
             selectedPaymentMethod: 'cash',
+            gcashReference: '',
+            gcashReferenceError: '',
+            gcashVerificationMethod: 'reference', // 'reference' or 'receipt'
+            gcashReceiptFile: null,
+            gcashReceiptPreview: null,
+            gcashReceiptError: '',
+            isDragOver: false,
+            downpaymentGcashReference: '',
+            downpaymentGcashReferenceError: '',
+            downpaymentVerificationMethod: 'reference', // 'reference' or 'receipt' for downpayment
+            downpaymentReceiptFile: null,
+            downpaymentReceiptPreview: null,
+            downpaymentReceiptError: '',
+            isDownpaymentDragOver: false,
             processingPayment: false,
             showPaymentStatus: false,
             currentOrderId: null,
@@ -485,6 +812,7 @@ export default {
             if (newValue && this.selectedItems) {
                 this.localItems = JSON.parse(JSON.stringify(this.selectedItems));
                 this.selectedPaymentMethod = 'cash'; // Reset to default
+                this.gcashVerificationMethod = 'reference'; // Reset to default
                 this.processingPayment = false;
                 this.verifyingPayment = false;
                 this.isGoingToOrders = false;
@@ -502,6 +830,11 @@ export default {
             // If GCash is selected but disabled, switch to cash
             if (newMethod === 'gcash' && !this.paymentSettings.gcash_enabled) {
                 this.selectedPaymentMethod = 'cash';
+            }
+            
+            // Clear GCash fields when switching away from GCash
+            if (newMethod !== 'gcash') {
+                this.clearGCashFields();
             }
         },
         selectedItems: {
@@ -601,6 +934,36 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 return false;
             }
             
+            // GCash validation based on verification method
+            if (this.selectedPaymentMethod === 'gcash') {
+                if (this.gcashVerificationMethod === 'reference') {
+                    // Reference number validation
+                    if (!this.gcashReference.trim() || this.gcashReferenceError) {
+                        return false;
+                    }
+                } else if (this.gcashVerificationMethod === 'receipt') {
+                    // Receipt upload validation
+                    if (!this.gcashReceiptFile || this.gcashReceiptError) {
+                        return false;
+                    }
+                }
+            }
+            
+            // Cash with downpayment validation based on verification method
+            if (this.selectedPaymentMethod === 'cash' && this.paymentSettings.downpayment_enabled) {
+                if (this.downpaymentVerificationMethod === 'reference') {
+                    // Reference number validation
+                    if (!this.downpaymentGcashReference.trim() || this.downpaymentGcashReferenceError) {
+                        return false;
+                    }
+                } else if (this.downpaymentVerificationMethod === 'receipt') {
+                    // Receipt upload validation
+                    if (!this.downpaymentReceiptFile || this.downpaymentReceiptError) {
+                        return false;
+                    }
+                }
+            }
+            
             // Additional validation for HATID delivery
             if (this.selectedPaymentMethod === 'hatid' && !this.deliveryAddress.trim()) {
                 return false;
@@ -674,6 +1037,62 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             }).format(price).replace('PHP', '₱');
+        },
+        validateGCashReference() {
+            this.gcashReferenceError = '';
+            
+            if (!this.gcashReference.trim()) {
+                this.gcashReferenceError = 'GCash reference number is required';
+                return;
+            }
+            
+            // Basic validation: should be alphanumeric and at least 6 characters
+            const reference = this.gcashReference.trim();
+            if (reference.length < 6) {
+                this.gcashReferenceError = 'Reference number must be at least 6 characters';
+                return;
+            }
+            
+            if (!/^[a-zA-Z0-9]+$/.test(reference)) {
+                this.gcashReferenceError = 'Reference number should only contain letters and numbers';
+                return;
+            }
+        },
+        validateDownpaymentGCashReference() {
+            this.downpaymentGcashReferenceError = '';
+            
+            if (!this.downpaymentGcashReference.trim()) {
+                this.downpaymentGcashReferenceError = 'Downpayment GCash reference number is required';
+                return;
+            }
+            
+            // Basic validation: should be alphanumeric and at least 6 characters
+            const reference = this.downpaymentGcashReference.trim();
+            if (reference.length < 6) {
+                this.downpaymentGcashReferenceError = 'Reference number must be at least 6 characters';
+                return;
+            }
+            
+            if (!/^[a-zA-Z0-9]+$/.test(reference)) {
+                this.downpaymentGcashReferenceError = 'Reference number should only contain letters and numbers';
+                return;
+            }
+        },
+        clearGCashFields() {
+            this.gcashReference = '';
+            this.gcashReferenceError = '';
+            this.gcashVerificationMethod = 'reference';
+            this.gcashReceiptFile = null;
+            this.gcashReceiptPreview = null;
+            this.gcashReceiptError = '';
+            this.isDragOver = false;
+            this.downpaymentGcashReference = '';
+            this.downpaymentGcashReferenceError = '';
+            this.downpaymentVerificationMethod = 'reference';
+            this.downpaymentReceiptFile = null;
+            this.downpaymentReceiptPreview = null;
+            this.downpaymentReceiptError = '';
+            this.isDownpaymentDragOver = false;
         },
         handleImageError(e) {
             e.target.src = '/img/placeholder.jpg';
@@ -766,47 +1185,149 @@ Special Instructions: ${this.specialInstructions || ''}`;
         
         async processGCashPayment(orderData) {
             try {
-                // Create GCash payment without creating order first
                 const token = localStorage.getItem('token');
-                const paymentResponse = await this.$fetch('/api/payment/gcash/create-payment-only', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        amount: this.calculateTotal,
-                        items: orderData.items,
-                        discountId: orderData.discountId,
-                        packagingPreference: orderData.packagingPreference,
-                        paymentMethod: 'gcash'
-                    })
-                });
+                
+                // Quick backend health check
+                console.log('🔍 Backend URL:', this.API_BASE_URL);
+                
+                try {
+                    const healthCheck = await this.$fetch('/health');
+                    console.log('💓 Backend health check:', healthCheck.status);
+                } catch (healthError) {
+                    console.error('❌ Backend not reachable:', healthError);
+                    throw new Error('Cannot connect to backend server. Please try again.');
+                }
+                
+                // Prepare the request data based on verification method
+                let requestData = {
+                    amount: this.calculateTotal,
+                    items: orderData.items,
+                    discountId: orderData.discountId,
+                    packagingPreference: orderData.packagingPreference,
+                    paymentMethod: 'gcash',
+                    gcashVerificationMethod: this.gcashVerificationMethod
+                };
+                
+                // Add verification data based on method
+                if (this.gcashVerificationMethod === 'reference') {
+                    requestData.gcashReference = this.gcashReference.trim();
+                }
+                
+                let paymentResponse;
+                
+                if (this.gcashVerificationMethod === 'receipt' && this.gcashReceiptFile) {
+                    // Handle file upload for receipt method
+                    const formData = new FormData();
+                    formData.append('amount', String(this.calculateTotal));
+                    formData.append('items', JSON.stringify(orderData.items));
+                    formData.append('discountId', orderData.discountId ? String(orderData.discountId) : '');
+                    formData.append('packagingPreference', String(orderData.packagingPreference || 'eco'));
+                    formData.append('paymentMethod', 'gcash');
+                    formData.append('gcashVerificationMethod', String(this.gcashVerificationMethod));
+                    formData.append('gcashReceipt', this.gcashReceiptFile);
+                    
+                    // Debug logging
+                    console.log('🔍 FormData contents:');
+                    console.log('- amount:', this.calculateTotal);
+                    console.log('- items:', JSON.stringify(orderData.items));
+                    console.log('- discountId:', orderData.discountId || '');
+                    console.log('- packagingPreference:', orderData.packagingPreference || '');
+                    console.log('- paymentMethod:', 'gcash');
+                    console.log('- gcashVerificationMethod:', this.gcashVerificationMethod);
+                    console.log('- file:', this.gcashReceiptFile?.name, this.gcashReceiptFile?.size, 'bytes');
+                    
+                    console.log('🔍 Attempting file upload to backend...');
+                    // Use the API mixin for consistent URL handling
+                    console.log('📤 Upload URL:', `${this.API_BASE_URL}/api/payment/gcash/create-payment-with-receipt`);
+                    
+                    const response = await this.$fetch('/api/payment/gcash/create-payment-with-receipt', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+                    
+                    console.log('📥 Upload response status:', response.status);
+                    
+                    if (response.status === 404) {
+                        throw new Error('Payment service not found. Please ensure the backend server is running on port 7904.');
+                    } else if (response.status === 413) {
+                        throw new Error('File size too large. Please upload an image smaller than 10MB.');
+                    }
+                    
+                    paymentResponse = response;
+                    
+                } else {
+                    // Handle reference method
+                    paymentResponse = await this.$fetch('/api/payment/gcash/create-payment-only', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                }
 
                 if (!paymentResponse.ok) {
-                    throw new Error('Failed to create GCash payment');
+                    let errorData;
+                    try {
+                        errorData = await paymentResponse.json();
+                        console.error('📥 Server error response:', errorData);
+                    } catch (e) {
+                        console.error('📥 Failed to parse error response:', e);
+                        errorData = { message: 'Server error occurred' };
+                    }
+                    
+                    // Log the full response for debugging
+                    console.error('📥 Full response status:', paymentResponse.status);
+                    console.error('📥 Full response headers:', Object.fromEntries(paymentResponse.headers.entries()));
+                    
+                    throw new Error(errorData.message || `Failed to create GCash payment (Status: ${paymentResponse.status})`);
                 }
 
                 const paymentData = await paymentResponse.json();
                 
-                // Open payment in new window instead of redirecting
-                const paymentWindow = window.open(
-                    paymentData.checkoutUrl,
-                    'gcash-payment',
-                    'width=800,height=600,scrollbars=yes,resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no'
-                );
-
-                if (!paymentWindow) {
-                    throw new Error('Payment window blocked. Please allow popups and try again.');
-                }
-
-                // Monitor the payment window
-                this.monitorPaymentWindow(paymentWindow, paymentData.paymentId, orderData);
+                // Show success message and close modal
+                this.handleManualGCashSuccess(paymentData);
                 
             } catch (error) {
                 console.error('GCash payment error:', error);
-                throw error;
+                
+                // Handle specific error types
+                if (error.message && error.message.includes('404')) {
+                    throw new Error('Payment service is not available. Please ensure the backend server is running.');
+                } else if (error.message && error.message.includes('413')) {
+                    throw new Error('File size too large. Please upload an image smaller than 10MB.');
+                } else if (error.message && error.message.includes('Payload Too Large')) {
+                    throw new Error('File size too large. Please upload an image smaller than 10MB.');
+                } else if (error.message && error.message.includes('Unexpected token')) {
+                    throw new Error('Server error. Please try again or contact support.');
+                } else if (error.name === 'SyntaxError') {
+                    throw new Error('Server communication error. Please try again.');
+                } else if (error.message && error.message.includes('Failed to fetch')) {
+                    throw new Error('Cannot connect to server. Please check your connection and try again.');
+                } else {
+                    throw error;
+                }
             }
+        },
+        
+        handleManualGCashSuccess(paymentData) {
+            this.processingPayment = false;
+            this.verifyingPayment = false;
+            
+            // Store order and payment reference for display
+            this.currentOrderId = paymentData.orderId || paymentData.referenceNumber;
+            this.currentAmount = paymentData.amount;
+            
+            // Close main modal and show success modal
+            this.$emit('close');
+            this.showPaymentSuccessModal = true;
+            
+            // Clear the cart
+            this.$emit('clear-cart');
         },
          monitorPaymentWindow(paymentWindow, paymentId, orderData) {
             let windowClosedTime = null;
@@ -999,49 +1520,153 @@ Special Instructions: ${this.specialInstructions || ''}`;
         
         async processCashWithDownpayment(orderData) {
             try {
-                // Create GCash payment for downpayment only
                 const token = localStorage.getItem('token');
-                const paymentResponse = await this.$fetch('/api/payment/gcash/create-downpayment', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        downpaymentAmount: this.downpaymentAmount,
-                        totalAmount: this.calculateTotal,
-                        remainingAmount: this.remainingAmount,
-                        items: orderData.items,
-                        discountId: orderData.discountId,
-                        packagingPreference: orderData.packagingPreference,
-                        paymentMethod: 'cash'
-                    })
-                });
+                
+                // Quick backend health check
+                console.log('🔍 Backend URL:', this.API_BASE_URL);
+                
+                try {
+                    const healthCheck = await this.$fetch('/health');
+                    console.log('💓 Backend health check:', healthCheck.status);
+                } catch (healthError) {
+                    console.error('❌ Backend not reachable:', healthError);
+                    throw new Error('Cannot connect to backend server. Please try again.');
+                }
+                
+                let paymentResponse;
+                
+                if (this.downpaymentVerificationMethod === 'receipt' && this.downpaymentReceiptFile) {
+                    // Handle file upload for receipt method
+                    const formData = new FormData();
+                    formData.append('downpaymentAmount', String(this.downpaymentAmount));
+                    formData.append('totalAmount', String(this.calculateTotal));
+                    formData.append('remainingAmount', String(this.remainingAmount));
+                    formData.append('items', JSON.stringify(orderData.items));
+                    formData.append('discountId', orderData.discountId ? String(orderData.discountId) : '');
+                    formData.append('packagingPreference', String(orderData.packagingPreference || 'eco'));
+                    formData.append('paymentMethod', 'cash');
+                    formData.append('downpaymentVerificationMethod', String(this.downpaymentVerificationMethod));
+                    formData.append('downpaymentReceipt', this.downpaymentReceiptFile);
+                    
+                    // Debug logging
+                    console.log('🔍 FormData contents for downpayment:');
+                    console.log('- downpaymentAmount:', this.downpaymentAmount);
+                    console.log('- totalAmount:', this.calculateTotal);
+                    console.log('- remainingAmount:', this.remainingAmount);
+                    console.log('- items:', JSON.stringify(orderData.items));
+                    console.log('- discountId:', orderData.discountId || '');
+                    console.log('- packagingPreference:', orderData.packagingPreference || 'eco');
+                    console.log('- paymentMethod:', 'cash');
+                    console.log('- downpaymentVerificationMethod:', this.downpaymentVerificationMethod);
+                    console.log('- file:', this.downpaymentReceiptFile?.name, this.downpaymentReceiptFile?.size, 'bytes');
+                    
+                    console.log('🔍 Attempting downpayment receipt upload to backend...');
+                    console.log('📤 Upload URL:', `${this.API_BASE_URL}/api/payment/gcash/create-downpayment-with-receipt`);
+                    
+                    const response = await this.$fetch('/api/payment/gcash/create-downpayment-with-receipt', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+                    
+                    console.log('📥 Upload response status:', response.status);
+                    
+                    if (response.status === 404) {
+                        throw new Error('Downpayment service not found. Please ensure the backend server is running on port 7904.');
+                    } else if (response.status === 413) {
+                        throw new Error('File size too large. Please upload an image smaller than 10MB.');
+                    }
+                    
+                    paymentResponse = response;
+                    
+                } else {
+                    // Handle reference method
+                    paymentResponse = await this.$fetch('/api/payment/gcash/create-downpayment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            downpaymentAmount: this.downpaymentAmount,
+                            totalAmount: this.calculateTotal,
+                            remainingAmount: this.remainingAmount,
+                            items: orderData.items,
+                            discountId: orderData.discountId,
+                            packagingPreference: orderData.packagingPreference,
+                            paymentMethod: 'cash',
+                            gcashReference: this.downpaymentGcashReference.trim()
+                        })
+                    });
+                }
 
                 if (!paymentResponse.ok) {
-                    throw new Error('Failed to create downpayment');
+                    let errorData;
+                    try {
+                        errorData = await paymentResponse.json();
+                        console.error('📥 Server error response:', errorData);
+                    } catch (e) {
+                        console.error('📥 Failed to parse error response:', e);
+                        errorData = { message: 'Server error occurred' };
+                    }
+                    
+                    // Log the full response for debugging
+                    console.error('📥 Full response status:', paymentResponse.status);
+                    console.error('📥 Full response headers:', Object.fromEntries(paymentResponse.headers.entries()));
+                    
+                    throw new Error(errorData.message || `Failed to create downpayment (Status: ${paymentResponse.status})`);
                 }
 
                 const paymentData = await paymentResponse.json();
                 
-                // Open payment in new window for downpayment
-                const paymentWindow = window.open(
-                    paymentData.checkoutUrl,
-                    'gcash-downpayment',
-                    'width=800,height=600,scrollbars=yes,resizable=yes,toolbar=no,location=no,directories=no,status=no,menubar=no'
-                );
-
-                if (!paymentWindow) {
-                    throw new Error('Payment window blocked. Please allow popups and try again.');
-                }
-
-                // Monitor the downpayment window
-                this.monitorDownpaymentWindow(paymentWindow, paymentData.paymentId, orderData);
+                // Show success message and close modal
+                this.handleManualDownpaymentSuccess(paymentData);
                 
             } catch (error) {
                 console.error('Cash with downpayment error:', error);
-                throw error;
+                
+                // Handle specific error types
+                if (error.message && error.message.includes('404')) {
+                    throw new Error('Downpayment service is not available. Please ensure the backend server is running.');
+                } else if (error.message && error.message.includes('413')) {
+                    throw new Error('File size too large. Please upload an image smaller than 10MB.');
+                } else if (error.message && error.message.includes('Payload Too Large')) {
+                    throw new Error('File size too large. Please upload an image smaller than 10MB.');
+                } else if (error.message && error.message.includes('Unexpected token')) {
+                    throw new Error('Server error. Please try again or contact support.');
+                } else if (error.name === 'SyntaxError') {
+                    throw new Error('Server communication error. Please try again.');
+                } else if (error.message && error.message.includes('Failed to fetch')) {
+                    throw new Error('Cannot connect to server. Please check your connection and try again.');
+                } else {
+                    throw error;
+                }
             }
+        },
+        
+        handleManualDownpaymentSuccess(paymentData) {
+            this.processingPayment = false;
+            this.verifyingPayment = false;
+            
+            // Store order ID and amount for display
+            this.currentOrderId = paymentData.orderId || paymentData.referenceNumber;
+            this.currentAmount = paymentData.downpaymentAmount;
+            this.successOrderId = paymentData.orderId;
+            
+            // Close main modal and show success modal
+            this.$emit('close');
+            this.showPaymentSuccessModal = true;
+            
+            // Clear the cart
+            this.$emit('clear-cart');
+            
+            // Emit success event
+            this.$emit('payment-success', {
+                message: `Downpayment successful! Order #${this.currentOrderId} has been placed and is pending verification.`,
+                orderId: this.currentOrderId
+            });
         },
 
         monitorDownpaymentWindow(paymentWindow, paymentId, orderData) {
@@ -1335,6 +1960,128 @@ Special Instructions: ${this.specialInstructions || ''}`;
             } finally {
                 this.isRetryingPayment = false;
             }
+        },
+        
+        // File upload methods
+        triggerFileInput() {
+            this.$refs.gcashReceiptInput.click();
+        },
+        
+        handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.validateAndSetFile(file);
+            }
+        },
+        
+        handleFileDrop(event) {
+            this.isDragOver = false;
+            const file = event.dataTransfer.files[0];
+            if (file) {
+                this.validateAndSetFile(file);
+            }
+        },
+        
+        validateAndSetFile(file) {
+            // Reset previous errors
+            this.gcashReceiptError = '';
+            
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                this.gcashReceiptError = 'Please upload an image file (JPG, PNG, GIF, WEBP)';
+                return;
+            }
+            
+            // Check file size (10MB limit to match backend)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > maxSize) {
+                this.gcashReceiptError = `File size must be less than 10MB. Current file is ${this.formatFileSize(file.size)}`;
+                return;
+            }
+            
+            // Set the file
+            this.gcashReceiptFile = file;
+            
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.gcashReceiptPreview = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        },
+        
+        removeReceiptFile() {
+            this.gcashReceiptFile = null;
+            this.gcashReceiptPreview = null;
+            this.gcashReceiptError = '';
+            if (this.$refs.gcashReceiptInput) {
+                this.$refs.gcashReceiptInput.value = '';
+            }
+        },
+        
+        // Downpayment file upload methods
+        triggerDownpaymentFileInput() {
+            this.$refs.downpaymentReceiptInput.click();
+        },
+        
+        handleDownpaymentFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.validateAndSetDownpaymentFile(file);
+            }
+        },
+        
+        handleDownpaymentFileDrop(event) {
+            this.isDownpaymentDragOver = false;
+            const file = event.dataTransfer.files[0];
+            if (file) {
+                this.validateAndSetDownpaymentFile(file);
+            }
+        },
+        
+        validateAndSetDownpaymentFile(file) {
+            // Reset previous errors
+            this.downpaymentReceiptError = '';
+            
+            // Check file type
+            if (!file.type.startsWith('image/')) {
+                this.downpaymentReceiptError = 'Please upload an image file (JPG, PNG, GIF, WEBP)';
+                return;
+            }
+            
+            // Check file size (10MB limit to match backend)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > maxSize) {
+                this.downpaymentReceiptError = `File size must be less than 10MB. Current file is ${this.formatFileSize(file.size)}`;
+                return;
+            }
+            
+            // Set the file
+            this.downpaymentReceiptFile = file;
+            
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.downpaymentReceiptPreview = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        },
+        
+        removeDownpaymentReceiptFile() {
+            this.downpaymentReceiptFile = null;
+            this.downpaymentReceiptPreview = null;
+            this.downpaymentReceiptError = '';
+            if (this.$refs.downpaymentReceiptInput) {
+                this.$refs.downpaymentReceiptInput.value = '';
+            }
+        },
+        
+        formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
     },
     mounted() {
@@ -1587,6 +2334,283 @@ Special Instructions: ${this.specialInstructions || ''}`;
 
 .payment-option.disabled .payment-card.disabled small {
     color: #999;
+}
+
+/* Verification Method Styles */
+.verification-method-section {
+    padding: clamp(1.5rem, 3vh, 2rem) clamp(1.5rem, 4vw, 2.5rem);
+    border-bottom: 2px solid #f1f9f1;
+    background: linear-gradient(135deg, #f8fff8 0%, #f0f8f0 100%);
+    flex-shrink: 0;
+}
+
+.verification-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.verification-option {
+    cursor: pointer;
+    position: relative;
+}
+
+.verification-option input[type="radio"] {
+    display: none;
+}
+
+.verification-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background-color: white;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.verification-card i {
+    font-size: 1.5rem;
+    color: #64748b;
+    transition: color 0.3s ease;
+}
+
+.verification-card span {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 1rem;
+}
+
+.verification-card small {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.verification-option input[type="radio"]:checked + .verification-card {
+    border-color: #4CAF50;
+    background-color: #f8fff8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+}
+
+.verification-option input[type="radio"]:checked + .verification-card i {
+    color: #4CAF50;
+}
+
+.verification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Reference Input Styles */
+.reference-input-section, .receipt-upload-section {
+    padding: clamp(1.5rem, 3vh, 2rem) clamp(1.5rem, 4vw, 2.5rem);
+    border-bottom: 2px solid #f1f9f1;
+    background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+    flex-shrink: 0;
+}
+
+.input-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 1rem;
+}
+
+.input-label i {
+    color: #4CAF50;
+    font-size: 1.1rem;
+}
+
+.reference-input {
+    width: 100%;
+    padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 2.5vw, 1.25rem);
+    border: 2px solid #e2e8f0;
+    border-radius: clamp(8px, 1.5vw, 12px);
+    font-size: clamp(0.9rem, 2.5vw, 1.05rem);
+    color: #1e293b;
+    background-color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+    min-height: clamp(40px, 8vh, 60px);
+}
+
+.reference-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.input-help {
+    display: block;
+    margin-top: 0.5rem;
+    color: #64748b;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.error-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    background-color: #fee2e2;
+    color: #dc2626;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    border-left: 4px solid #dc2626;
+}
+
+.error-message i {
+    color: #dc2626;
+    font-size: 1rem;
+}
+
+/* File Upload Styles */
+.upload-area {
+    border: 2px dashed #e2e8f0;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    background-color: #fafafa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-area:hover {
+    border-color: #4CAF50;
+    background-color: #f8fff8;
+    transform: translateY(-2px);
+}
+
+.upload-area.drag-over {
+    border-color: #4CAF50;
+    background-color: #f8fff8;
+    transform: scale(1.02);
+}
+
+.upload-area.has-file {
+    border-style: solid;
+    border-color: #4CAF50;
+    background-color: #f8fff8;
+}
+
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.upload-placeholder i {
+    font-size: 3rem;
+    color: #4CAF50;
+    margin-bottom: 0.5rem;
+}
+
+.upload-placeholder h5 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.upload-placeholder p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.upload-placeholder small {
+    color: #9ca3af;
+    font-size: 0.8rem;
+}
+
+.uploaded-file {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.file-preview {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    flex-shrink: 0;
+}
+
+.receipt-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.file-icon {
+    font-size: 2rem;
+    color: #4CAF50;
+}
+
+.file-details {
+    flex: 1;
+    text-align: left;
+}
+
+.file-details h6 {
+    margin: 0 0 0.25rem 0;
+    color: #1e293b;
+    font-size: 1rem;
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.file-details p {
+    margin: 0 0 0.75rem 0;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.remove-file-btn {
+    background-color: #fee2e2;
+    color: #dc2626;
+    border: 2px solid #fecaca;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.remove-file-btn:hover {
+    background-color: #dc2626;
+    color: white;
+    border-color: #dc2626;
+    transform: translateY(-1px);
 }
 
 /* Delivery Address Section */
@@ -3189,6 +4213,294 @@ input:checked + .slider:before {
     
     .payment-status-body {
         padding: 0 clamp(1rem, 3vw, 1.5rem) clamp(1.5rem, 4vh, 2rem);
+    }
+}
+
+/* GCash Reference Sections */
+.gcash-reference-section,
+.downpayment-gcash-section {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8f3ff 100%);
+    border-radius: 12px;
+    border: 1px solid #d1e7ff;
+}
+
+.gcash-instructions,
+.downpayment-instructions {
+    margin-bottom: 1.5rem;
+}
+
+.instruction-step {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    background: #007bff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.step-content h5 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.step-content p {
+    margin: 0.25rem 0;
+    color: #666;
+    line-height: 1.4;
+}
+
+.reference-input-section {
+    margin-bottom: 1.5rem;
+}
+
+.input-label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.input-label i {
+    margin-right: 0.5rem;
+    color: #007bff;
+}
+
+.reference-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.reference-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.input-help {
+    display: block;
+    margin-top: 0.5rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.error-message {
+    display: flex;
+    align-items: center;
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 6px;
+    color: #e53e3e;
+    font-size: 0.9rem;
+}
+
+.error-message i {
+    margin-right: 0.5rem;
+}
+
+.verification-notice {
+    display: flex;
+    align-items: flex-start;
+    padding: 1rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    border-left: 4px solid #28a745;
+}
+
+.notice-icon {
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.notice-icon i {
+    color: #28a745;
+    font-size: 1.2rem;
+}
+
+.notice-content h6 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.notice-content p {
+    margin: 0;
+    color: #666;
+    line-height: 1.4;
+    font-size: 0.95rem;
+}
+
+.verification-steps {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.verification-steps h4 {
+    margin: 0 0 0.75rem 0;
+    color: #333;
+    font-size: 1rem;
+}
+
+.verification-steps ol {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.verification-steps li {
+    margin-bottom: 0.5rem;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* Responsive Design for New Features */
+@media (max-width: 768px) {
+    .verification-methods {
+        gap: 0.75rem;
+    }
+    
+    .verification-card {
+        padding: 1rem;
+        gap: 0.75rem;
+    }
+    
+    .verification-card i {
+        font-size: 1.25rem;
+    }
+    
+    .verification-card span {
+        font-size: 0.9rem;
+    }
+    
+    .verification-card small {
+        font-size: 0.8rem;
+    }
+    
+    .upload-area {
+        padding: 1.5rem 1rem;
+        min-height: 150px;
+    }
+    
+    .upload-placeholder i {
+        font-size: 2.5rem;
+    }
+    
+    .upload-placeholder h5 {
+        font-size: 1rem;
+    }
+    
+    .upload-placeholder p {
+        font-size: 0.9rem;
+    }
+    
+    .uploaded-file {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .file-preview {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .reference-input-section, .receipt-upload-section {
+        padding: 1.25rem 1rem;
+    }
+    
+    .input-label {
+        font-size: 0.9rem;
+    }
+    
+    .verification-method-section {
+        padding: 1.25rem 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .verification-card {
+        padding: 0.875rem;
+        gap: 0.5rem;
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .verification-card i {
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .upload-area {
+        padding: 1rem;
+        min-height: 120px;
+    }
+    
+    .upload-placeholder i {
+        font-size: 2rem;
+    }
+    
+    .upload-placeholder h5 {
+        font-size: 0.9rem;
+    }
+    
+    .upload-placeholder p {
+        font-size: 0.85rem;
+    }
+    
+    .upload-placeholder small {
+        font-size: 0.75rem;
+    }
+    
+    .file-preview {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .file-details h6 {
+        font-size: 0.9rem;
+    }
+    
+    .file-details p {
+        font-size: 0.8rem;
+    }
+    
+    .remove-file-btn {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    .error-message {
+        padding: 0.625rem 0.875rem;
+        font-size: 0.85rem;
     }
 }
 </style>

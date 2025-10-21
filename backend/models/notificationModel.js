@@ -3,19 +3,30 @@ const db = require('../config/db');
 class Notification {
     static async create(userId, title, message, type = 'info', icon = 'fas fa-bell', relatedOrderId = null, actionUrl = null, customId = null) {
         try {
-            // If customId is provided, check if notification already exists
             if (customId) {
-                const existing = await this.findByCustomId(customId, userId);
-                if (existing) {
-                    return existing.id; // Return existing notification ID
-                }
+                // Use INSERT ... ON DUPLICATE KEY UPDATE to handle duplicates gracefully
+                const [result] = await db.execute(
+                    `INSERT INTO notifications (user_id, title, message, type, icon, related_order_id, action_url, custom_id, created_at) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                     ON DUPLICATE KEY UPDATE 
+                        title = VALUES(title),
+                        message = VALUES(message),
+                        type = VALUES(type),
+                        icon = VALUES(icon),
+                        related_order_id = VALUES(related_order_id),
+                        action_url = VALUES(action_url),
+                        updated_at = NOW()`,
+                    [userId, title, message, type, icon, relatedOrderId, actionUrl, customId]
+                );
+                return result.insertId || result.affectedRows; // Return insert ID or affected rows for updates
+            } else {
+                // Normal insert without custom_id
+                const [result] = await db.execute(
+                    'INSERT INTO notifications (user_id, title, message, type, icon, related_order_id, action_url, custom_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                    [userId, title, message, type, icon, relatedOrderId, actionUrl, customId]
+                );
+                return result.insertId;
             }
-
-            const [result] = await db.execute(
-                'INSERT INTO notifications (user_id, title, message, type, icon, related_order_id, action_url, custom_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                [userId, title, message, type, icon, relatedOrderId, actionUrl, customId]
-            );
-            return result.insertId;
         } catch (error) {
             throw error;
         }
@@ -41,7 +52,16 @@ class Notification {
 
     static async findByCustomId(customId, userId) {
         try {
-            const [rows] = await db.execute('SELECT * FROM notifications WHERE id = ? AND user_id = ?', [customId, userId]);
+            const [rows] = await db.execute('SELECT * FROM notifications WHERE custom_id = ? AND user_id = ?', [customId, userId]);
+            return rows[0];
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async findById(id) {
+        try {
+            const [rows] = await db.execute('SELECT * FROM notifications WHERE id = ?', [id]);
             return rows[0];
         } catch (error) {
             throw error;

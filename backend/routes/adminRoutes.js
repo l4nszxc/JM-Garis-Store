@@ -76,4 +76,9 @@ router.get('/staff-analytics/orders-chart', authenticate, isAdmin, adminControll
 router.get('/walk-in/lookup-user/:userId', authenticate, isAdmin, adminController.lookupUser);
 router.post('/walk-in/process-rewards', authenticate, isAdmin, adminController.processWalkInRewards);
 
+// GCash Payment Management Routes
+router.get('/gcash-payments/pending', authenticate, isAdmin, adminController.getPendingGCashPayments);
+router.get('/orders/:orderId/gcash-details', authenticate, isAdmin, adminController.getOrderGCashDetails);
+router.post('/orders/:orderId/verify-gcash', authenticate, isAdmin, adminController.verifyGCashPayment);
+
 module.exports = router;

@@ -8,9 +8,6 @@ const initializePaymentSettingsTable = async () => {
             CREATE TABLE IF NOT EXISTS payment_settings (
                 id int NOT NULL AUTO_INCREMENT,
                 gcash_enabled tinyint(1) DEFAULT 1,
-                gcash_public_key varchar(255) DEFAULT NULL,
-                gcash_secret_key varchar(255) DEFAULT NULL,
-                gcash_environment enum('test','live') DEFAULT 'test',
                 downpayment_enabled tinyint(1) DEFAULT 1,
                 downpayment_percentage decimal(5,2) DEFAULT 25.00,
                 min_order_amount decimal(10,2) DEFAULT 500.00,
