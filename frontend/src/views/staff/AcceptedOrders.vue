@@ -286,8 +286,8 @@
                             </span>
                         </p>
                         
-                        <!-- Payment Verification Details for GCash -->
-                        <div v-if="selectedOrder.payment_method === 'gcash'" class="payment-verification-details">
+                        <!-- Payment Verification Details for GCash and Downpayment -->
+                        <div v-if="selectedOrder.payment_method === 'gcash' || selectedOrder.payment_type === 'downpayment'" class="payment-verification-details">
                             <p><strong>Payment Verification Details:</strong></p>
                             <div class="verification-details-content">
                                 <div v-if="selectedOrder.payment_status === 'verified'" class="verification-status verified">
@@ -378,8 +378,8 @@
                                 <i class="fas fa-dollar-sign"></i> Original Total: {{ formatPrice(getOriginalTotal(selectedOrder)) }}
                             </p>
                             
-                            <!-- Downpayment breakdown for cash on pickup -->
-                            <div v-if="selectedOrder.payment_method === 'cash' && selectedOrder.payment_type === 'downpayment'" class="downpayment-breakdown">
+                            <!-- Downpayment breakdown for downpayment orders -->
+                            <div v-if="selectedOrder.payment_type === 'downpayment'" class="downpayment-breakdown">
                                 <p class="downpayment-info">
                                     <i class="fas fa-hand-holding-usd"></i> Downpayment Paid: {{ formatPrice(getDownpaymentAmount(selectedOrder)) }}
                                 </p>
