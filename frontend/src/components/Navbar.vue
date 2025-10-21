@@ -62,9 +62,9 @@
             </button>
           </div>
           
-          <div v-if="notifications.length > 0" class="notifications-list">
+          <div v-if="validNotifications.length > 0" class="notifications-list">
             <div 
-              v-for="notification in notifications" 
+              v-for="notification in validNotifications" 
               :key="notification.id"
               class="notification-item"
               :class="{ unread: !notification.is_read }"
@@ -168,6 +168,9 @@ export default {
         return this.profilePicture;
       }
       return getAvatarUrl(this.username);
+    },
+    validNotifications() {
+      return this.notifications.filter(notification => notification != null && notification.id != null);
     },
     unreadNotificationsCount() {
       return this.notifications.filter(notification => notification && !notification.is_read).length;
