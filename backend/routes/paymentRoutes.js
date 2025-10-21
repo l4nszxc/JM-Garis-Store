@@ -426,6 +426,41 @@ router.post('/admin/verify/:paymentId', authenticate, async (req, res) => {
                 });
             }
             
+            // *** ADD REWARD POINTS FOR VERIFIED GCASH PAYMENT ***
+            try {
+                const Reward = require('../models/rewardModel');
+                
+                // Check if points were already added for this order
+                const [existingPoints] = await db.execute(
+                    'SELECT COUNT(*) as count FROM user_rewards WHERE order_id = ? AND points > 0',
+                    [orderId]
+                );
+                
+                console.log(`🔍 Checking existing points for order ${orderId}: ${existingPoints[0].count}`);
+                
+                if (existingPoints[0].count === 0) {
+                    // Get order details including user_id and total_amount
+                    const [orderDetails] = await db.execute(
+                        'SELECT user_id, total_amount FROM orders WHERE order_id = ?',
+                        [orderId]
+                    );
+                    
+                    if (orderDetails.length > 0) {
+                        const userId = orderDetails[0].user_id;
+                        const orderAmount = parseFloat(orderDetails[0].total_amount);
+                        
+                        console.log(`🎯 Adding reward points for verified payment - Order #${orderId}, User: ${userId}, Amount: ₱${orderAmount}`);
+                        const pointsEarned = await Reward.addPoints(userId, orderId, orderAmount);
+                        console.log(`✅ SUCCESS! Points earned: ${pointsEarned} points`);
+                    }
+                } else {
+                    console.log(`⚠️ Points already added for order #${orderId}, skipping duplicate addition`);
+                }
+            } catch (pointsError) {
+                console.error('❌ ERROR adding reward points:', pointsError);
+                // Don't fail the verification if points addition fails
+            }
+            
             // Commit transaction
             await db.query('COMMIT');
             

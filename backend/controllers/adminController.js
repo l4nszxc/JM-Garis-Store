@@ -3585,6 +3585,41 @@ exports.verifyGCashPayment = async (req, res) => {
                     await connection.execute(updatePaymentQuery, [gcash_reference]);
                 }
                 
+                // *** ADD REWARD POINTS FOR VERIFIED GCASH PAYMENT ***
+                try {
+                    const Reward = require('../models/rewardModel');
+                    
+                    // Check if points were already added for this order
+                    const [existingPoints] = await connection.execute(
+                        'SELECT COUNT(*) as count FROM user_rewards WHERE order_id = ? AND points > 0',
+                        [orderId]
+                    );
+                    
+                    console.log(`🔍 Checking existing points for order ${orderId}: ${existingPoints[0].count}`);
+                    
+                    if (existingPoints[0].count === 0) {
+                        // Get user_id from order
+                        const [orderUser] = await connection.execute(
+                            'SELECT user_id FROM orders WHERE order_id = ?',
+                            [orderId]
+                        );
+                        
+                        if (orderUser.length > 0) {
+                            const userId = orderUser[0].user_id;
+                            const orderAmount = parseFloat(order.total_amount);
+                            
+                            console.log(`🎯 Adding reward points for verified GCash payment - Order #${orderId}, User: ${userId}, Amount: ₱${orderAmount}`);
+                            const pointsEarned = await Reward.addPoints(userId, orderId, orderAmount);
+                            console.log(`✅ SUCCESS! Points earned for verified GCash payment: ${pointsEarned} points`);
+                        }
+                    } else {
+                        console.log(`⚠️ Points already added for order #${orderId}, skipping duplicate addition`);
+                    }
+                } catch (pointsError) {
+                    console.error('❌ ERROR adding reward points:', pointsError);
+                    // Don't fail the verification if points addition fails
+                }
+                
                 await connection.commit();
                 
                 res.json({ 

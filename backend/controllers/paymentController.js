@@ -853,6 +853,10 @@ exports.verifyGCashPayment = async (req, res) => {
     try {
         const { paymentId, isValid } = req.body;
         
+        console.log('=== VERIFY GCASH PAYMENT START ===');
+        console.log('Payment ID:', paymentId);
+        console.log('Is Valid:', isValid);
+        
         // Get payment details
         const [payments] = await db.execute(
             'SELECT * FROM payment_intents WHERE id = ? OR reference_number = ?',
@@ -860,10 +864,19 @@ exports.verifyGCashPayment = async (req, res) => {
         );
         
         if (payments.length === 0) {
+            console.log('Payment not found!');
             return res.status(404).json({ message: 'Payment not found' });
         }
         
         const payment = payments[0];
+        console.log('Payment found:', {
+            id: payment.id,
+            order_id: payment.order_id,
+            user_id: payment.user_id,
+            amount: payment.amount,
+            payment_type: payment.payment_type
+        });
+        
         const newStatus = isValid ? 'succeeded' : 'failed';
         
         // Update payment status
@@ -871,15 +884,58 @@ exports.verifyGCashPayment = async (req, res) => {
             'UPDATE payment_intents SET status = ?, verified_at = NOW() WHERE id = ?',
             [newStatus, payment.id]
         );
+        console.log('Payment status updated to:', newStatus);
         
         if (isValid) {
+            const Reward = require('../models/rewardModel');
+            console.log('Payment is valid, processing rewards...');
+            
             // If payment is valid, update the existing order to paid status
             if (payment.order_id) {
+                console.log('Order ID exists:', payment.order_id);
+                
                 // Update existing order status to paid
                 await db.execute(
                     'UPDATE orders SET status = "paid", paid_at = NOW() WHERE order_id = ?',
                     [payment.order_id]
                 );
+                console.log('Order status updated to PAID');
+                
+                // Add reward points for the payment (only if not already added)
+                try {
+                    console.log('Checking for existing points...');
+                    // Check if points were already added for this order
+                    const [existingPoints] = await db.execute(
+                        'SELECT COUNT(*) as count FROM user_rewards WHERE order_id = ? AND points > 0',
+                        [payment.order_id]
+                    );
+                    
+                    console.log('Existing points count:', existingPoints[0].count);
+                    
+                    if (existingPoints[0].count === 0) {
+                        console.log('No existing points found, adding points now...');
+                        // No points added yet, so add them now
+                        const [orders] = await db.execute(
+                            'SELECT total_amount FROM orders WHERE order_id = ?',
+                            [payment.order_id]
+                        );
+                        
+                        if (orders.length > 0) {
+                            const orderAmount = parseFloat(orders[0].total_amount);
+                            console.log(`🎯 Adding reward points for verified GCash payment - Order #${payment.order_id}, Amount: ₱${orderAmount}`);
+                            const pointsEarned = await Reward.addPoints(payment.user_id, payment.order_id, orderAmount);
+                            console.log(`✅ SUCCESS! Points earned for verified GCash payment: ${pointsEarned} points`);
+                        } else {
+                            console.log('⚠️ Order not found in database!');
+                        }
+                    } else {
+                        console.log(`⚠️ Points already added for order #${payment.order_id}, skipping duplicate addition`);
+                    }
+                } catch (error) {
+                    console.error('❌ ERROR adding reward points for verified payment:', error);
+                    console.error('Error stack:', error.stack);
+                    // Don't fail the verification if points addition fails
+                }
                 
                 // Create notification for payment verification
                 const Notification = require('../models/notificationModel');
