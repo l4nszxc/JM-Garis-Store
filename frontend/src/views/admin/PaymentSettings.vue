@@ -205,19 +205,6 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- Save Changes -->
-            <div class="save-section">
-                <button 
-                    class="save-btn" 
-                    @click="saveAllSettings"
-                    :disabled="isSaving"
-                    :class="{ saving: isSaving }"
-                >
-                    <i :class="isSaving ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
-                    {{ isSaving ? 'Saving...' : 'Save All Changes' }}
-                </button>
-            </div>
         </div>
 
         <!-- Logout Modal -->
@@ -252,7 +239,6 @@ export default {
         return {
             username: '',
             showLogoutModal: false,
-            isSaving: false,
             showMessage: false,
             message: '',
             messageType: 'success',
@@ -309,7 +295,13 @@ export default {
                 
                 const data = await response.json();
                 if (data.success) {
-                    this.paymentSettings = { ...this.paymentSettings, ...data.settings };
+                    // Convert database values (1/0) to boolean (true/false)
+                    this.paymentSettings = {
+                        gcash_enabled: Boolean(data.settings.gcash_enabled),
+                        downpayment_enabled: Boolean(data.settings.downpayment_enabled),
+                        downpayment_percentage: Number(data.settings.downpayment_percentage),
+                        min_order_amount: Number(data.settings.min_order_amount)
+                    };
                 }
             } catch (error) {
                 console.error('Error loading payment settings:', error);
@@ -318,6 +310,7 @@ export default {
         },
 
         async updateGCashSettings() {
+            const previousState = this.paymentSettings.gcash_enabled;
             try {
                 const token = localStorage.getItem('token');
                 const response = await this.$fetch('/api/admin/payment-settings/gcash', {
@@ -333,19 +326,25 @@ export default {
                 
                 const data = await response.json();
                 if (response.ok && data.success) {
-                    this.showToast('GCash settings updated successfully', 'success');
+                    this.showToast(`GCash payment ${this.paymentSettings.gcash_enabled ? 'enabled' : 'disabled'} successfully`, 'success');
                 } else {
                     throw new Error(data.message || 'Failed to update GCash settings');
                 }
             } catch (error) {
                 console.error('Error updating GCash settings:', error);
                 this.showToast('Failed to update GCash settings', 'error');
-                // Revert the change
-                this.paymentSettings.gcash_enabled = !this.paymentSettings.gcash_enabled;
+                // Revert the change on error
+                this.paymentSettings.gcash_enabled = previousState;
             }
         },
 
         async updateDownpaymentSettings() {
+            const previousState = {
+                enabled: this.paymentSettings.downpayment_enabled,
+                percentage: this.paymentSettings.downpayment_percentage,
+                minAmount: this.paymentSettings.min_order_amount
+            };
+            
             try {
                 const token = localStorage.getItem('token');
                 const response = await this.$fetch('/api/admin/payment-settings/downpayment', {
@@ -370,33 +369,10 @@ export default {
             } catch (error) {
                 console.error('Error updating downpayment settings:', error);
                 this.showToast('Failed to update downpayment settings', 'error');
-            }
-        },
-
-        async saveAllSettings() {
-            this.isSaving = true;
-            try {
-                const token = localStorage.getItem('token');
-                const response = await this.$fetch('/api/admin/payment-settings', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(this.paymentSettings)
-                });
-                
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    this.showToast('All payment settings saved successfully', 'success');
-                } else {
-                    throw new Error(data.message || 'Failed to save payment settings');
-                }
-            } catch (error) {
-                console.error('Error saving payment settings:', error);
-                this.showToast('Failed to save payment settings', 'error');
-            } finally {
-                this.isSaving = false;
+                // Revert the changes on error
+                this.paymentSettings.downpayment_enabled = previousState.enabled;
+                this.paymentSettings.downpayment_percentage = previousState.percentage;
+                this.paymentSettings.min_order_amount = previousState.minAmount;
             }
         },
 
@@ -910,49 +886,6 @@ input:checked + .slider:before {
     margin: 0.5rem 0;
     color: #4a5568;
     font-size: 0.9rem;
-}
-
-/* Save Section - Enhanced */
-.save-section {
-    text-align: center;
-    margin-top: 3rem;
-    padding: 2rem;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.save-btn {
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-    color: white;
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-width: 200px;
-    justify-content: center;
-    box-shadow: 0 4px 6px rgba(76, 175, 80, 0.25);
-}
-
-.save-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
-}
-
-.save-btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.save-btn.saving {
-    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
 }
 
 /* Modal Styles - Enhanced */
