@@ -214,31 +214,35 @@ static async checkAndUpdateLoyaltyTier(userId, connection) {
         if (spendData.length === 0) return;
 
         const monthlySpend = parseFloat(spendData[0].current_month_spend);
-        console.log(`Checking tier for user ${userId} with monthly spend: ${monthlySpend}`);
+        console.log(`Checking tier for user ${userId} with monthly spend: ₱${monthlySpend.toFixed(2)}`);
 
-        // Get loyalty tiers ordered by minimum spend (ascending)
+        // Get loyalty tiers ordered by minimum spend (descending to find highest qualifying tier first)
         const [tiers] = await connection.query(
-            'SELECT * FROM loyalty_tiers ORDER BY min_spend ASC'
+            'SELECT * FROM loyalty_tiers ORDER BY min_spend DESC'
         );
 
         let appropriateTier = null;
         
         // Find the highest tier the user qualifies for
+        // Must meet BOTH minimum spend requirement AND not exceed max spend (if it exists)
         for (const tier of tiers) {
             const minSpend = parseFloat(tier.min_spend);
             const maxSpend = tier.max_spend ? parseFloat(tier.max_spend) : null;
             
-            console.log(`Checking tier ${tier.name}: min=${minSpend}, max=${maxSpend}, userSpend=${monthlySpend}`);
+            console.log(`Checking tier ${tier.name}: min=₱${minSpend}, max=${maxSpend ? '₱' + maxSpend : 'unlimited'}, userSpend=₱${monthlySpend.toFixed(2)}`);
             
+            // Check if user meets minimum requirement
             if (monthlySpend >= minSpend) {
+                // Check if user is within max spend (or no max exists)
                 if (!maxSpend || monthlySpend <= maxSpend) {
                     appropriateTier = tier;
-                    console.log(`User qualifies for tier: ${tier.name}`);
+                    console.log(`✓ User qualifies for tier: ${tier.name}`);
+                    break; // Found the highest tier they qualify for
                 } else {
-                    console.log(`User exceeds max spend for tier ${tier.name}`);
+                    console.log(`✗ User exceeds max spend for tier ${tier.name}`);
                 }
             } else {
-                console.log(`User doesn't meet min spend for tier ${tier.name}`);
+                console.log(`✗ User doesn't meet min spend for tier ${tier.name}`);
             }
         }
 
@@ -264,7 +268,7 @@ static async checkAndUpdateLoyaltyTier(userId, connection) {
                 WHERE user_id = ?`,
                 [appropriateTier.id, tierEndDate.toISOString().split('T')[0], userId]
             );
-            console.log(`Updated user ${userId} to tier ${appropriateTier.name}`);
+            console.log(`✓ Updated user ${userId} to tier ${appropriateTier.name}`);
         } else if (!appropriateTier && currentTierId) {
             // Remove tier if user no longer qualifies
             await connection.query(
@@ -275,7 +279,7 @@ static async checkAndUpdateLoyaltyTier(userId, connection) {
                 WHERE user_id = ?`,
                 [userId]
             );
-            console.log(`Removed tier for user ${userId} - no longer qualifies`);
+            console.log(`✓ Removed tier for user ${userId} - no longer qualifies (spend: ₱${monthlySpend.toFixed(2)})`);
         } else {
             console.log(`No tier change needed for user ${userId}`);
         }
