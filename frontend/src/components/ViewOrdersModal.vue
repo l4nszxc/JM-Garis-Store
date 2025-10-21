@@ -72,17 +72,88 @@
                     <i class="fab fa-google-pay"></i>
                     GCash Payment Details
                 </h4>
+                
+                <!-- GCash Payment Method Choice -->
+                <div v-if="paymentSettings.gcash_qr_code || paymentSettings.gcash_number" class="gcash-payment-choice">
+                    <div class="choice-header">
+                        <h5><i class="fas fa-hand-pointer"></i> Choose Payment Method</h5>
+                    </div>
+                    <div class="choice-options">
+                        <button 
+                            @click="showQRCode = true"
+                            :class="{ active: showQRCode }"
+                            class="choice-btn qr-choice"
+                        >
+                            <i class="fas fa-qrcode"></i>
+                            <span>Scan QR Code</span>
+                        </button>
+                        <button 
+                            @click="showQRCode = false"
+                            :class="{ active: !showQRCode }"
+                            class="choice-btn manual-choice"
+                        >
+                            <i class="fas fa-mobile-alt"></i>
+                            <span>Use GCash Number</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- QR Code Display -->
+                <div v-if="showQRCode && paymentSettings.gcash_qr_code" class="qr-code-display">
+                    <div class="qr-code-container">
+                        <div class="qr-header">
+                            <i class="fas fa-qrcode"></i>
+                            <h5>Scan this QR Code with GCash</h5>
+                        </div>
+                        <div class="qr-image-wrapper">
+                            <img :src="paymentSettings.gcash_qr_code" alt="GCash QR Code" class="qr-code-image">
+                        </div>
+                        <div class="payment-amount-display">
+                            <p>Amount to Pay:</p>
+                            <h3>{{ formatPrice(calculateTotal) }}</h3>
+                        </div>
+                        <div class="qr-instructions">
+                            <p><i class="fas fa-info-circle"></i> Open your GCash app and scan this QR code to pay</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Manual GCash Number Display -->
+                <div v-if="!showQRCode && paymentSettings.gcash_number" class="gcash-number-display">
+                    <div class="gcash-number-container">
+                        <div class="number-header">
+                            <i class="fas fa-mobile-alt"></i>
+                            <h5>Send Payment to this GCash Number</h5>
+                        </div>
+                        <div class="gcash-number-box">
+                            <span class="number-label">GCash Number:</span>
+                            <div class="number-value">{{ paymentSettings.gcash_number }}</div>
+                            <button @click="copyGCashNumber" class="copy-number-btn">
+                                <i :class="copySuccess ? 'fas fa-check' : 'fas fa-copy'"></i>
+                                {{ copySuccess ? 'Copied!' : 'Copy' }}
+                            </button>
+                        </div>
+                        <div class="payment-amount-display">
+                            <p>Amount to Send:</p>
+                            <h3>{{ formatPrice(calculateTotal) }}</h3>
+                        </div>
+                        <div class="manual-instructions">
+                            <p><i class="fas fa-info-circle"></i> Send the exact amount to the GCash number above</p>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="gcash-instructions">
                     <div class="instruction-step">
-                        <div class="step-number">1</div>
+                        <div class="step-number">{{ showQRCode || !paymentSettings.gcash_number ? '1' : '2' }}</div>
                         <div class="step-content">
-                            <h5>Send payment to JM Garis Store GCash</h5>
-                            <p>Amount: <strong>{{ formatPrice(calculateTotal) }}</strong></p>
-                            <p>Please send the exact amount to our GCash account</p>
+                            <h5>Complete your GCash payment</h5>
+                            <p v-if="showQRCode">Scan the QR code above with your GCash app</p>
+                            <p v-else>Send <strong>{{ formatPrice(calculateTotal) }}</strong> to the GCash number above</p>
                         </div>
                     </div>
                     <div class="instruction-step">
-                        <div class="step-number">2</div>
+                        <div class="step-number">{{ showQRCode || !paymentSettings.gcash_number ? '2' : '3' }}</div>
                         <div class="step-content">
                             <h5>Provide Payment Proof</h5>
                             <p>Choose to either enter your reference number or upload a screenshot of your GCash receipt</p>
@@ -253,17 +324,88 @@
                         <i class="fab fa-google-pay"></i>
                         Pay Downpayment via GCash
                     </h4>
+                    
+                    <!-- GCash Payment Method Choice for Downpayment -->
+                    <div v-if="paymentSettings.gcash_qr_code || paymentSettings.gcash_number" class="gcash-payment-choice">
+                        <div class="choice-header">
+                            <h5><i class="fas fa-hand-pointer"></i> Choose Payment Method</h5>
+                        </div>
+                        <div class="choice-options">
+                            <button 
+                                @click="showDownpaymentQR = true"
+                                :class="{ active: showDownpaymentQR }"
+                                class="choice-btn qr-choice"
+                            >
+                                <i class="fas fa-qrcode"></i>
+                                <span>Scan QR Code</span>
+                            </button>
+                            <button 
+                                @click="showDownpaymentQR = false"
+                                :class="{ active: !showDownpaymentQR }"
+                                class="choice-btn manual-choice"
+                            >
+                                <i class="fas fa-mobile-alt"></i>
+                                <span>Use GCash Number</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- QR Code Display for Downpayment -->
+                    <div v-if="showDownpaymentQR && paymentSettings.gcash_qr_code" class="qr-code-display">
+                        <div class="qr-code-container">
+                            <div class="qr-header">
+                                <i class="fas fa-qrcode"></i>
+                                <h5>Scan this QR Code with GCash</h5>
+                            </div>
+                            <div class="qr-image-wrapper">
+                                <img :src="paymentSettings.gcash_qr_code" alt="GCash QR Code" class="qr-code-image">
+                            </div>
+                            <div class="payment-amount-display">
+                                <p>Downpayment Amount:</p>
+                                <h3>{{ formatPrice(downpaymentAmount) }}</h3>
+                            </div>
+                            <div class="qr-instructions">
+                                <p><i class="fas fa-info-circle"></i> Open your GCash app and scan this QR code to pay the downpayment</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Manual GCash Number Display for Downpayment -->
+                    <div v-if="!showDownpaymentQR && paymentSettings.gcash_number" class="gcash-number-display">
+                        <div class="gcash-number-container">
+                            <div class="number-header">
+                                <i class="fas fa-mobile-alt"></i>
+                                <h5>Send Downpayment to this GCash Number</h5>
+                            </div>
+                            <div class="gcash-number-box">
+                                <span class="number-label">GCash Number:</span>
+                                <div class="number-value">{{ paymentSettings.gcash_number }}</div>
+                                <button @click="copyGCashNumber" class="copy-number-btn">
+                                    <i :class="copySuccess ? 'fas fa-check' : 'fas fa-copy'"></i>
+                                    {{ copySuccess ? 'Copied!' : 'Copy' }}
+                                </button>
+                            </div>
+                            <div class="payment-amount-display">
+                                <p>Downpayment Amount:</p>
+                                <h3>{{ formatPrice(downpaymentAmount) }}</h3>
+                            </div>
+                            <div class="manual-instructions">
+                                <p><i class="fas fa-info-circle"></i> Send the exact downpayment amount to the GCash number above</p>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="downpayment-instructions">
                         <div class="instruction-step">
-                            <div class="step-number">1</div>
+                            <div class="step-number">{{ showDownpaymentQR || !paymentSettings.gcash_number ? '1' : '2' }}</div>
                             <div class="step-content">
-                                <h5>Send downpayment to JM Garis Store GCash</h5>
-                                <p>Amount: <strong>{{ formatPrice(downpaymentAmount) }}</strong></p>
-                                <p>Please send the exact downpayment amount to our GCash account</p>
+                                <h5>Complete your downpayment</h5>
+                                <p v-if="showDownpaymentQR">Scan the QR code above with your GCash app</p>
+                                <p v-else>Send <strong>{{ formatPrice(downpaymentAmount) }}</strong> to the GCash number above</p>
                             </div>
                         </div>
                         <div class="instruction-step">
-                            <div class="step-number">2</div>
+                            <div class="step-number">{{ showDownpaymentQR || !paymentSettings.gcash_number ? '2' : '3' }}</div>
                             <div class="step-content">
                                 <h5>Provide Payment Proof</h5>
                                 <p>Choose to either enter your reference number or upload a screenshot of your GCash receipt</p>
@@ -801,10 +943,14 @@ export default {
                 gcash_enabled: true,
                 downpayment_enabled: true,
                 downpayment_percentage: 25.00,
-                min_order_amount: 500.00
+                min_order_amount: 500.00,
+                gcash_qr_code: null,
+                gcash_number: ''
             },
             isGoingToOrders: false,
-            isRetryingPayment: false
+            isRetryingPayment: false,
+            showQRCode: false, // Toggle between QR code and manual entry
+            showDownpaymentQR: false // Toggle for downpayment QR
         }
     },
     watch: {
@@ -1030,6 +1176,20 @@ Special Instructions: ${this.specialInstructions || ''}`;
                 // Keep default values if fetch fails
             }
         },
+
+        copyGCashNumber() {
+            if (!this.paymentSettings.gcash_number) return;
+            
+            navigator.clipboard.writeText(this.paymentSettings.gcash_number).then(() => {
+                this.copySuccess = true;
+                setTimeout(() => {
+                    this.copySuccess = false;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        },
+
         formatPrice(price) {
             return new Intl.NumberFormat('en-PH', {
                 style: 'currency',
@@ -4501,6 +4661,279 @@ input:checked + .slider:before {
     .error-message {
         padding: 0.625rem 0.875rem;
         font-size: 0.85rem;
+    }
+}
+
+/* GCash QR Code and Number Display Styles */
+.gcash-payment-choice {
+    background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    border: 2px solid #007bff;
+}
+
+.choice-header {
+    margin-bottom: 1rem;
+}
+
+.choice-header h5 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.choice-header h5 i {
+    color: #007bff;
+}
+
+.choice-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.choice-btn {
+    padding: 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.choice-btn i {
+    font-size: 2rem;
+    color: #64748b;
+    transition: color 0.3s ease;
+}
+
+.choice-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #007bff;
+}
+
+.choice-btn.active {
+    border-color: #007bff;
+    background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+    color: #007bff;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+}
+
+.choice-btn.active i {
+    color: #007bff;
+}
+
+.qr-code-display,
+.gcash-number-display {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    border: 2px solid #e2e8f0;
+}
+
+.qr-code-container,
+.gcash-number-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.qr-header,
+.number-header {
+    text-align: center;
+}
+
+.qr-header h5,
+.number-header h5 {
+    margin: 0.5rem 0 0 0;
+    color: #1e293b;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.qr-header i,
+.number-header i {
+    font-size: 2rem;
+    color: #007bff;
+}
+
+.qr-image-wrapper {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border: 3px solid #007bff;
+}
+
+.qr-code-image {
+    max-width: 250px;
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+}
+
+.gcash-number-box {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border: 3px solid #007bff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    max-width: 400px;
+}
+
+.number-label {
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.number-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #007bff;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
+    text-align: center;
+}
+
+.copy-number-btn {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.copy-number-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+}
+
+.payment-amount-display {
+    text-align: center;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    padding: 1rem 2rem;
+    border-radius: 10px;
+    border: 2px solid #4CAF50;
+    width: 100%;
+    max-width: 400px;
+}
+
+.payment-amount-display p {
+    margin: 0 0 0.5rem 0;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.payment-amount-display h3 {
+    margin: 0;
+    color: #4CAF50;
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+.qr-instructions,
+.manual-instructions {
+    text-align: center;
+    color: #64748b;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.qr-instructions i,
+.manual-instructions i {
+    color: #007bff;
+    margin-right: 0.5rem;
+}
+
+/* Responsive Design for QR Code Display */
+@media (max-width: 768px) {
+    .choice-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .qr-code-display,
+    .gcash-number-display {
+        padding: 1.5rem;
+    }
+    
+    .qr-code-image {
+        max-width: 200px;
+    }
+    
+    .number-value {
+        font-size: 1.5rem;
+    }
+    
+    .payment-amount-display h3 {
+        font-size: 1.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .gcash-payment-choice {
+        padding: 1rem;
+    }
+    
+    .choice-btn {
+        padding: 0.75rem;
+    }
+    
+    .choice-btn i {
+        font-size: 1.5rem;
+    }
+    
+    .qr-image-wrapper {
+        padding: 1rem;
+    }
+    
+    .qr-code-image {
+        max-width: 180px;
+    }
+    
+    .gcash-number-box {
+        padding: 1rem;
+    }
+    
+    .number-value {
+        font-size: 1.3rem;
+        letter-spacing: 1px;
+    }
+    
+    .payment-amount-display {
+        padding: 0.75rem 1.5rem;
+    }
+    
+    .payment-amount-display h3 {
+        font-size: 1.5rem;
     }
 }
 </style>

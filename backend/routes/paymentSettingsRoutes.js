@@ -10,6 +10,7 @@ router.put('/gcash', authenticate, isAdmin, paymentSettingsController.updateGCas
 router.put('/downpayment', authenticate, isAdmin, paymentSettingsController.updateDownpaymentSettings);
 router.put('/gcash-config', authenticate, isAdmin, paymentSettingsController.updateGCashConfig);
 router.get('/gcash-config', authenticate, isAdmin, paymentSettingsController.getGCashConfig);
+router.put('/gcash-qr-config', authenticate, isAdmin, paymentSettingsController.updateGCashQRConfig);
 
 // Public route for frontend to get payment settings (for order processing)
 router.get('/public', paymentSettingsController.getPublicPaymentSettings);

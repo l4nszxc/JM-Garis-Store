@@ -91,6 +91,76 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- GCash QR Code and Number Configuration -->
+                    <div class="setting-row" v-if="paymentSettings.gcash_enabled">
+                        <div class="setting-info full-width">
+                            <h3><i class="fas fa-qrcode"></i> GCash QR Code & Number</h3>
+                            <p>Upload your GCash QR code and provide your GCash number for customers</p>
+                            
+                            <div class="gcash-config-container">
+                                <!-- GCash Number Input -->
+                                <div class="gcash-number-section">
+                                    <label class="config-label">
+                                        <i class="fas fa-mobile-alt"></i>
+                                        GCash Number
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        v-model="paymentSettings.gcash_number"
+                                        @blur="updateGCashQRConfig"
+                                        placeholder="e.g., 09123456789"
+                                        class="gcash-number-input"
+                                    >
+                                    <small class="input-hint">Enter your GCash mobile number</small>
+                                </div>
+                                
+                                <!-- QR Code Upload -->
+                                <div class="qr-upload-section">
+                                    <label class="config-label">
+                                        <i class="fas fa-qrcode"></i>
+                                        GCash QR Code
+                                    </label>
+                                    <div 
+                                        class="qr-upload-area"
+                                        :class="{ 'has-qr': paymentSettings.gcash_qr_code }"
+                                        @click="triggerQRUpload"
+                                        @dragover.prevent="qrDragOver = true"
+                                        @dragleave.prevent="qrDragOver = false"
+                                        @drop.prevent="handleQRDrop"
+                                    >
+                                        <input 
+                                            ref="qrFileInput"
+                                            type="file"
+                                            accept="image/*"
+                                            @change="handleQRUpload"
+                                            style="display: none;"
+                                        >
+                                        
+                                        <div v-if="!paymentSettings.gcash_qr_code && !isUploadingQR" class="qr-placeholder">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <p>Click or drag to upload QR code</p>
+                                            <small>PNG, JPG up to 5MB</small>
+                                        </div>
+                                        
+                                        <div v-if="isUploadingQR" class="qr-uploading">
+                                            <i class="fas fa-spinner fa-spin"></i>
+                                            <p>Uploading...</p>
+                                        </div>
+                                        
+                                        <div v-if="paymentSettings.gcash_qr_code && !isUploadingQR" class="qr-preview">
+                                            <img :src="paymentSettings.gcash_qr_code" alt="GCash QR Code" class="qr-image">
+                                            <button @click.stop="removeQRCode" class="remove-qr-btn">
+                                                <i class="fas fa-trash-alt"></i>
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <small class="input-hint">Upload your GCash QR code for customers to scan</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -242,11 +312,15 @@ export default {
             showMessage: false,
             message: '',
             messageType: 'success',
+            isUploadingQR: false,
+            qrDragOver: false,
             paymentSettings: {
                 gcash_enabled: true,
                 downpayment_enabled: true,
                 downpayment_percentage: 25,
-                min_order_amount: 500
+                min_order_amount: 500,
+                gcash_qr_code: null,
+                gcash_number: ''
             }
         }
     },
@@ -300,7 +374,9 @@ export default {
                         gcash_enabled: Boolean(data.settings.gcash_enabled),
                         downpayment_enabled: Boolean(data.settings.downpayment_enabled),
                         downpayment_percentage: Number(data.settings.downpayment_percentage),
-                        min_order_amount: Number(data.settings.min_order_amount)
+                        min_order_amount: Number(data.settings.min_order_amount),
+                        gcash_qr_code: data.settings.gcash_qr_code || null,
+                        gcash_number: data.settings.gcash_number || ''
                     };
                 }
             } catch (error) {
@@ -373,6 +449,102 @@ export default {
                 this.paymentSettings.downpayment_enabled = previousState.enabled;
                 this.paymentSettings.downpayment_percentage = previousState.percentage;
                 this.paymentSettings.min_order_amount = previousState.minAmount;
+            }
+        },
+
+        triggerQRUpload() {
+            this.$refs.qrFileInput.click();
+        },
+
+        async handleQRUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            await this.uploadQRCode(file);
+        },
+
+        async handleQRDrop(event) {
+            this.qrDragOver = false;
+            const file = event.dataTransfer.files[0];
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                this.showToast('Please upload an image file', 'error');
+                return;
+            }
+            
+            await this.uploadQRCode(file);
+        },
+
+        async uploadQRCode(file) {
+            if (file.size > 5 * 1024 * 1024) {
+                this.showToast('File size must be less than 5MB', 'error');
+                return;
+            }
+
+            this.isUploadingQR = true;
+            try {
+                const token = localStorage.getItem('token');
+                const formData = new FormData();
+                formData.append('image', file);
+
+                // Upload to ImgBB through your backend
+                const uploadResponse = await fetch('https://api.imgbb.com/1/upload?key=349e0212aa15e99aa04a1b8c7fcdce49', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const uploadData = await uploadResponse.json();
+                
+                if (uploadData.success) {
+                    this.paymentSettings.gcash_qr_code = uploadData.data.url;
+                    await this.updateGCashQRConfig();
+                    this.showToast('QR code uploaded successfully', 'success');
+                } else {
+                    throw new Error('Failed to upload image');
+                }
+            } catch (error) {
+                console.error('Error uploading QR code:', error);
+                this.showToast('Failed to upload QR code', 'error');
+            } finally {
+                this.isUploadingQR = false;
+                // Reset file input
+                this.$refs.qrFileInput.value = '';
+            }
+        },
+
+        async removeQRCode() {
+            if (!confirm('Are you sure you want to remove the QR code?')) return;
+            
+            this.paymentSettings.gcash_qr_code = null;
+            await this.updateGCashQRConfig();
+            this.showToast('QR code removed successfully', 'success');
+        },
+
+        async updateGCashQRConfig() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await this.$fetch('/api/admin/payment-settings/gcash-qr-config', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        gcash_qr_code: this.paymentSettings.gcash_qr_code,
+                        gcash_number: this.paymentSettings.gcash_number
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    this.showToast('GCash configuration updated successfully', 'success');
+                } else {
+                    throw new Error(data.message || 'Failed to update GCash configuration');
+                }
+            } catch (error) {
+                console.error('Error updating GCash configuration:', error);
+                this.showToast('Failed to update GCash configuration', 'error');
             }
         },
 
@@ -1064,6 +1236,159 @@ input:checked + .slider:before {
     }
 }
 
+/* GCash QR Configuration Styles */
+.setting-info.full-width {
+    width: 100%;
+}
+
+.gcash-config-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+.gcash-number-section,
+.qr-upload-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.config-label {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.config-label i {
+    color: #4CAF50;
+}
+
+.gcash-number-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+.gcash-number-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.input-hint {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.qr-upload-area {
+    border: 2px dashed #e2e8f0;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    background-color: #fafafa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qr-upload-area:hover {
+    border-color: #4CAF50;
+    background-color: #f8fff8;
+    transform: translateY(-2px);
+}
+
+.qr-upload-area.has-qr {
+    border-style: solid;
+    border-color: #4CAF50;
+    background-color: #f8fff8;
+    padding: 1rem;
+}
+
+.qr-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.qr-placeholder i {
+    font-size: 3rem;
+    color: #4CAF50;
+}
+
+.qr-placeholder p {
+    margin: 0;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.qr-placeholder small {
+    color: #64748b;
+}
+
+.qr-uploading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    color: #4CAF50;
+}
+
+.qr-uploading i {
+    font-size: 2rem;
+}
+
+.qr-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+}
+
+.qr-image {
+    max-width: 100%;
+    max-height: 250px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.remove-qr-btn {
+    background-color: #fee2e2;
+    color: #dc2626;
+    border: 2px solid #fecaca;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.remove-qr-btn:hover {
+    background-color: #dc2626;
+    color: white;
+    border-color: #dc2626;
+    transform: translateY(-1px);
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
     .admin-container {
@@ -1072,6 +1397,11 @@ input:checked + .slider:before {
     
     .admin-content {
         padding: 1rem;
+    }
+    
+    .gcash-config-container {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
 }
 

@@ -11,11 +11,21 @@ const initializePaymentSettingsTable = async () => {
                 downpayment_enabled tinyint(1) DEFAULT 1,
                 downpayment_percentage decimal(5,2) DEFAULT 25.00,
                 min_order_amount decimal(10,2) DEFAULT 500.00,
+                gcash_qr_code text,
+                gcash_number varchar(50),
                 created_at timestamp NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
         `);
+        
+        // Add columns if they don't exist (for existing tables)
+        try {
+            await db.execute(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS gcash_qr_code text`);
+            await db.execute(`ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS gcash_number varchar(50)`);
+        } catch (alterError) {
+            // Columns might already exist, ignore error
+        }
         
         // Insert default settings if none exist
         await db.execute(`
@@ -57,6 +67,8 @@ exports.getPaymentSettings = async (req, res) => {
             downpayment_enabled: rows[0].downpayment_enabled,
             downpayment_percentage: rows[0].downpayment_percentage,
             min_order_amount: rows[0].min_order_amount,
+            gcash_qr_code: rows[0].gcash_qr_code,
+            gcash_number: rows[0].gcash_number,
             created_at: rows[0].created_at,
             updated_at: rows[0].updated_at
         };
@@ -314,7 +326,7 @@ exports.getPublicPaymentSettings = async (req, res) => {
         await initializePaymentSettingsTable();
         
         const [rows] = await db.execute(`
-            SELECT gcash_enabled, downpayment_enabled, downpayment_percentage, min_order_amount 
+            SELECT gcash_enabled, downpayment_enabled, downpayment_percentage, min_order_amount, gcash_qr_code, gcash_number 
             FROM payment_settings 
             WHERE id = 1
         `);
@@ -327,7 +339,9 @@ exports.getPublicPaymentSettings = async (req, res) => {
                     gcash_enabled: true,
                     downpayment_enabled: true,
                     downpayment_percentage: 25.00,
-                    min_order_amount: 500.00
+                    min_order_amount: 500.00,
+                    gcash_qr_code: null,
+                    gcash_number: null
                 }
             });
         }
@@ -338,7 +352,9 @@ exports.getPublicPaymentSettings = async (req, res) => {
                 gcash_enabled: Boolean(rows[0].gcash_enabled),
                 downpayment_enabled: Boolean(rows[0].downpayment_enabled),
                 downpayment_percentage: parseFloat(rows[0].downpayment_percentage),
-                min_order_amount: parseFloat(rows[0].min_order_amount)
+                min_order_amount: parseFloat(rows[0].min_order_amount),
+                gcash_qr_code: rows[0].gcash_qr_code,
+                gcash_number: rows[0].gcash_number
             }
         });
     } catch (error) {
@@ -346,6 +362,62 @@ exports.getPublicPaymentSettings = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch payment settings'
+        });
+    }
+};
+
+// Update GCash QR code and number
+exports.updateGCashQRConfig = async (req, res) => {
+    try {
+        const { gcash_number, gcash_qr_code } = req.body;
+        
+        // Ensure table exists
+        await initializePaymentSettingsTable();
+        
+        // Build update query based on what's provided
+        let updateQuery = 'UPDATE payment_settings SET ';
+        const updateValues = [];
+        
+        if (gcash_number !== undefined) {
+            updateQuery += 'gcash_number = ?';
+            updateValues.push(gcash_number);
+        }
+        
+        if (gcash_qr_code !== undefined) {
+            if (updateValues.length > 0) {
+                updateQuery += ', ';
+            }
+            updateQuery += 'gcash_qr_code = ?';
+            updateValues.push(gcash_qr_code);
+        }
+        
+        updateQuery += ' WHERE id = 1';
+        
+        if (updateValues.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No data to update'
+            });
+        }
+        
+        await db.execute(updateQuery, updateValues);
+        
+        // Fetch updated settings
+        const [rows] = await db.execute('SELECT * FROM payment_settings WHERE id = 1');
+        
+        res.json({
+            success: true,
+            message: 'GCash configuration updated successfully',
+            settings: {
+                gcash_qr_code: rows[0].gcash_qr_code,
+                gcash_number: rows[0].gcash_number
+            }
+        });
+    } catch (error) {
+        console.error('Error updating GCash QR configuration:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update GCash configuration'
         });
     }
 };
