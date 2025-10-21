@@ -160,7 +160,7 @@ export default {
     },
     activeOrdersCount() {
       return this.activeOrders.filter(order => 
-        ['pending', 'preparing', 'ready for pickup', 'to verify'].includes(order.status.toLowerCase())
+        order && order.status && ['pending', 'preparing', 'ready for pickup', 'to verify'].includes(order.status.toLowerCase())
       ).length;
     },
     profileImage() {
@@ -170,7 +170,7 @@ export default {
       return getAvatarUrl(this.username);
     },
     unreadNotificationsCount() {
-      return this.notifications.filter(notification => !notification.is_read).length;
+      return this.notifications.filter(notification => notification && !notification.is_read).length;
     }
   },
   methods: {
@@ -219,13 +219,14 @@ export default {
         });
         if (response.ok) {
           const orders = await response.json();
-          this.activeOrders = orders;
+          // Ensure orders is an array and filter out null/undefined values
+          this.activeOrders = Array.isArray(orders) ? orders.filter(order => order != null) : [];
           
           // Load existing notifications first to prevent duplicates
           await this.loadNotifications();
           
           // Create notifications for orders that don't have them yet
-          await this.createNotificationsForOrders(orders);
+          await this.createNotificationsForOrders(this.activeOrders);
         }
       } catch (error) {
         console.error('Error fetching active orders:', error);
@@ -238,6 +239,11 @@ export default {
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000); // Only check orders from last 24 hours
       
       for (const order of orders) {
+        // Skip if order is undefined or doesn't have required properties
+        if (!order || !order.order_id) {
+          continue;
+        }
+        
         // Skip orders that are too old (more than 24 hours)
         const orderDate = new Date(order.created_at || order.updated_at);
         if (orderDate < oneDayAgo) {
@@ -247,7 +253,7 @@ export default {
         const notificationId = `order-${order.order_id}-${order.status}`;
         
         // Check if notification already exists in database
-        const existingNotification = this.notifications.find(n => n.id === notificationId || n.custom_id === notificationId);
+        const existingNotification = this.notifications.find(n => n && (n.id === notificationId || n.custom_id === notificationId));
         
         if (!existingNotification) {
           // Create new notification via API
@@ -294,10 +300,11 @@ export default {
         });
         if (response.ok) {
           const orders = await response.json();
-          this.activeOrders = orders;
+          // Ensure orders is an array and filter out null/undefined values
+          this.activeOrders = Array.isArray(orders) ? orders.filter(order => order != null) : [];
           
           // Only create notifications for truly new orders (status changes)
-          await this.createNotificationsForNewOrderStatuses(orders);
+          await this.createNotificationsForNewOrderStatuses(this.activeOrders);
         }
       } catch (error) {
         console.error('Error checking for new notifications:', error);
@@ -309,6 +316,11 @@ export default {
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000); // Only check orders from last 24 hours
       
       for (const order of orders) {
+        // Skip if order is undefined or doesn't have required properties
+        if (!order || !order.order_id) {
+          continue;
+        }
+        
         // Skip orders that are too old (more than 24 hours)
         const orderDate = new Date(order.created_at || order.updated_at);
         if (orderDate < oneDayAgo) {
@@ -318,7 +330,7 @@ export default {
         const notificationId = `order-${order.order_id}-${order.status}`;
         
         // Check if notification already exists in database
-        const existingNotification = this.notifications.find(n => n.id === notificationId || n.custom_id === notificationId);
+        const existingNotification = this.notifications.find(n => n && (n.id === notificationId || n.custom_id === notificationId));
         
         if (!existingNotification) {
           // This is a new status for this order, create notification
@@ -588,7 +600,9 @@ export default {
           }
         });
         if (response.ok) {
-          this.notifications = await response.json();
+          const data = await response.json();
+          // Filter out any null or undefined values
+          this.notifications = Array.isArray(data) ? data.filter(n => n != null) : [];
         }
       } catch (error) {
         console.error('Error loading notifications:', error);
