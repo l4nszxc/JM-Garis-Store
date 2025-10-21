@@ -279,10 +279,26 @@
 
         <!-- Logout Modal -->
         <LogoutModal 
-            v-if="showLogoutModal" 
+            :show="showLogoutModal" 
             @confirm="logout" 
             @cancel="showLogoutModal = false" 
         />
+
+        <!-- Remove QR Code Confirmation Modal -->
+        <div v-if="showRemoveQRModal" class="modal-overlay" @click.self="showRemoveQRModal = false">
+            <div class="modal-content simple-confirm-modal">
+                <h3>Remove QR Code?</h3>
+                <p>Are you sure you want to remove the GCash QR code?</p>
+                <div class="modal-buttons">
+                    <button class="cancel-btn" @click="showRemoveQRModal = false">
+                        Cancel
+                    </button>
+                    <button class="confirm-btn" @click="confirmRemoveQR">
+                        Remove
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Success/Error Messages -->
         <div v-if="showMessage" class="message-toast" :class="messageType">
@@ -309,6 +325,7 @@ export default {
         return {
             username: '',
             showLogoutModal: false,
+            showRemoveQRModal: false,
             showMessage: false,
             message: '',
             messageType: 'success',
@@ -513,9 +530,12 @@ export default {
             }
         },
 
-        async removeQRCode() {
-            if (!confirm('Are you sure you want to remove the QR code?')) return;
-            
+        removeQRCode() {
+            this.showRemoveQRModal = true;
+        },
+
+        async confirmRemoveQR() {
+            this.showRemoveQRModal = false;
             this.paymentSettings.gcash_qr_code = null;
             await this.updateGCashQRConfig();
             this.showToast('QR code removed successfully', 'success');
@@ -1198,6 +1218,66 @@ input:checked + .slider:before {
 .modal-actions .save-btn {
     flex: 1;
     min-width: auto;
+}
+
+/* Simple Confirmation Modal Styles */
+.simple-confirm-modal {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.simple-confirm-modal h3 {
+    margin: 0 0 1rem 0;
+    color: #1e293b;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.simple-confirm-modal p {
+    margin: 0 0 1.5rem 0;
+    color: #64748b;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.modal-buttons .cancel-btn,
+.modal-buttons .confirm-btn {
+    flex: 1;
+    padding: 0.625rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.modal-buttons .cancel-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+.modal-buttons .cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+.modal-buttons .confirm-btn {
+    background-color: #dc2626;
+    color: white;
+}
+
+.modal-buttons .confirm-btn:hover {
+    background-color: #b91c1c;
 }
 
 /* Message Toast - Enhanced */
