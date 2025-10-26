@@ -41,7 +41,7 @@ Thumbs.db
 *~
 
 # Uploads directory (if contains sensitive files)
-uploads/
+
 
 # Build outputs
 dist/
