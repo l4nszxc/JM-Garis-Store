@@ -9,7 +9,8 @@ async function exportDatabase() {
             port: 59293,
             user: 'root',
             password: 'jJyLsLCVKSGQnoeTGsEIHoLpeGIqWPHg',
-            database: 'railway'
+            database: 'railway',
+            charset: 'utf8mb4'
         });
 
         console.log('Connected to Railway MySQL database');
@@ -23,6 +24,10 @@ async function exportDatabase() {
         sqlExport += `-- Exported on ${new Date().toISOString()}\n`;
         sqlExport += '-- Database: railway\n\n';
 
+        sqlExport += 'SET NAMES utf8mb4;\n';
+        sqlExport += 'SET CHARACTER_SET_CLIENT = utf8mb4;\n';
+        sqlExport += 'SET CHARACTER_SET_RESULTS = utf8mb4;\n';
+        sqlExport += 'SET COLLATION_CONNECTION = utf8mb4_unicode_ci;\n';
         sqlExport += 'SET FOREIGN_KEY_CHECKS = 0;\n\n';
 
         for (const tableRow of tables) {
@@ -50,9 +55,26 @@ async function exportDatabase() {
                 const values = rows.map(row => {
                     const rowValues = Object.values(row).map(value => {
                         if (value === null) return 'NULL';
-                        if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
+                        if (Buffer.isBuffer(value)) {
+                            // Handle binary data
+                            return `0x${value.toString('hex')}`;
+                        }
+                        if (typeof value === 'string') {
+                            // Escape special characters properly
+                            const escaped = value
+                                .replace(/\\/g, '\\\\')
+                                .replace(/'/g, "\\'")
+                                .replace(/"/g, '\\"')
+                                .replace(/\n/g, '\\n')
+                                .replace(/\r/g, '\\r')
+                                .replace(/\t/g, '\\t')
+                                .replace(/\0/g, '\\0');
+                            return `'${escaped}'`;
+                        }
                         if (value instanceof Date) return `'${value.toISOString().slice(0, 19).replace('T', ' ')}'`;
-                        return value;
+                        if (typeof value === 'boolean') return value ? '1' : '0';
+                        if (typeof value === 'number') return value;
+                        return `'${value}'`;
                     });
                     return `(${rowValues.join(', ')})`;
                 });
@@ -62,9 +84,7 @@ async function exportDatabase() {
         }
 
         sqlExport += 'SET FOREIGN_KEY_CHECKS = 1;\n';
-
-        // Write to file
-        fs.writeFileSync('railway_database_export.sql', sqlExport);
+        fs.writeFileSync('railway_database_export.sql', sqlExport, 'utf8');
         console.log('Database exported successfully to railway_database_export.sql');
 
         await connection.end();
