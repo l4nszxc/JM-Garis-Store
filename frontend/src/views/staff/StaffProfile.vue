@@ -1,6 +1,6 @@
 <template>
-    <div class="staff-container">
-        <StaffNavbar :username="username" @logout="showLogoutModal = true" />
+    <div class="staff-container" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
+        <StaffNavbar :username="username" @logout="showLogoutModal = true" @sidebar-toggle="handleSidebarToggle" />
         
         <div class="staff-content">
             <h1><i class="fas fa-user-cog"></i> Staff Profile</h1>
@@ -251,6 +251,7 @@ export default {
         return {
             username: '',
             showLogoutModal: false,
+            isSidebarCollapsed: false,
             isEditing: false,
             isChangingPassword: false,
             
@@ -304,6 +305,9 @@ export default {
         }
     },
     methods: {
+        handleSidebarToggle(isCollapsed) {
+            this.isSidebarCollapsed = isCollapsed;
+        },
         validatePassword() {
             const password = this.passwordData.newPassword;
             this.passwordValidation.show = password.length > 0;
@@ -506,6 +510,11 @@ export default {
     min-height: 100vh;
     background-color: #f5f5f5;
     padding-left: 250px;
+    transition: padding-left 0.3s ease;
+}
+
+.staff-container.sidebar-collapsed {
+    padding-left: 60px;
 }
 
 .staff-content {
@@ -850,7 +859,8 @@ export default {
 }
 
 @media (max-width: 768px) {
-    .staff-container {
+    .staff-container,
+    .staff-container.sidebar-collapsed {
         padding-left: 0;
     }
     

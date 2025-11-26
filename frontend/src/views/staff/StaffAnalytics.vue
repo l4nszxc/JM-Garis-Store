@@ -1,6 +1,6 @@
 <template>
-  <div class="staff-container">
-    <StaffNavbar :username="username" @logout="showLogoutModal = true" />
+  <div class="staff-container" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
+    <StaffNavbar :username="username" @logout="showLogoutModal = true" @sidebar-toggle="handleSidebarToggle" />
     
     <div class="staff-content">
       <div class="page-header">
@@ -291,6 +291,7 @@ export default {
     return {
       username: '',
       showLogoutModal: false,
+      isSidebarCollapsed: false,
       timeFilter: 'week',
       customersPeriod: 'weekly',
       loading: false,
@@ -312,6 +313,9 @@ export default {
     }
   },
   methods: {
+    handleSidebarToggle(isCollapsed) {
+      this.isSidebarCollapsed = isCollapsed;
+    },
     getTimeFilterLabel() {
       const labels = {
         today: "Today's",
@@ -566,6 +570,11 @@ export default {
   min-height: 100vh;
   background-color: #f8fafc;
   padding-left: 250px;
+  transition: padding-left 0.3s ease;
+}
+
+.staff-container.sidebar-collapsed {
+  padding-left: 60px;
 }
 
 .staff-content {
@@ -1101,7 +1110,8 @@ export default {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .staff-container {
+  .staff-container,
+  .staff-container.sidebar-collapsed {
     padding-left: 0;
   }
   

@@ -1,8 +1,9 @@
 <template>
-    <div class="staff-container">
+    <div class="staff-container" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
         <StaffNavbar 
             :username="username"
             @logout="showLogoutModal = true"
+            @sidebar-toggle="handleSidebarToggle"
         />
         
         <div class="staff-content">
@@ -527,6 +528,7 @@ export default {
         return {
             username: '',
             showLogoutModal: false,
+            isSidebarCollapsed: false,
             orders: [],
             searchQuery: '',
             dateFilter: '',
@@ -742,6 +744,9 @@ export default {
         }
     },
     methods: {
+        handleSidebarToggle(isCollapsed) {
+            this.isSidebarCollapsed = isCollapsed;
+        },
         resetFilters() {
             this.searchQuery = '';
             this.dateFilter = '';
@@ -1140,6 +1145,11 @@ export default {
     min-height: 100vh;
     background-color: #f5f5f5;
     padding-left: 250px;
+    transition: padding-left 0.3s ease;
+}
+
+.staff-container.sidebar-collapsed {
+    padding-left: 60px;
 }
 
 .staff-content {
@@ -2000,8 +2010,9 @@ tfoot tr td {
     .sort-select {
         width: 100%;
     }
-    .staff-container {
-        padding-left: 60px;
+    .staff-container,
+    .staff-container.sidebar-collapsed {
+        padding-left: 0;
     }
 
     .staff-content {

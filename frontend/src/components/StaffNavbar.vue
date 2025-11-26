@@ -89,14 +89,12 @@ export default {
             this.isSidebarCollapsed = !this.isSidebarCollapsed;
             this.updateOverlay();
             this.$emit('sidebar-toggle', this.isSidebarCollapsed);
-            document.body.classList.toggle('sidebar-collapsed', this.isSidebarCollapsed);
         },
         closeSidebar() {
             if (window.innerWidth <= 768) {
                 this.isSidebarCollapsed = true;
                 this.showOverlay = false;
                 this.$emit('sidebar-toggle', true);
-                document.body.classList.add('sidebar-collapsed');
             }
         },
         updateOverlay() {
@@ -110,17 +108,15 @@ export default {
             }
             if (wasSidebarCollapsed !== this.isSidebarCollapsed) {
                 this.$emit('sidebar-toggle', this.isSidebarCollapsed);
-                document.body.classList.toggle('sidebar-collapsed', this.isSidebarCollapsed);
             }
         }
     },
     mounted() {
         window.addEventListener('resize', this.handleResize);
-        document.body.classList.toggle('sidebar-collapsed', this.isSidebarCollapsed);
+        this.$emit('sidebar-toggle', this.isSidebarCollapsed);
     },
     beforeUnmount() {
         window.removeEventListener('resize', this.handleResize);
-        document.body.classList.remove('sidebar-collapsed');
     }
 }
 </script>

@@ -1,6 +1,6 @@
 <template>
-    <div class="staff-container">
-      <StaffNavbar :username="username" @logout="showLogoutModal = true" />
+    <div class="staff-container" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
+      <StaffNavbar :username="username" @logout="showLogoutModal = true" @sidebar-toggle="handleSidebarToggle" />
       
       <div class="staff-content">
         <h1><i class="fas fa-cash-register"></i> Create Order</h1>
@@ -316,6 +316,7 @@
       return {
         username: '',
         showLogoutModal: false,
+        isSidebarCollapsed: false,
         products: [],
         searchQuery: '',
         cart: [],
@@ -381,6 +382,9 @@
       }
     },
     methods: {
+      handleSidebarToggle(isCollapsed) {
+        this.isSidebarCollapsed = isCollapsed;
+      },
         selectCategory(categoryId) {
             this.selectedCategory = categoryId;
             this.currentPage = 1; // Reset to first page when changing category
@@ -750,6 +754,11 @@
   min-height: 100vh;
   background-color: #f5f5f5;
   padding-left: 250px;
+  transition: padding-left 0.3s ease;
+}
+
+.staff-container.sidebar-collapsed {
+  padding-left: 60px;
 }
 
 .staff-content {
@@ -1647,8 +1656,9 @@
 }
 
 @media (max-width: 768px) {
-  .staff-container {
-    padding-left: 60px;
+  .staff-container,
+  .staff-container.sidebar-collapsed {
+    padding-left: 0;
   }
 
   .staff-content {

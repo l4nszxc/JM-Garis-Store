@@ -1,6 +1,6 @@
 <template>
-    <div class="staff-container">
-        <StaffNavbar :username="username" @logout="showLogoutModal = true" />
+    <div class="staff-container" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
+        <StaffNavbar :username="username" @logout="showLogoutModal = true" @sidebar-toggle="handleSidebarToggle" />
         <div class="staff-content">
             <h1><i class="fas fa-tasks"></i> Accepted Orders</h1>
 
@@ -535,6 +535,7 @@ export default {
         return {
             username: '',
             showLogoutModal: false,
+            isSidebarCollapsed: false,
             acceptedOrders: [],
             selectedOrder: null,
             checkedProducts: [],
@@ -709,6 +710,9 @@ export default {
         }
     },
     methods: {
+        handleSidebarToggle(isCollapsed) {
+            this.isSidebarCollapsed = isCollapsed;
+        },
         resetFilters() {
             this.searchQuery = '';
             this.dateFilter = '';
@@ -1122,6 +1126,11 @@ export default {
     min-height: 100vh;
     background-color: #f5f5f5;
     padding-left: 250px;
+    transition: padding-left 0.3s ease;
+}
+
+.staff-container.sidebar-collapsed {
+    padding-left: 60px;
 }
 
 .staff-content {
@@ -2064,8 +2073,9 @@ input[type="checkbox"] {
     tfoot tr td {
         padding: 0.75rem;
     }
-    .staff-container {
-        padding-left: 60px;
+    .staff-container,
+    .staff-container.sidebar-collapsed {
+        padding-left: 0;
     }
 
     .staff-content {
