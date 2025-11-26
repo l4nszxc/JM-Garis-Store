@@ -3,7 +3,13 @@
         <AdminNavbar :username="username" @logout="showLogoutModal = true" />
         
         <div class="admin-content">
-            <h1><i class="fas fa-clipboard-list"></i> All Orders</h1>
+            <div class="header-section">
+                <h1><i class="fas fa-clipboard-list"></i> All Orders</h1>
+                <button @click="downloadTransactionReport" class="download-btn" :disabled="!filteredOrders.length || isLoading">
+                    <i class="fas fa-download"></i>
+                    Download Excel
+                </button>
+            </div>
 
             <div class="orders-section">
                 <div class="search-filter">
@@ -1208,6 +1214,7 @@ export default {
             dateFilter: '',
             selectedStatus: 'to verify',
             defaultStatusFilter: 'to verify',
+            isLoading: false,
             statusFilters: [
                 { label: 'All Status', value: '' },
                 { label: 'Pending', value: 'pending' },
@@ -2002,6 +2009,7 @@ export default {
         },
         async fetchOrders() {
             try {
+                this.isLoading = true;
                 const token = localStorage.getItem('token');
                 const response = await this.$fetch('/api/admin/orders', {
                     headers: {
@@ -2014,8 +2022,53 @@ export default {
                 }
             } catch (error) {
                 console.error('Error fetching orders:', error);
+            } finally {
+                this.isLoading = false;
             }
         },
+        
+        async downloadTransactionReport() {
+            if (!this.filteredOrders.length) {
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('token');
+                const params = new URLSearchParams({
+                    status: this.selectedStatus || 'all',
+                    search: this.searchQuery || '',
+                    date: this.dateFilter || ''
+                });
+                
+                const response = await this.$fetch(`/api/admin/download-transaction-report?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    
+                    const today = new Date().toISOString().split('T')[0];
+                    const statusLabel = this.selectedStatus ? `_${this.selectedStatus.replace(/ /g, '_')}` : '_all';
+                    const filename = `transaction_report${statusLabel}_${today}.xlsx`;
+                    link.download = filename;
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    throw new Error('Download failed');
+                }
+            } catch (error) {
+                console.error('Error downloading transaction report:', error);
+            }
+        },
+        
         async viewOrderDetails(order) {
             try {
                 const token = localStorage.getItem('token');
@@ -2800,12 +2853,47 @@ export default {
     padding: 2rem;
 }
 
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
 .admin-content h1 {
     color: #2c3e50;
-    margin-bottom: 2rem;
+    margin: 0;
     display: flex;
     align-items: center;
     gap: 0.75rem;
+}
+
+.download-btn {
+    padding: 0.75rem 1.25rem;
+    background-color: #059669;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.download-btn:hover:not(:disabled) {
+    background-color: #047857;
+    transform: translateY(-1px);
+}
+
+.download-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #9ca3af;
 }
 
 .orders-section {
@@ -4090,6 +4178,16 @@ tfoot tr td {
 
     .admin-content {
         padding: 1rem;
+    }
+
+    .header-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .download-btn {
+        width: 100%;
+        justify-content: center;
     }
 
     .search-filter {

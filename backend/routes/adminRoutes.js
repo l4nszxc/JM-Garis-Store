@@ -59,6 +59,7 @@ router.get('/categories', authenticate, isAdmin, adminController.getCategories);
 router.get('/download-reports', authenticate, isAdmin, adminController.downloadReports);
 
 router.get('/download-low-stock', adminController.downloadLowStockReport);
+router.get('/download-transaction-report', adminController.downloadTransactionReport);
 
 // Staff Performance Routes
 router.get('/staff-performance', authenticate, isAdmin, adminController.getStaffPerformance);

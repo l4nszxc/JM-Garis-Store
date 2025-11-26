@@ -2530,6 +2530,370 @@ exports.downloadLowStockReport = async (req, res) => {
     }
 };
 
+exports.downloadTransactionReport = async (req, res) => {
+    try {
+        const { status, search, date } = req.query;
+        
+        // Format current date for filename
+        const now = new Date();
+        const formattedDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+        
+        const ExcelJS = require('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        
+        // Set workbook properties
+        workbook.creator = 'JM Garis Store';
+        workbook.lastModifiedBy = 'Admin';
+        workbook.created = new Date();
+        workbook.modified = new Date();
+        
+        // Create Transaction Report worksheet
+        const transactionSheet = workbook.addWorksheet('Transaction Report');
+        
+        // Set column widths
+        transactionSheet.columns = [
+            { width: 15 }, // Order ID
+            { width: 25 }, // Customer Name
+            { width: 20 }, // Payment Method
+            { width: 15 }, // Status
+            { width: 15 }, // Total Amount
+            { width: 20 }, // Order Date
+            { width: 20 }, // Staff
+            { width: 15 }  // Order Type
+        ];
+        
+        // Add store header
+        transactionSheet.mergeCells('A1:H1');
+        const titleCell = transactionSheet.getCell('A1');
+        titleCell.value = 'JM GARIS STORE';
+        titleCell.font = { name: 'Arial', size: 18, bold: true };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        titleCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF4472C4' }
+        };
+        titleCell.font = { ...titleCell.font, color: { argb: 'FFFFFFFF' } };
+        
+        // Add report title
+        transactionSheet.mergeCells('A2:H2');
+        const reportTitleCell = transactionSheet.getCell('A2');
+        reportTitleCell.value = 'TRANSACTION REPORT';
+        reportTitleCell.font = { name: 'Arial', size: 14, bold: true };
+        reportTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Add generation timestamp
+        transactionSheet.mergeCells('A3:H3');
+        const timestampCell = transactionSheet.getCell('A3');
+        timestampCell.value = `Generated on: ${new Date().toLocaleString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })}`;
+        timestampCell.font = { name: 'Arial', size: 10, italic: true };
+        timestampCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        let currentRow = 4;
+        
+        // Add filter information if any
+        if (status && status !== 'all') {
+            transactionSheet.mergeCells(`A${currentRow}:H${currentRow}`);
+            const filterCell = transactionSheet.getCell(`A${currentRow}`);
+            let statusText = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            filterCell.value = `Status Filter: ${statusText}`;
+            filterCell.font = { name: 'Arial', size: 10, italic: true };
+            filterCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            currentRow++;
+        }
+        
+        // Add date filter information if any
+        if (date) {
+            transactionSheet.mergeCells(`A${currentRow}:H${currentRow}`);
+            const dateCell = transactionSheet.getCell(`A${currentRow}`);
+            dateCell.value = `Date Filter: ${new Date(date).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric'
+            })}`;
+            dateCell.font = { name: 'Arial', size: 10, italic: true };
+            dateCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            currentRow++;
+        }
+        
+        // Add search information if any
+        if (search) {
+            transactionSheet.mergeCells(`A${currentRow}:H${currentRow}`);
+            const searchCell = transactionSheet.getCell(`A${currentRow}`);
+            searchCell.value = `Search: "${search}"`;
+            searchCell.font = { name: 'Arial', size: 10, italic: true };
+            searchCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            currentRow++;
+        }
+        
+        // Add headers
+        const headerRow = transactionSheet.addRow([
+            'Order ID', 
+            'Customer Name', 
+            'Payment Method', 
+            'Status', 
+            'Total Amount (₱)', 
+            'Order Date', 
+            'Staff', 
+            'Order Type'
+        ]);
+        headerRow.eachCell((cell, colNumber) => {
+            cell.font = { name: 'Arial', size: 11, bold: true };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE7E6E6' }
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        });
+        
+        // Get all orders
+        const orders = await Staff.getAllOrders();
+        
+        // Apply filters similar to frontend
+        let filteredOrders = orders;
+        
+        // Filter by search query
+        if (search) {
+            filteredOrders = filteredOrders.filter(order => 
+                order.customer_name?.toLowerCase().includes(search.toLowerCase()) ||
+                order.order_id?.toString().includes(search)
+            );
+        }
+        
+        // Filter by status
+        if (status && status !== 'all') {
+            filteredOrders = filteredOrders.filter(order => {
+                if (status === 'to verify') {
+                    return order.payment_status === 'pending' && order.payment_method === 'gcash';
+                }
+                return order.status === status;
+            });
+        }
+        
+        // Filter by date
+        if (date) {
+            const filterDate = new Date(date);
+            filteredOrders = filteredOrders.filter(order => {
+                const orderDate = new Date(order.created_at);
+                return orderDate.toDateString() === filterDate.toDateString();
+            });
+        }
+        
+        // Add data rows
+        let totalRevenue = 0;
+        const statusCounts = {};
+        
+        filteredOrders.forEach((order, index) => {
+            const orderDate = new Date(order.created_at);
+            const formattedDate = orderDate.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const paymentMethod = order.payment_method === 'cod' 
+                ? 'Cash on Delivery' 
+                : order.payment_method === 'gcash' 
+                ? 'GCash' 
+                : order.payment_method === 'cash'
+                ? 'Cash'
+                : order.payment_method || 'N/A';
+            
+            const orderType = order.is_physical_order ? 'Walk-in' : 'Online';
+            
+            const dataRow = transactionSheet.addRow([
+                order.order_id,
+                order.customer_name || 'N/A',
+                paymentMethod,
+                order.status ? order.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A',
+                parseFloat(order.total_amount || 0),
+                formattedDate,
+                order.staff_name || 'N/A',
+                orderType
+            ]);
+            
+            // Format data cells
+            dataRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+            dataRow.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
+            dataRow.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
+            dataRow.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+            dataRow.getCell(5).alignment = { horizontal: 'right', vertical: 'middle' };
+            dataRow.getCell(5).numFmt = '#,##0.00';
+            dataRow.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
+            dataRow.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' };
+            dataRow.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Add borders
+            dataRow.eachCell((cell, colNumber) => {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Color code status column
+            const statusCell = dataRow.getCell(4);
+            const orderStatus = order.status?.toLowerCase();
+            
+            switch(orderStatus) {
+                case 'paid':
+                    statusCell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFD1E7DD' }
+                    };
+                    statusCell.font = { color: { argb: 'FF0F5132' }, bold: true };
+                    totalRevenue += parseFloat(order.total_amount || 0);
+                    break;
+                case 'pending':
+                    statusCell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFFEF3C7' }
+                    };
+                    statusCell.font = { color: { argb: 'FF92400E' }, bold: true };
+                    break;
+                case 'preparing':
+                    statusCell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFCCE5FF' }
+                    };
+                    statusCell.font = { color: { argb: 'FF004085' }, bold: true };
+                    break;
+                case 'ready for pickup':
+                case 'ready_for_pickup':
+                    statusCell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFE3F5E9' }
+                    };
+                    statusCell.font = { color: { argb: 'FF0F7840' }, bold: true };
+                    break;
+                case 'cancelled':
+                    statusCell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFFEE2E2' }
+                    };
+                    statusCell.font = { color: { argb: 'FFB91C1C' }, bold: true };
+                    break;
+            }
+            
+            // Track status counts
+            const statusKey = order.status || 'Unknown';
+            statusCounts[statusKey] = (statusCounts[statusKey] || 0) + 1;
+            
+            // Alternate row colors
+            if (index % 2 === 1) {
+                dataRow.eachCell((cell, colNumber) => {
+                    if (colNumber !== 4) { // Don't override status cell color
+                        const currentFill = cell.fill;
+                        cell.fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: { argb: 'FFF8F9FA' }
+                        };
+                    }
+                });
+            }
+        });
+        
+        // Add summary section
+        const summaryStartRow = transactionSheet.rowCount + 2;
+        transactionSheet.mergeCells(`A${summaryStartRow}:H${summaryStartRow}`);
+        const summaryHeaderCell = transactionSheet.getCell(`A${summaryStartRow}`);
+        summaryHeaderCell.value = 'TRANSACTION SUMMARY';
+        summaryHeaderCell.font = { name: 'Arial', size: 12, bold: true };
+        summaryHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        summaryHeaderCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE3F2FD' }
+        };
+        
+        // Add summary statistics
+        transactionSheet.addRow(['Total Transactions:', filteredOrders.length, '', '', '', '', '', '']);
+        transactionSheet.addRow(['Total Revenue (Paid Orders):', '', '', '', totalRevenue, '', '', '']);
+        
+        // Add status breakdown
+        transactionSheet.addRow(['', '', '', '', '', '', '', '']);
+        transactionSheet.addRow(['Status Breakdown:', '', '', '', '', '', '', '']);
+        
+        Object.entries(statusCounts).forEach(([status, count]) => {
+            const statusDisplay = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            transactionSheet.addRow([`  ${statusDisplay}:`, count, '', '', '', '', '', '']);
+        });
+        
+        // Format summary rows
+        for (let i = summaryStartRow + 1; i <= transactionSheet.rowCount; i++) {
+            const row = transactionSheet.getRow(i);
+            row.getCell(1).font = { bold: true };
+            row.getCell(2).font = { bold: true };
+            if (i === summaryStartRow + 2) { // Total revenue row
+                row.getCell(5).numFmt = '#,##0.00';
+                row.getCell(5).font = { bold: true, color: { argb: 'FF059669' } };
+            }
+        }
+        
+        // Add footer with signature
+        const footerRow = transactionSheet.rowCount + 3;
+        transactionSheet.mergeCells(`A${footerRow}:H${footerRow}`);
+        transactionSheet.mergeCells(`A${footerRow + 2}:H${footerRow + 2}`);
+        transactionSheet.mergeCells(`A${footerRow + 4}:H${footerRow + 4}`);
+        transactionSheet.mergeCells(`A${footerRow + 5}:H${footerRow + 5}`);
+        
+        // Signature line
+        const signatureCell = transactionSheet.getCell(`A${footerRow + 2}`);
+        signatureCell.value = '________________________';
+        signatureCell.font = { name: 'Arial', size: 10 };
+        signatureCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Printed name
+        const nameCell = transactionSheet.getCell(`A${footerRow + 4}`);
+        nameCell.value = 'Signature Over Printed Name';
+        nameCell.font = { name: 'Arial', size: 10, bold: true };
+        nameCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Store name
+        const storeNameCell = transactionSheet.getCell(`A${footerRow + 5}`);
+        storeNameCell.value = 'JM Garis Store';
+        storeNameCell.font = { name: 'Arial', size: 9, italic: true };
+        storeNameCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Set row heights
+        transactionSheet.getRow(1).height = 25;
+        transactionSheet.getRow(2).height = 20;
+        
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=transaction-report-${formattedDate}.xlsx`);
+        
+        await workbook.xlsx.write(res);
+        res.end();
+        
+    } catch (error) {
+        console.error('Error generating transaction report:', error);
+        res.status(500).json({ message: 'Error generating transaction report' });
+    }
+};
+
 // Staff Analytics Functions
 exports.getStaffAnalyticsSummary = async (req, res) => {
   try {
