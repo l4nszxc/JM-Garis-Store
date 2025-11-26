@@ -124,6 +124,48 @@
             </tbody>
           </table>
           
+          <!-- Pagination -->
+          <div v-if="!isLoading && allFilteredLowStock.length > 0" class="pagination-container">
+            <div class="pagination-info">
+              Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, allFilteredLowStock.length) }} of {{ allFilteredLowStock.length }} items
+            </div>
+            <div class="pagination">
+              <button 
+                @click="prevPage" 
+                :disabled="currentPage === 1"
+                class="pagination-btn"
+              >
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              
+              <template v-for="(page, index) in visiblePages" :key="index">
+                <button
+                  v-if="page === '...'"
+                  class="pagination-btn pagination-ellipsis"
+                  disabled
+                >
+                  {{ page }}
+                </button>
+                
+                <button
+                  v-else
+                  @click="goToPage(page)"
+                  :class="['pagination-btn', 'page-btn', { active: page === currentPage }]"
+                >
+                  {{ page }}
+                </button>
+              </template>
+              
+              <button 
+                @click="nextPage" 
+                :disabled="currentPage === totalPages"
+                class="pagination-btn"
+              >
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+          
           <!-- No data state -->
           <div v-else-if="!isLoading" class="no-data">
             <i class="fas fa-check-circle"></i>
@@ -200,6 +242,8 @@ export default {
       searchQuery: '',
       stockFilter: 'all',
       isLoading: false,
+      currentPage: 1,
+      itemsPerPage: 20,
       stockFilters: [
         { label: 'All Low Stock', value: 'all', class: '' },
         { label: 'Critical (≤ 10)', value: 'critical', class: 'critical' },
@@ -219,7 +263,7 @@ export default {
     hasActiveFilters() {
       return this.searchQuery !== '' || this.stockFilter !== this.defaultStockFilter;
     },
-    filteredLowStock() {
+    allFilteredLowStock() {
       if (!this.lowStockItems.length) return [];
       
       return this.lowStockItems.filter(item => {
@@ -243,12 +287,67 @@ export default {
         
         return searchMatch && stockMatch;
       });
+    },
+    filteredLowStock() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      return this.allFilteredLowStock.slice(start, end);
+    },
+    totalPages() {
+      return Math.ceil(this.allFilteredLowStock.length / this.itemsPerPage);
+    },
+    visiblePages() {
+      const pages = [];
+      const total = this.totalPages;
+      const current = this.currentPage;
+      
+      if (total <= 7) {
+        for (let i = 1; i <= total; i++) {
+          pages.push(i);
+        }
+      } else {
+        if (current <= 4) {
+          for (let i = 1; i <= 5; i++) pages.push(i);
+          pages.push('...');
+          pages.push(total);
+        } else if (current >= total - 3) {
+          pages.push(1);
+          pages.push('...');
+          for (let i = total - 4; i <= total; i++) pages.push(i);
+        } else {
+          pages.push(1);
+          pages.push('...');
+          for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+          pages.push('...');
+          pages.push(total);
+        }
+      }
+      return pages;
     }
   },
   methods: {
     resetFilters() {
       this.searchQuery = '';
       this.stockFilter = this.defaultStockFilter;
+      this.currentPage = 1;
+    },
+    
+    goToPage(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.currentPage = page;
+      }
+    },
+    
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    },
+    
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
     },
     
     getStockStatusClass(stock) {
@@ -1021,6 +1120,106 @@ tr:hover {
   }
   100% {
     background-position: 200% 0;
+  }
+}
+
+/* Pagination Styles */
+.pagination-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  gap: 1rem;
+}
+
+.pagination-info {
+  color: #64748b;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.pagination {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pagination-btn {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  background-color: white;
+  color: #475569;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f8fafc;
+}
+
+.pagination-btn.page-btn {
+  min-width: 40px;
+}
+
+.pagination-btn.page-btn.active {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.pagination-btn.page-btn.active:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.pagination-ellipsis {
+  border: none;
+  background: transparent;
+  cursor: default;
+  padding: 0.5rem;
+}
+
+.pagination-ellipsis:hover {
+  background: transparent;
+  transform: none;
+}
+
+@media (max-width: 768px) {
+  .pagination-container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .pagination-info {
+    text-align: center;
+  }
+  
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .pagination-btn {
+    padding: 0.4rem 0.6rem;
+    min-width: 35px;
+    font-size: 0.85rem;
   }
 }
 
