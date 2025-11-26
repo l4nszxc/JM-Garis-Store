@@ -1,5 +1,5 @@
 <template>
-  <div class="users-list-container">
+  <div class="admin-container users-list-container">
     <AdminNavbar 
       :username="username"
       @logout="showLogoutModal = true"
@@ -253,7 +253,7 @@ export default {
   font-family: Arial, sans-serif;
   min-height: 100vh;
   background-color: #f5f5f5;
-  padding-left: 250px;
+  /* padding-left removed - now handled by admin-container global class */
 }
 
 .users-content {
@@ -509,9 +509,7 @@ td {
 }
 
 @media (max-width: 768px) {
-  .users-list-container {
-    padding-left: 60px;
-  }
+  /* padding-left removed - now handled by admin-container global class */
 
   .header {
     padding: 1rem;

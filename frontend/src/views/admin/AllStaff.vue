@@ -1,5 +1,5 @@
 <template>
-    <div class="staff-list-container">
+    <div class="admin-container staff-list-container">
       <AdminNavbar 
         :username="username"
         @logout="showLogoutModal = true"
@@ -857,7 +857,7 @@
     font-family: Arial, sans-serif;
     min-height: 100vh;
     background-color: #f5f5f5;
-    padding-left: 250px;
+    /* padding-left removed - now handled by admin-container global class */
   }
   
   .staff-content {
@@ -1704,9 +1704,7 @@ td {
   }
   
   @media (max-width: 768px) {
-    .staff-list-container {
-      padding-left: 60px;
-    }
+    /* padding-left removed - now handled by admin-container global class */
     
     .header {
       padding: 1rem;

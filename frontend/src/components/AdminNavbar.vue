@@ -176,6 +176,7 @@ export default {
       this.updateOverlay();
       this.$emit('sidebar-toggle', this.isSidebarCollapsed);
       document.body.classList.toggle('sidebar-collapsed', this.isSidebarCollapsed);
+      document.documentElement.classList.toggle('admin-sidebar-collapsed', this.isSidebarCollapsed);
     },
     closeSidebar() {
       if (window.innerWidth <= 768) {
@@ -183,6 +184,7 @@ export default {
         this.showOverlay = false;
         this.$emit('sidebar-toggle', true);
         document.body.classList.add('sidebar-collapsed');
+        document.documentElement.classList.add('admin-sidebar-collapsed');
       }
     },
     updateOverlay() {
@@ -197,6 +199,7 @@ export default {
       if (wasSidebarCollapsed !== this.isSidebarCollapsed) {
         this.$emit('sidebar-toggle', this.isSidebarCollapsed);
         document.body.classList.toggle('sidebar-collapsed', this.isSidebarCollapsed);
+        document.documentElement.classList.toggle('admin-sidebar-collapsed', this.isSidebarCollapsed);
       }
     },
     // New method to fetch low stock count
@@ -224,6 +227,9 @@ export default {
     window.addEventListener('resize', this.handleResize);
     document.body.classList.toggle('sidebar-collapsed', this.isSidebarCollapsed);
     
+    // Add initial class to HTML element for global styling
+    document.documentElement.classList.toggle('admin-sidebar-collapsed', this.isSidebarCollapsed);
+    
     // Fetch low stock count when component is mounted
     this.fetchLowStockCount();
     
@@ -238,6 +244,7 @@ export default {
   beforeUnmount() {
     window.removeEventListener('resize', this.handleResize);
     document.body.classList.remove('sidebar-collapsed');
+    document.documentElement.classList.remove('admin-sidebar-collapsed');
     
     // Clean up interval and event listener
     if (this.lowStockInterval) {
@@ -267,7 +274,7 @@ export default {
 
 .admin-sidebar.collapsed {
   width: 60px;
-  transform: translateX(-200px);
+  transform: translateX(-215px);
 }
 
 .toggle-button {
@@ -543,6 +550,12 @@ export default {
   }
 }
 
+@media (min-width: 769px) {
+  .admin-sidebar:not(.collapsed) {
+    transform: translateX(0);
+  }
+}
+
 /* When sidebar is collapsed */
 .admin-sidebar.collapsed .sidebar-header h1,
 .admin-sidebar.collapsed .menu-item span,
@@ -571,6 +584,26 @@ export default {
 .sales-reports-icon {
   background-color: #6366f1;
   color: white;
+}
+</style>
+
+<style>
+/* Global styles for admin container when sidebar is collapsed */
+html:not(.admin-sidebar-collapsed) .admin-container {
+  padding-left: 275px !important;
+  transition: padding-left 0.3s ease;
+}
+
+html.admin-sidebar-collapsed .admin-container {
+  padding-left: 60px !important;
+  transition: padding-left 0.3s ease;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  html .admin-container {
+    padding-left: 0 !important;
+  }
 }
 </style>
 

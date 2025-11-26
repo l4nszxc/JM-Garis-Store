@@ -215,6 +215,7 @@ export default {
       chartLoading: false,
       salesChart: null,
       ordersChart: null,
+      resizeTimeout: null,
       chartPeriods: [
         { label: 'Day', value: 'day' },
         { label: 'Week', value: 'week' },
@@ -690,15 +691,21 @@ export default {
                   }
                 }, 300);
                 
-                // Add resize observer for responsive chart handling
+                // Add resize observer for responsive chart handling with debouncing
                 if (window.ResizeObserver) {
                   this.resizeObserver = new ResizeObserver(() => {
-                    if (this.salesChart && !this.salesChart.destroyed) {
-                      this.salesChart.resize();
+                    // Debounce resize events to prevent rapid updates
+                    if (this.resizeTimeout) {
+                      clearTimeout(this.resizeTimeout);
                     }
-                    if (this.ordersChart && !this.ordersChart.destroyed) {
-                      this.ordersChart.resize();
-                    }
+                    this.resizeTimeout = setTimeout(() => {
+                      if (this.salesChart && !this.salesChart.destroyed) {
+                        this.salesChart.resize();
+                      }
+                      if (this.ordersChart && !this.ordersChart.destroyed) {
+                        this.ordersChart.resize();
+                      }
+                    }, 150);
                   });
                   
                   if (this.$refs.salesChart) {
@@ -730,6 +737,12 @@ export default {
 
   beforeUnmount() {
     try {
+      // Clear resize timeout
+      if (this.resizeTimeout) {
+        clearTimeout(this.resizeTimeout);
+        this.resizeTimeout = null;
+      }
+      
       // Clean up resize observer
       if (this.resizeObserver) {
         this.resizeObserver.disconnect();
