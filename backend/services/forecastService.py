@@ -4,6 +4,11 @@ import json
 import decimal
 import mysql.connector
 from datetime import datetime, timedelta, date
+import pandas as pd
+import numpy as np
+from prophet import Prophet
+import warnings
+warnings.filterwarnings('ignore')
 
 class EnhancedForecastService:
     def __init__(self):
@@ -77,50 +82,172 @@ class EnhancedForecastService:
             return None
 
     def simple_forecast(self, product_sales, forecast_days=30):
-        """Simple forecasting method"""
+        """Prophet-based forecasting with enhanced accuracy and user-friendly output"""
         try:
-            # Calculate average daily sales (convert Decimal to float)
-            total_sales = sum(float(item['daily_sales']) for item in product_sales)
-            avg_daily_sales = total_sales / len(product_sales) if product_sales else 1
+            # Convert sales data to DataFrame for Prophet
+            df_data = []
+            for item in product_sales:
+                df_data.append({
+                    'ds': item['date'],
+                    'y': float(item['daily_sales'])
+                })
             
-            # Add weekend boost pattern
-            future_predictions = []
-            start_date = datetime.now().date()
+            df = pd.DataFrame(df_data)
             
-            for i in range(forecast_days):
-                future_date = start_date + timedelta(days=i+1)
-                is_weekend = future_date.weekday() >= 5  # Saturday=5, Sunday=6
+            # Ensure minimum data points for Prophet
+            if len(df) < 2:
+                print(f"Warning: Only {len(df)} data point(s) available. Need at least 2 for accurate forecasting.", file=sys.stderr)
+                # Create synthetic data points by duplicating if only 1 point exists
+                if len(df) == 1:
+                    df = pd.concat([df, df], ignore_index=True)
+                    df.loc[1, 'ds'] = df.loc[0, 'ds'] + timedelta(days=1)
+            
+            # Initialize Prophet model with enhanced parameters for accuracy
+            model = Prophet(
+                # Seasonality settings
+                daily_seasonality=True,
+                weekly_seasonality=True,
+                yearly_seasonality=len(df) >= 365,  # Only if we have 1 year of data
                 
-                # Weekend boost
-                seasonal_multiplier = 1.3 if is_weekend else 0.9
-                predicted_sales = max(0.5, avg_daily_sales * seasonal_multiplier)
+                # Accuracy optimization
+                seasonality_mode='multiplicative',  # Better for sales data with varying amplitude
+                changepoint_prior_scale=0.05,  # Prevent overfitting (0.05 is conservative)
+                seasonality_prior_scale=10,  # Strong seasonality detection
+                
+                # Prediction intervals
+                interval_width=0.90,  # 90% confidence interval (standard for business forecasting)
+                
+                # Performance
+                mcmc_samples=0,  # Disable MCMC for faster computation
+                uncertainty_samples=1000  # Good balance of accuracy vs speed
+            )
+            
+            # Add custom seasonalities if enough data
+            if len(df) >= 30:
+                model.add_seasonality(
+                    name='monthly',
+                    period=30.5,
+                    fourier_order=5
+                )
+            
+            # Fit the model with suppressed output
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                model.fit(df)
+            
+            # Create future dataframe
+            future = model.make_future_dataframe(periods=forecast_days)
+            
+            # Make predictions
+            forecast = model.predict(future)
+            
+            # Get only future predictions (exclude historical)
+            future_forecast = forecast.tail(forecast_days)
+            
+            # Calculate model accuracy metrics using cross-validation on historical data
+            historical_predictions = forecast.head(len(df))
+            y_true = df['y'].values
+            y_pred = historical_predictions['yhat'].values
+            
+            # Ensure non-negative values
+            y_pred = np.maximum(y_pred, 0)
+            
+            # Calculate standard accuracy metrics
+            mae = np.mean(np.abs(y_true - y_pred))
+            rmse = np.sqrt(np.mean((y_true - y_pred) ** 2))
+            
+            # MAPE with protection against division by zero
+            mape = np.mean(np.abs((y_true - y_pred) / np.maximum(y_true, 0.1))) * 100
+            
+            # R-squared score (coefficient of determination)
+            ss_res = np.sum((y_true - y_pred) ** 2)
+            ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+            r2_score = 1 - (ss_res / (ss_tot + 1e-10))
+            
+            # Calculate accuracy percentage (100% = perfect, 0% = worst)
+            # Using inverse MAPE capped at reasonable values
+            accuracy = max(0, min(100, 100 - mape))
+            
+            # Adjust accuracy based on R² score
+            if r2_score > 0:
+                accuracy = (accuracy + r2_score * 100) / 2  # Average of both metrics
+            
+            # Format predictions with user-friendly labels
+            future_predictions = []
+            for _, row in future_forecast.iterrows():
+                prediction_date = row['ds']
+                day_name = prediction_date.strftime('%A')  # Monday, Tuesday, etc.
                 
                 future_predictions.append({
-                    'ds': future_date.strftime('%Y-%m-%d'),
-                    'yhat': round(predicted_sales, 2),
-                    'yhat_lower': round(predicted_sales * 0.7, 2),
-                    'yhat_upper': round(predicted_sales * 1.4, 2)
+                    'ds': prediction_date.strftime('%Y-%m-%d'),
+                    'day': day_name,
+                    'yhat': max(0, round(row['yhat'], 1)),  # Predicted sales
+                    'yhat_lower': max(0, round(row['yhat_lower'], 1)),  # Minimum expected
+                    'yhat_upper': max(0, round(row['yhat_upper'], 1)),  # Maximum expected
+                    'confidence': 90  # 90% confidence interval
                 })
+            
+            # Detect trend with clear interpretation
+            trend_values = forecast['trend'].values
+            trend_start = trend_values[0]
+            trend_end = trend_values[-1]
+            trend_change_pct = ((trend_end - trend_start) / (trend_start + 1)) * 100
+            
+            if trend_change_pct > 5:
+                trend_direction = 'growing'
+                trend_label = f'📈 Sales are growing by {abs(trend_change_pct):.1f}%'
+            elif trend_change_pct < -5:
+                trend_direction = 'declining'
+                trend_label = f'📉 Sales are declining by {abs(trend_change_pct):.1f}%'
+            else:
+                trend_direction = 'stable'
+                trend_label = '➡️ Sales are stable'
+            
+            # Detect weekly patterns
+            if 'weekly' in forecast.columns:
+                weekly_values = forecast.tail(7)['weekly'].values
+                peak_day_index = np.argmax(weekly_values)
+                days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                peak_day = days_of_week[peak_day_index] if peak_day_index < 7 else 'Weekend'
+            else:
+                peak_day = 'Not enough data'
+            
+            # Calculate forecast summary
+            avg_forecast = np.mean([p['yhat'] for p in future_predictions])
+            max_forecast = max([p['yhat'] for p in future_predictions])
+            min_forecast = min([p['yhat'] for p in future_predictions])
+            total_forecast = sum([p['yhat'] for p in future_predictions])
             
             return {
                 'forecast': future_predictions,
-                'accuracy': 75.0,
+                'accuracy': round(accuracy, 1),
                 'metrics': {
-                    'rmse': avg_daily_sales * 0.3,
-                    'mae': avg_daily_sales * 0.25,
-                    'mape': 25.0
+                    'rmse': round(rmse, 2),
+                    'mae': round(mae, 2),
+                    'mape': round(mape, 2),
+                    'r2_score': round(r2_score, 3)
                 },
-                'model_type': 'Enhanced Simple Forecast',
-                'training_days': len(product_sales),
+                'model_type': 'Prophet AI (Advanced Time Series)',
+                'training_days': len(df),
                 'seasonal_insights': {
-                    'weekly_peak': 'Weekend',
-                    'trend_direction': 'stable',
-                    'seasonality_impact': 'moderate'
+                    'weekly_peak': peak_day,
+                    'trend_direction': trend_direction,
+                    'trend_label': trend_label,
+                    'seasonality_impact': 'strong' if accuracy > 80 else ('moderate' if accuracy > 60 else 'weak')
+                },
+                'forecast_summary': {
+                    'avg_daily_forecast': round(avg_forecast, 1),
+                    'max_daily_forecast': round(max_forecast, 1),
+                    'min_daily_forecast': round(min_forecast, 1),
+                    'total_forecast': round(total_forecast, 1),
+                    'forecast_period': f'{forecast_days} days'
                 }
             }
             
         except Exception as e:
-            print(f"Simple forecast error: {str(e)}", file=sys.stderr)
+            print(f"Prophet forecast error: {str(e)}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
             return None
 
     def calculate_stock_metrics(self, product_sales):

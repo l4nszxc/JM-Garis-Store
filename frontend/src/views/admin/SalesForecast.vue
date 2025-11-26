@@ -7,8 +7,8 @@
     
     <div class="admin-content">
       <div class="forecast-header">
-        <h1>Demand Forecasting & Inventory Optimization</h1>
-        <p class="description">Analyze historical sales data to predict inventory needs and optimize stock levels, reducing shortages and overstock situations.</p>
+        <h1>📊 Sales Forecasting</h1>
+        <p class="description">Predict your future sales with AI. Know what to stock, when to reorder, and how your business is trending.</p>
       </div>
       
       <div class="forecast-actions">
@@ -37,24 +37,9 @@
           <label>Analysis method:</label>
           <div class="forecast-method">
             <button 
-              @click="forecastMethod = 'auto'" 
-              :class="['analysis-button', { active: forecastMethod === 'auto' }]">
-              🤖 Auto (Best Available)
-            </button>
-            <button 
               @click="forecastMethod = 'prophet'" 
-              :class="['analysis-button', { active: forecastMethod === 'prophet' }]">
-              📊 Prophet (Time Series)
-            </button>
-            <button 
-              @click="forecastMethod = 'ml'" 
-              :class="['analysis-button', { active: forecastMethod === 'ml' }]">
-              🧠 Machine Learning
-            </button>
-            <button 
-              @click="forecastMethod = 'simple'" 
-              :class="['analysis-button', { active: forecastMethod === 'simple' }]">
-              📈 Simple (Fast)
+              :class="['analysis-button', 'active']">
+              🤖 AI-Powered Prophet (Recommended)
             </button>
           </div>
         </div>
@@ -85,7 +70,7 @@
       
       <div v-if="!isGenerating && forecasts.length" class="forecasts-container">
         <h2>
-          Demand Forecast & Inventory Optimization
+          📈 Your Sales Forecast
           <span class="forecast-period-badge">{{ getPeriodLabel() }}</span>
           <span class="method-badge">{{ getMethodLabel() }}</span>
         </h2>
@@ -94,21 +79,21 @@
           <div class="explanation-card">
             <i class="fas fa-cubes"></i>
             <div>
-              <h3>🎯 Enhanced Demand Forecasting & Smart Inventory Optimization</h3>
+              <h3>🎯 AI-Powered Sales Forecasting Made Simple</h3>
               <p>
-                Our advanced AI-powered system analyzes historical sales patterns, seasonal trends, and market behavior to predict future demand with high accuracy. This helps you:
+                Our smart forecasting system uses Facebook's Prophet AI to predict your future sales with high accuracy. Here's what you get:
               </p>
               <ul class="benefits-list">
-                <li>🔮 <strong>Predict future demand</strong> up to 180 days ahead with 80-95% accuracy</li>
-                <li>📦 <strong>Optimize stock levels</strong> to prevent stockouts and reduce overstock</li>
-                <li>💰 <strong>Reduce inventory costs</strong> by 15-30% through smart reorder recommendations</li>
-                <li>📊 <strong>Identify seasonal patterns</strong> and peak demand periods</li>
-                <li>⚡ <strong>Get real-time alerts</strong> for low stock and reorder points</li>
+                <li>📊 <strong>Easy-to-read predictions</strong> - See exactly how many units you'll sell each day</li>
+                <li>📈 <strong>Trend insights</strong> - Know if sales are growing, stable, or declining</li>
+                <li>📦 <strong>Smart reorder alerts</strong> - Never run out of stock or overstock again</li>
+                <li>📅 <strong>Peak day detection</strong> - Identify your busiest days automatically</li>
+                <li>✨ <strong>Confidence ranges</strong> - See best and worst case scenarios</li>
               </ul>
               <div class="model-info">
                 <i class="fas fa-brain"></i>
                 <span v-if="forecasts.length > 0">{{ getTrainingDataInfo() }}</span>
-                <span v-else>Uses Prophet time-series forecasting, Random Forest ML, and seasonal decomposition algorithms</span>
+                <span v-else>Powered by Prophet AI - The same technology used by Facebook for billions of forecasts</span>
               </div>
             </div>
           </div>
@@ -133,17 +118,18 @@
             
             <div class="demand-metrics">
               <div class="metric highlight">
-                <span class="metric-label">Predicted {{ getPeriodUnit() }} Demand</span>
-                <span class="metric-value">{{ calculateAverage(forecast.forecast_data) }} units/{{ getPeriodUnit().toLowerCase() }}</span>
+                <span class="metric-label">📊 Average Daily Sales</span>
+                <span class="metric-value">{{ calculateAverage(forecast.forecast_data) }} units/day</span>
+                <span class="metric-sublabel">Expected daily sales for the forecast period</span>
               </div>
               
-              
               <div class="metric">
-                <span class="metric-label">Trend Analysis</span>
+                <span class="metric-label">📈 Sales Trend</span>
                 <div class="trend-indicator" :class="getTrendClass(forecast)">
                   <i :class="getTrendIcon(forecast)"></i>
                   {{ getTrendLabel(forecast) }}
                 </div>
+                <span class="metric-sublabel">{{ getTrendDescription(forecast) }}</span>
               </div>
             </div>
             <div class="demand-chart">
@@ -289,7 +275,7 @@ export default {
       error: null,
       forecastPeriod: 'monthly',
       selectedQuarter: 'Q1',
-      forecastMethod: 'auto',
+      forecastMethod: 'prophet',
       tooltipVisible: false,
       tooltipDate: '',
       tooltipValue: '',
@@ -412,7 +398,16 @@ export default {
       
       if (Math.abs(percentChange) < 1) return 'Stable Demand';
       
-      return `${Math.abs(percentChange).toFixed(1)}% ${percentChange > 0 ? 'Increase' : 'Decrease'}`;
+      // Cap the display percentage at 100% while maintaining accuracy
+      const displayPercent = Math.min(Math.abs(percentChange), 100);
+      
+      // If actual change is over 100%, show it differently
+      if (Math.abs(percentChange) > 100) {
+        const multiplier = (Math.abs(percentChange) / 100).toFixed(1);
+        return `${multiplier}x ${percentChange > 0 ? 'Growth' : 'Decline'} (${displayPercent}%+)`;
+      }
+      
+      return `${displayPercent.toFixed(1)}% ${percentChange > 0 ? 'Increase' : 'Decrease'}`;
     },
     
     getRecommendedStock(forecast) {
@@ -481,13 +476,7 @@ export default {
     },
     
     getMethodLabel() {
-      const methods = {
-        'auto': 'Auto-Selected Best Method',
-        'prophet': 'Prophet Time Series Analysis',
-        'ml': 'Machine Learning Ensemble',
-        'simple': 'Simple Moving Average'
-      };
-      return methods[this.forecastMethod] || this.forecastMethod;
+      return 'Prophet AI - Advanced Time Series Forecasting';
     },
     
     getAccuracyClass(forecast) {
@@ -499,9 +488,11 @@ export default {
     
     getAccuracyLabel(forecast) {
       const accuracy = parseFloat(forecast.model_accuracy) || 70;
-      if (accuracy >= 85) return 'High Accuracy';
-      if (accuracy >= 70) return 'Medium Accuracy';
-      return 'Requires Review';
+      if (accuracy >= 90) return `${accuracy.toFixed(1)}% Excellent`;
+      if (accuracy >= 80) return `${accuracy.toFixed(1)}% Very Good`;
+      if (accuracy >= 70) return `${accuracy.toFixed(1)}% Good`;
+      if (accuracy >= 60) return `${accuracy.toFixed(1)}% Fair`;
+      return `${accuracy.toFixed(1)}% Needs More Data`;
     },
     
     getTrainingDataInfo() {
@@ -523,6 +514,19 @@ export default {
     getSeasonalInsight(forecast) {
       const seasonal = this.getSeasonal(forecast);
       return `Historical data shows higher demand during ${seasonal.peak} and lower demand during ${seasonal.low}. Plan inventory accordingly.`;
+    },
+    
+    getTrendDescription(forecast) {
+      if (!forecast.seasonal_insights) return '';
+      
+      const trend = forecast.seasonal_insights.trend_direction;
+      if (trend === 'growing' || trend === 'increasing') {
+        return 'Your sales are on the rise! Consider stocking more inventory.';
+      } else if (trend === 'declining' || trend === 'decreasing') {
+        return 'Sales are declining. Review pricing or promotions.';
+      } else {
+        return 'Sales are steady. Maintain current stock levels.';
+      }
     },
         
     showTooltip(event, point, index) {
@@ -1094,6 +1098,14 @@ export default {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 0.25rem;
+}
+
+.metric-sublabel {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+  font-style: italic;
+  display: block;
 }
 
 .metric-value {
