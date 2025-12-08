@@ -177,12 +177,150 @@
               </div>
             </div>
             
-            <<div class="inventory-optimization">
-              <h4>Inventory Optimization</h4>
+            <div class="inventory-optimization">
+              <h4>📦 Inventory Optimization & Stock Prediction</h4>
+              
+              <!-- Stock Status Alert -->
+              <div v-if="getInventoryAlert(forecast)" class="inventory-alert" :class="getInventoryAlertClass(forecast)">
+                <i :class="getInventoryAlertIcon(forecast)"></i>
+                <span>{{ getInventoryAlert(forecast) }}</span>
+              </div>
+              
+              <!-- Key Inventory Metrics -->
               <div class="optimization-metrics">
                 <div class="optimization-item">
-                  <span class="optimization-label">Recommended Stock Level</span>
-                  <span class="optimization-value">{{ getRecommendedStock(forecast) }} units</span>
+                  <span class="optimization-label">📊 Current Stock</span>
+                  <span class="optimization-value" :class="getStockStatusClass(getCurrentStock(forecast))">
+                    {{ getCurrentStock(forecast) }} units
+                  </span>
+                  <span class="optimization-sublabel">{{ getStockStatusText(getCurrentStock(forecast)) }}</span>
+                </div>
+                
+                <div class="optimization-item">
+                  <span class="optimization-label">📈 Total Forecast Demand</span>
+                  <span class="optimization-value">{{ getTotalDemand(forecast) }} units</span>
+                  <span class="optimization-sublabel">Expected demand for {{ forecastDays }}-day period</span>
+                </div>
+                
+                <div class="optimization-item">
+                  <span class="optimization-label">⏱️ Days Until Stockout</span>
+                  <span class="optimization-value" :class="getStockoutWarningClass(forecast)">
+                    {{ getDaysUntilStockout(forecast) }}
+                  </span>
+                  <span class="optimization-sublabel">Based on current stock & demand</span>
+                </div>
+                
+                <div class="optimization-item">
+                  <span class="optimization-label">🛒 Recommended Order Qty</span>
+                  <span class="optimization-value highlight">{{ getRecommendedOrderQty(forecast) }} units</span>
+                  <span class="optimization-sublabel">To maintain optimal inventory levels</span>
+                </div>
+                
+                <div class="optimization-item">
+                  <span class="optimization-label">🔄 Reorder Point</span>
+                  <span class="optimization-value">{{ getReorderPoint(forecast) }} units</span>
+                  <span class="optimization-sublabel">Trigger reorder when stock reaches this level</span>
+                </div>
+                
+                <div class="optimization-item">
+                  <span class="optimization-label">🛡️ Safety Stock</span>
+                  <span class="optimization-value">{{ getSafetyStock(forecast) }} units</span>
+                  <span class="optimization-sublabel">Buffer to prevent stockouts</span>
+                </div>
+              </div>
+              
+              <!-- Stock Level Prediction Chart -->
+              <div class="stock-prediction-chart">
+                <h5>📉 Stock Level Prediction ({{ forecastDays }} Days)</h5>
+                <div class="stock-chart-container">
+                  <div class="stock-chart-y-axis">
+                    <span class="y-label">{{ getMaxStockLevel(forecast) }}</span>
+                    <span class="y-label">{{ Math.floor(getMaxStockLevel(forecast) * 0.75) }}</span>
+                    <span class="y-label">{{ Math.floor(getMaxStockLevel(forecast) * 0.5) }}</span>
+                    <span class="y-label">{{ Math.floor(getMaxStockLevel(forecast) * 0.25) }}</span>
+                    <span class="y-label">0</span>
+                  </div>
+                  <div class="stock-chart-area">
+                    <!-- Safety Stock Zone -->
+                    <div class="stock-zone safety-zone" 
+                      :style="{ height: `${(getSafetyStock(forecast) / getMaxStockLevel(forecast)) * 100}%` }">
+                      <span class="zone-label">Safety Stock</span>
+                    </div>
+                    
+                    <!-- Reorder Point Line -->
+                    <div class="stock-line reorder-line" 
+                      :style="{ bottom: `${(getReorderPoint(forecast) / getMaxStockLevel(forecast)) * 100}%` }">
+                      <span class="line-label">Reorder Point</span>
+                    </div>
+                    
+                    <!-- Stock Level Line -->
+                    <div class="stock-prediction-line">
+                      <div v-for="(point, i) in forecast.forecast_data" 
+                        :key="`stock-${i}`"
+                        class="stock-point"
+                        :class="getStockPointClass(forecast, i)"
+                        :style="{ 
+                          left: `${(i / (forecast.forecast_data.length - 1)) * 100}%`,
+                          bottom: `${calculateStockLevel(forecast, i)}%` 
+                        }"
+                        @mouseover="showStockTooltip($event, forecast, i)"
+                        @mouseout="hideTooltip">
+                      </div>
+                    </div>
+                    
+                    <!-- Date markers -->
+                    <div class="stock-chart-dates">
+                      <div v-for="(date, i) in getStockDateBreakpoints(forecast)" 
+                        :key="`stock-date-${i}`" 
+                        class="date-marker"
+                        :style="{ left: `${(date.index / (forecast.forecast_data.length - 1)) * 100}%` }">
+                        {{ date.label }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="chart-legend">
+                  <div class="legend-item">
+                    <div class="legend-dot stock-normal"></div>
+                    <span>Normal Stock</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-dot stock-warning"></div>
+                    <span>Low Stock Warning</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-dot stock-critical"></div>
+                    <span>Critical/Stockout</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Sales Trend Analysis -->
+              <div class="sales-trend-analysis">
+                <h5>📊 Sales Trend Analysis</h5>
+                <div class="trend-metrics">
+                  <div class="trend-metric">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="trend-label">Trend Direction:</span>
+                    <span class="trend-value" :class="getTrendClass(forecast)">
+                      {{ getTrendLabel(forecast) }}
+                    </span>
+                  </div>
+                  <div class="trend-metric">
+                    <i class="fas fa-wave-square"></i>
+                    <span class="trend-label">Demand Volatility:</span>
+                    <span class="trend-value">{{ getDemandVolatility(forecast) }}</span>
+                  </div>
+                  <div class="trend-metric">
+                    <i class="fas fa-calendar-day"></i>
+                    <span class="trend-label">Highest Demand:</span>
+                    <span class="trend-value">{{ getPeakDemandDay(forecast) || 'N/A' }}</span>
+                  </div>
+                  <div class="trend-metric">
+                    <i class="fas fa-calendar-minus"></i>
+                    <span class="trend-label">Lowest Demand:</span>
+                    <span class="trend-value">{{ getLowestDemandDay(forecast) || 'N/A' }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -343,6 +481,252 @@ export default {
       }
       
       return null;
+    },
+    
+    // New Inventory Optimization Methods
+    getTotalDemand(forecast) {
+      const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
+      return Math.ceil(avgDemand * this.forecastDays);
+    },
+    
+    getDaysUntilStockout(forecast) {
+      const currentStock = this.getCurrentStock(forecast);
+      const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
+      
+      if (avgDemand === 0) return 'N/A';
+      if (currentStock === 0) return '0 days (Out of Stock)';
+      
+      const days = Math.floor(currentStock / avgDemand);
+      
+      if (days > this.forecastDays) {
+        return `${this.forecastDays}+ days`;
+      }
+      
+      return `${days} day${days !== 1 ? 's' : ''}`;
+    },
+    
+    getStockoutWarningClass(forecast) {
+      const currentStock = this.getCurrentStock(forecast);
+      const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
+      
+      if (avgDemand === 0) return 'normal';
+      if (currentStock === 0) return 'critical';
+      
+      const days = Math.floor(currentStock / avgDemand);
+      
+      if (days <= 3) return 'critical';
+      if (days <= 7) return 'warning';
+      return 'normal';
+    },
+    
+    getRecommendedOrderQty(forecast) {
+      const currentStock = this.getCurrentStock(forecast);
+      const totalDemand = this.getTotalDemand(forecast);
+      const safetyStock = this.getSafetyStock(forecast);
+      const optimalStock = totalDemand + safetyStock;
+      
+      const orderQty = Math.max(0, optimalStock - currentStock);
+      return Math.ceil(orderQty);
+    },
+    
+    getReorderPoint(forecast) {
+      const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
+      const leadTime = 3; // Assume 3 days lead time
+      const safetyStock = this.getSafetyStock(forecast);
+      
+      return Math.ceil((avgDemand * leadTime) + safetyStock);
+    },
+    
+    getSafetyStock(forecast) {
+      const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
+      const volatility = this.getDemandVolatilityValue(forecast);
+      
+      // Safety stock = Z-score * volatility * sqrt(lead time)
+      // Using Z-score of 1.65 for 95% service level
+      const zScore = 1.65;
+      const leadTime = 3; // days
+      
+      return Math.ceil(zScore * volatility * Math.sqrt(leadTime));
+    },
+    
+    getInventoryAlert(forecast) {
+      const currentStock = this.getCurrentStock(forecast);
+      const reorderPoint = this.getReorderPoint(forecast);
+      const totalDemand = this.getTotalDemand(forecast);
+      const safetyStock = this.getSafetyStock(forecast);
+      
+      if (currentStock === 0) {
+        return '🚨 CRITICAL: Out of Stock - Immediate Action Required!';
+      }
+      
+      if (currentStock < safetyStock) {
+        return `⚠️ WARNING: Stock below safety level (${safetyStock} units) - Risk of stockout!`;
+      }
+      
+      if (currentStock < reorderPoint) {
+        return `📢 NOTICE: Stock reached reorder point - Order ${this.getRecommendedOrderQty(forecast)} units now`;
+      }
+      
+      if (currentStock < totalDemand) {
+        const shortfall = totalDemand - currentStock;
+        return `⚡ ALERT: Projected shortage of ${shortfall} units during forecast period`;
+      }
+      
+      const excessStock = currentStock - (totalDemand + safetyStock);
+      if (excessStock > totalDemand) {
+        return `📦 INFO: Overstock detected (${excessStock} excess units) - Consider reducing orders`;
+      }
+      
+      return null;
+    },
+    
+    getInventoryAlertClass(forecast) {
+      const currentStock = this.getCurrentStock(forecast);
+      const safetyStock = this.getSafetyStock(forecast);
+      const reorderPoint = this.getReorderPoint(forecast);
+      
+      if (currentStock === 0 || currentStock < safetyStock) return 'alert-critical';
+      if (currentStock < reorderPoint) return 'alert-warning';
+      return 'alert-info';
+    },
+    
+    getInventoryAlertIcon(forecast) {
+      const currentStock = this.getCurrentStock(forecast);
+      const safetyStock = this.getSafetyStock(forecast);
+      const reorderPoint = this.getReorderPoint(forecast);
+      
+      if (currentStock === 0 || currentStock < safetyStock) return 'fas fa-exclamation-circle';
+      if (currentStock < reorderPoint) return 'fas fa-exclamation-triangle';
+      return 'fas fa-info-circle';
+    },
+    
+    getMaxStockLevel(forecast) {
+      const currentStock = this.getCurrentStock(forecast);
+      const totalDemand = this.getTotalDemand(forecast);
+      const recommendedOrder = this.getRecommendedOrderQty(forecast);
+      
+      return Math.max(currentStock, totalDemand, currentStock + recommendedOrder, 50);
+    },
+    
+    calculateStockLevel(forecast, dayIndex) {
+      const currentStock = this.getCurrentStock(forecast);
+      const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
+      const maxStock = this.getMaxStockLevel(forecast);
+      
+      // Calculate cumulative demand up to this day
+      let cumulativeDemand = 0;
+      for (let i = 0; i <= dayIndex; i++) {
+        cumulativeDemand += forecast.forecast_data[i].yhat;
+      }
+      
+      const remainingStock = Math.max(0, currentStock - cumulativeDemand);
+      return (remainingStock / maxStock) * 100;
+    },
+    
+    getStockPointClass(forecast, dayIndex) {
+      const currentStock = this.getCurrentStock(forecast);
+      const reorderPoint = this.getReorderPoint(forecast);
+      const safetyStock = this.getSafetyStock(forecast);
+      
+      // Calculate stock level at this day
+      let cumulativeDemand = 0;
+      for (let i = 0; i <= dayIndex; i++) {
+        cumulativeDemand += forecast.forecast_data[i].yhat;
+      }
+      
+      const remainingStock = currentStock - cumulativeDemand;
+      
+      if (remainingStock <= 0) return 'stock-critical';
+      if (remainingStock < safetyStock) return 'stock-critical';
+      if (remainingStock < reorderPoint) return 'stock-warning';
+      return 'stock-normal';
+    },
+    
+    showStockTooltip(event, forecast, dayIndex) {
+      const currentStock = this.getCurrentStock(forecast);
+      const point = forecast.forecast_data[dayIndex];
+      
+      let cumulativeDemand = 0;
+      for (let i = 0; i <= dayIndex; i++) {
+        cumulativeDemand += forecast.forecast_data[i].yhat;
+      }
+      
+      const remainingStock = Math.max(0, currentStock - cumulativeDemand);
+      const date = new Date(point.ds).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      
+      this.tooltipDate = date;
+      this.tooltipValue = `Stock: ${Math.floor(remainingStock)} units | Demand: ${point.yhat.toFixed(1)} units`;
+      this.tooltipVisible = true;
+      
+      const tooltip = this.$refs.tooltip;
+      tooltip.style.left = event.clientX + 10 + 'px';
+      tooltip.style.top = event.clientY - 40 + 'px';
+    },
+    
+    getStockDateBreakpoints(forecast) {
+      if (!forecast.forecast_data || forecast.forecast_data.length === 0) return [];
+      
+      const breakpoints = [];
+      const numPoints = forecast.forecast_data.length;
+      const numBreakpoints = Math.min(5, numPoints);
+      
+      for (let i = 0; i < numBreakpoints; i++) {
+        const index = Math.floor((i / (numBreakpoints - 1)) * (numPoints - 1));
+        const date = new Date(forecast.forecast_data[index].ds);
+        
+        breakpoints.push({
+          index: index,
+          label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        });
+      }
+      
+      return breakpoints;
+    },
+    
+    getDemandVolatility(forecast) {
+      const volatilityValue = this.getDemandVolatilityValue(forecast);
+      const avgDemand = parseFloat(this.calculateAverage(forecast.forecast_data));
+      
+      if (avgDemand === 0) return 'N/A';
+      
+      const coefficient = (volatilityValue / avgDemand) * 100;
+      
+      if (coefficient < 15) return 'Low (Stable)';
+      if (coefficient < 30) return 'Moderate';
+      return 'High (Volatile)';
+    },
+    
+    getDemandVolatilityValue(forecast) {
+      if (!forecast.forecast_data || forecast.forecast_data.length < 2) return 0;
+      
+      const values = forecast.forecast_data.map(p => p.yhat);
+      const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+      
+      const squaredDiffs = values.map(val => Math.pow(val - avg, 2));
+      const variance = squaredDiffs.reduce((sum, val) => sum + val, 0) / values.length;
+      
+      return Math.sqrt(variance);
+    },
+    
+    getLowestDemandDay(forecast) {
+      if (!forecast.forecast_data || forecast.forecast_data.length === 0) return null;
+      
+      let lowestIndex = 0;
+      let lowestValue = forecast.forecast_data[0].yhat;
+      
+      forecast.forecast_data.forEach((point, index) => {
+        if (point.yhat < lowestValue) {
+          lowestValue = point.yhat;
+          lowestIndex = index;
+        }
+      });
+      
+      const lowDate = new Date(forecast.forecast_data[lowestIndex].ds);
+      return lowDate.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        weekday: 'short'
+      });
     },
     
     calculatePointHeight(point, forecast) {
@@ -1477,42 +1861,387 @@ export default {
 }
 
 .inventory-optimization {
-  background-color: #f8fafc;
-  padding: 1rem;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  padding: 1.5rem;
+  border-radius: 12px;
   border-left: 4px solid #3b82f6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .inventory-optimization h4 {
-  font-size: 0.9rem;
-  color: #475569;
-  margin: 0 0 0.75rem 0;
-}
-
-.optimization-metrics {
+  font-size: 1rem;
+  color: #1e293b;
+  margin: 0 0 1rem 0;
+  font-weight: 600;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 0.5rem;
 }
 
-.optimization-item {
+.inventory-alert {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e2e8f0;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
 }
 
-.optimization-item:last-child {
-  border-bottom: none;
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.inventory-alert.alert-critical {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 2px solid #fecaca;
+}
+
+.inventory-alert.alert-warning {
+  background-color: #fefce8;
+  color: #854d0e;
+  border: 2px solid #fef08a;
+}
+
+.inventory-alert.alert-info {
+  background-color: #eff6ff;
+  color: #1e40af;
+  border: 2px solid #dbeafe;
+}
+
+.inventory-alert i {
+  font-size: 1.25rem;
+}
+
+.optimization-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.optimization-item {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
+}
+
+.optimization-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 
 .optimization-label {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .optimization-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.optimization-value.highlight {
+  color: #059669;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.optimization-value.critical {
+  color: #dc2626;
+}
+
+.optimization-value.warning {
+  color: #f59e0b;
+}
+
+.optimization-value.normal {
+  color: #059669;
+}
+
+.optimization-sublabel {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  line-height: 1.3;
+}
+
+/* Stock Prediction Chart Styles */
+.stock-prediction-chart {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.stock-prediction-chart h5 {
+  font-size: 0.9rem;
+  color: #475569;
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+}
+
+.stock-chart-container {
+  display: flex;
+  gap: 0.5rem;
+  height: 250px;
+  margin-bottom: 1rem;
+}
+
+.stock-chart-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 0;
+  min-width: 40px;
+}
+
+.stock-chart-y-axis .y-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-align: right;
+}
+
+.stock-chart-area {
+  flex: 1;
+  position: relative;
+  background: linear-gradient(to bottom, 
+    rgba(34, 197, 94, 0.05) 0%, 
+    rgba(34, 197, 94, 0.1) 50%, 
+    rgba(239, 68, 68, 0.1) 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.stock-zone {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stock-zone.safety-zone {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(239, 68, 68, 0.1),
+    rgba(239, 68, 68, 0.1) 10px,
+    rgba(239, 68, 68, 0.15) 10px,
+    rgba(239, 68, 68, 0.15) 20px
+  );
+  border-top: 2px dashed #ef4444;
+}
+
+.zone-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.stock-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.stock-line.reorder-line {
+  background: linear-gradient(to right, 
+    transparent 0%, 
+    #f59e0b 10%, 
+    #f59e0b 90%, 
+    transparent 100%);
+  border-top: 2px dashed #f59e0b;
+}
+
+.line-label {
+  position: absolute;
+  left: 10px;
+  font-size: 0.7rem;
+  color: #f59e0b;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #fbbf24;
+}
+
+.stock-prediction-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.stock-point {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, 50%);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.stock-point:hover {
+  width: 12px;
+  height: 12px;
+  z-index: 10;
+}
+
+.stock-point.stock-normal {
+  background-color: #22c55e;
+}
+
+.stock-point.stock-warning {
+  background-color: #f59e0b;
+}
+
+.stock-point.stock-critical {
+  background-color: #ef4444;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
+.stock-chart-dates {
+  position: absolute;
+  bottom: -25px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.stock-chart-dates .date-marker {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.legend-dot.stock-normal {
+  background-color: #22c55e;
+}
+
+.legend-dot.stock-warning {
+  background-color: #f59e0b;
+}
+
+.legend-dot.stock-critical {
+  background-color: #ef4444;
+}
+
+/* Sales Trend Analysis Styles */
+.sales-trend-analysis {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.sales-trend-analysis h5 {
+  font-size: 0.9rem;
+  color: #475569;
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+}
+
+.trend-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.trend-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.trend-metric i {
+  color: #3b82f6;
+  font-size: 1rem;
+}
+
+.trend-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.trend-value {
   font-size: 0.9rem;
   font-weight: 600;
   color: #1e293b;

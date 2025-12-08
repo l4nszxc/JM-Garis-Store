@@ -12,12 +12,16 @@ warnings.filterwarnings('ignore')
 
 class EnhancedForecastService:
     def __init__(self):
+        # Use environment variables for production (Railway MySQL) or fallback to local
         self.db_config = {
-            'host': 'localhost',
-            'user': 'root',
-            'password': '',
-            'database': 'capstone'
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'port': int(os.getenv('DB_PORT', 3306)),
+            'user': os.getenv('DB_USER', 'root'),
+            'password': os.getenv('DB_PASSWORD', ''),
+            'database': os.getenv('DB_NAME', 'capstone')
         }
+        
+        print(f"🔌 Database Config: {self.db_config['user']}@{self.db_config['host']}:{self.db_config['port']}/{self.db_config['database']}", file=sys.stderr)
         
         # Create necessary directories
         os.makedirs('forecasts', exist_ok=True)
