@@ -7,7 +7,26 @@
     
     <div class="users-content">
       <div class="header">
-        <h2>ALL USERS</h2>
+        <div class="header-top">
+          <h2>ALL USERS</h2>
+          <div class="user-counts">
+            <div class="count-item verified-count">
+              <i class="fas fa-user-check"></i>
+              <span class="count-label">Verified:</span>
+              <span class="count-value">{{ verifiedCount }}</span>
+            </div>
+            <div class="count-item unverified-count">
+              <i class="fas fa-user-times"></i>
+              <span class="count-label">Unverified:</span>
+              <span class="count-value">{{ unverifiedCount }}</span>
+            </div>
+            <div class="count-item total-count">
+              <i class="fas fa-users"></i>
+              <span class="count-label">Total:</span>
+              <span class="count-value">{{ users.length }}</span>
+            </div>
+          </div>
+        </div>
         <div class="filters">
           <div class="search-box">
             <input 
@@ -160,6 +179,12 @@ export default {
 
       return matchesSearch && matchesStatus;
     });
+  },
+  verifiedCount() {
+    return this.users.filter(user => user.email_verified).length;
+  },
+  unverifiedCount() {
+    return this.users.filter(user => !user.email_verified).length;
   }
 },
     methods: {
@@ -270,10 +295,75 @@ export default {
   margin-bottom: 2rem;
 }
 
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
 .header h2 {
   color: #2c3e50;
-  margin: 0 0 1rem 0;
+  margin: 0;
   font-size: 1.5rem;
+}
+
+.user-counts {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.count-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.count-item i {
+  font-size: 1.1rem;
+}
+
+.count-label {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.count-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.verified-count {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.verified-count .count-value {
+  color: #166534;
+}
+
+.unverified-count {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.unverified-count .count-value {
+  color: #dc2626;
+}
+
+.total-count {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.total-count .count-value {
+  color: #0369a1;
 }
 
 .filters {
@@ -513,6 +603,29 @@ td {
 
   .header {
     padding: 1rem;
+  }
+
+  .header-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .user-counts {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .count-item {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .count-item i {
+    font-size: 1rem;
+  }
+
+  .count-value {
+    font-size: 1rem;
   }
 
   .header h2 {
