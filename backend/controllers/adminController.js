@@ -2135,6 +2135,70 @@ exports.downloadReports = async (req, res) => {
       // Set row heights
       inventorySheet.getRow(1).height = 25;
       inventorySheet.getRow(2).height = 20;
+      
+      // Configure page setup for coupon bond (8.5" x 13")
+      inventorySheet.pageSetup = {
+        paperSize: 5, // Legal size (8.5" x 14", closest to coupon bond 8.5" x 13")
+        orientation: 'portrait',
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0, // Allow multiple pages vertically
+        margins: {
+          left: 0.5,
+          right: 0.5,
+          top: 0.75,
+          bottom: 0.75,
+          header: 0.3,
+          footer: 0.3
+        },
+        printTitlesRow: '6:6', // Repeat header row on every page
+        horizontalCentered: true
+      };
+      
+      // Configure header and footer for every page
+      inventorySheet.headerFooter = {
+        oddHeader: '&C&"Arial,Bold"&16JM GARIS STORE\n&"Arial"&12Inventory Report',
+        oddFooter: '&L&"Arial"&9Generated: ' + new Date().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }) + '&C&"Arial,Bold"&9Page &P of &N&R&"Arial"&9JM Garis Store'
+      };
+    }
+    
+    // Apply page setup to sales sheet if it exists
+    if (type === 'sales' || type === 'combined') {
+      const salesSheet = workbook.getWorksheet('Sales Report');
+      if (salesSheet) {
+        // Configure page setup for coupon bond (8.5" x 13")
+        salesSheet.pageSetup = {
+          paperSize: 5, // Legal size (8.5" x 14", closest to coupon bond 8.5" x 13")
+          orientation: 'portrait',
+          fitToPage: true,
+          fitToWidth: 1,
+          fitToHeight: 0, // Allow multiple pages vertically
+          margins: {
+            left: 0.5,
+            right: 0.5,
+            top: 0.75,
+            bottom: 0.75,
+            header: 0.3,
+            footer: 0.3
+          },
+          printTitlesRow: '6:6', // Repeat header row on every page
+          horizontalCentered: true
+        };
+        
+        // Configure header and footer for every page
+        salesSheet.headerFooter = {
+          oddHeader: '&C&"Arial,Bold"&16JM GARIS STORE\n&"Arial"&12Sales Report',
+          oddFooter: '&L&"Arial"&9Generated: ' + new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }) + '&C&"Arial,Bold"&9Page &P of &N&R&"Arial"&9JM Garis Store'
+        };
+      }
     }
     
     // Set response headers
@@ -2518,6 +2582,36 @@ exports.downloadLowStockReport = async (req, res) => {
         lowStockSheet.getRow(1).height = 25;
         lowStockSheet.getRow(2).height = 20;
         
+        // Configure page setup for coupon bond (8.5" x 13")
+        lowStockSheet.pageSetup = {
+            paperSize: 5, // Legal size (8.5" x 14", closest to coupon bond 8.5" x 13")
+            orientation: 'portrait',
+            fitToPage: true,
+            fitToWidth: 1,
+            fitToHeight: 0, // Allow multiple pages vertically
+            margins: {
+                left: 0.5,
+                right: 0.5,
+                top: 0.75,
+                bottom: 0.75,
+                header: 0.3,
+                footer: 0.3
+            },
+            printArea: `A1:F${lowStockSheet.rowCount}`,
+            printTitlesRow: '6:6', // Repeat header row on every page
+            horizontalCentered: true
+        };
+        
+        // Configure header and footer for every page
+        lowStockSheet.headerFooter = {
+            oddHeader: '&C&"Arial,Bold"&16JM GARIS STORE\n&"Arial"&12Low Stock Alert Report',
+            oddFooter: '&L&"Arial"&9Generated: ' + new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }) + '&C&"Arial,Bold"&9Page &P of &N&R&"Arial"&9JM Garis Store'
+        };
+        
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename=low-stock-report-${formattedDate}.xlsx`);
         
@@ -2881,6 +2975,35 @@ exports.downloadTransactionReport = async (req, res) => {
         // Set row heights
         transactionSheet.getRow(1).height = 25;
         transactionSheet.getRow(2).height = 20;
+        
+        // Configure page setup for coupon bond (8.5" x 13")
+        transactionSheet.pageSetup = {
+            paperSize: 5, // Legal size (8.5" x 14", closest to coupon bond 8.5" x 13")
+            orientation: 'landscape', // Landscape for more columns
+            fitToPage: true,
+            fitToWidth: 1,
+            fitToHeight: 0, // Allow multiple pages vertically
+            margins: {
+                left: 0.5,
+                right: 0.5,
+                top: 0.75,
+                bottom: 0.75,
+                header: 0.3,
+                footer: 0.3
+            },
+            printTitlesRow: `${currentRow + 1}:${currentRow + 1}`, // Repeat header row on every page
+            horizontalCentered: true
+        };
+        
+        // Configure header and footer for every page
+        transactionSheet.headerFooter = {
+            oddHeader: '&C&"Arial,Bold"&16JM GARIS STORE\n&"Arial"&12Transaction Report',
+            oddFooter: '&L&"Arial"&9Generated: ' + new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }) + '&C&"Arial,Bold"&9Page &P of &N&R&"Arial"&9JM Garis Store'
+        };
         
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename=transaction-report-${formattedDate}.xlsx`);
@@ -3625,7 +3748,7 @@ exports.downloadStaffReports = async (req, res) => {
             });
             
             // Add data rows
-            staffWithScores.forEach((staff) => {
+            staffWithScores.forEach((staff, index) => {
                 const dataRow = rankingsSheet.addRow([
                     staff.rank,
                     staff.fullname,
@@ -3641,6 +3764,7 @@ exports.downloadStaffReports = async (req, res) => {
                 
                 // Style data rows
                 dataRow.eachCell((cell, colNumber) => {
+                    // Add borders
                     cell.border = {
                         top: { style: 'thin' },
                         left: { style: 'thin' },
@@ -3648,38 +3772,140 @@ exports.downloadStaffReports = async (req, res) => {
                         right: { style: 'thin' }
                     };
                     
+                    // Alignment
+                    if (colNumber === 1) { // Rank
+                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    } else if (colNumber === 2) { // Name
+                        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                    } else if (colNumber === 3) { // Email
+                        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+                    } else {
+                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    }
+                    
                     // Format currency columns
                     if (colNumber === 5 || colNumber === 10) { // Total Sales and Avg Order Value
-                        cell.numFmt = '₱#,##0.00';
+                        cell.numFmt = '#,##0.00';
+                        cell.alignment = { horizontal: 'right', vertical: 'middle' };
                     }
                     
                     // Format percentage columns
                     if (colNumber === 8 || colNumber === 9) { // Acceptance Rate and Completion Rate
-                        cell.numFmt = '0.00%';
-                        cell.value = (parseFloat(cell.value) || 0) / 100;
+                        cell.numFmt = '0.00';
+                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    }
+                    
+                    // Format performance score
+                    if (colNumber === 4) {
+                        cell.numFmt = '0.00';
+                        cell.alignment = { horizontal: 'center', vertical: 'middle' };
                     }
                 });
+                
+                // Alternate row colors
+                if (index % 2 === 1) {
+                    dataRow.eachCell((cell) => {
+                        cell.fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: { argb: 'FFF8F9FA' }
+                        };
+                    });
+                }
             });
             
-            // Add summary row
-            const summaryStartRow = rankingsSheet.lastRow.number + 2;
+            // Add summary section
+            const summaryStartRow = rankingsSheet.rowCount + 2;
             rankingsSheet.mergeCells(`A${summaryStartRow}:J${summaryStartRow}`);
             const summaryTitleCell = rankingsSheet.getCell(`A${summaryStartRow}`);
             summaryTitleCell.value = 'SUMMARY STATISTICS';
-            summaryTitleCell.font = { bold: true, size: 12 };
-            summaryTitleCell.alignment = { horizontal: 'center' };
+            summaryTitleCell.font = { name: 'Arial', size: 12, bold: true };
+            summaryTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            summaryTitleCell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE3F2FD' }
+            };
             
-            const summaryData = [
-                ['Total Staff Members:', staffWithScores.length],
-                ['Total Combined Sales:', `₱${staffWithScores.reduce((sum, staff) => sum + parseFloat(staff.total_sales), 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`],
-                ['Total Orders Processed:', staffWithScores.reduce((sum, staff) => sum + parseInt(staff.total_orders), 0)],
-                ['Average Performance Score:', `${(staffWithScores.reduce((sum, staff) => sum + staff.performance_score, 0) / staffWithScores.length || 0).toFixed(2)}%`]
-            ];
+            // Calculate summary data
+            const totalStaff = staffWithScores.length;
+            const totalSales = staffWithScores.reduce((sum, staff) => sum + parseFloat(staff.total_sales), 0);
+            const totalOrders = staffWithScores.reduce((sum, staff) => sum + parseInt(staff.total_orders), 0);
+            const avgPerformance = totalStaff > 0 ? staffWithScores.reduce((sum, staff) => sum + staff.performance_score, 0) / totalStaff : 0;
             
-            summaryData.forEach((row, index) => {
-                const summaryRow = rankingsSheet.addRow(['', '', '', '', row[0], row[1]]);
-                summaryRow.getCell(5).font = { bold: true };
-            });
+            rankingsSheet.addRow(['Total Staff Members:', totalStaff, '', '', '', '', '', '', '', '']);
+            rankingsSheet.addRow(['Total Combined Sales:', '', '', '', totalSales, '', '', '', '', '']);
+            rankingsSheet.addRow(['Total Orders Processed:', totalOrders, '', '', '', '', '', '', '', '']);
+            rankingsSheet.addRow(['Average Performance Score:', avgPerformance.toFixed(2), '', '', '', '', '', '', '', '']);
+            
+            // Format summary rows
+            for (let i = summaryStartRow + 1; i <= summaryStartRow + 4; i++) {
+                const row = rankingsSheet.getRow(i);
+                row.getCell(1).font = { bold: true };
+                row.getCell(2).font = { bold: true };
+                if (i === summaryStartRow + 2) { // Total sales row
+                    row.getCell(5).numFmt = '#,##0.00';
+                    row.getCell(5).font = { bold: true, color: { argb: 'FF059669' } };
+                }
+            }
+            
+            // Add footer with signature
+            const footerRow = rankingsSheet.rowCount + 3;
+            rankingsSheet.mergeCells(`A${footerRow}:J${footerRow}`);
+            rankingsSheet.mergeCells(`A${footerRow + 2}:J${footerRow + 2}`);
+            rankingsSheet.mergeCells(`A${footerRow + 4}:J${footerRow + 4}`);
+            rankingsSheet.mergeCells(`A${footerRow + 5}:J${footerRow + 5}`);
+            
+            // Signature line
+            const signatureCell = rankingsSheet.getCell(`A${footerRow + 2}`);
+            signatureCell.value = '________________________';
+            signatureCell.font = { name: 'Arial', size: 10 };
+            signatureCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Printed name
+            const nameCell = rankingsSheet.getCell(`A${footerRow + 4}`);
+            nameCell.value = 'Signature Over Printed Name';
+            nameCell.font = { name: 'Arial', size: 10, bold: true };
+            nameCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Store name
+            const storeNameCell = rankingsSheet.getCell(`A${footerRow + 5}`);
+            storeNameCell.value = 'JM Garis Store';
+            storeNameCell.font = { name: 'Arial', size: 9, italic: true };
+            storeNameCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Set row heights
+            rankingsSheet.getRow(1).height = 25;
+            rankingsSheet.getRow(2).height = 20;
+            
+            // Configure page setup for coupon bond (8.5" x 13")
+            rankingsSheet.pageSetup = {
+                paperSize: 5, // Legal size (8.5" x 14", closest to coupon bond 8.5" x 13")
+                orientation: 'landscape', // Landscape for more columns
+                fitToPage: true,
+                fitToWidth: 1,
+                fitToHeight: 0, // Allow multiple pages vertically
+                margins: {
+                    left: 0.5,
+                    right: 0.5,
+                    top: 0.75,
+                    bottom: 0.75,
+                    header: 0.3,
+                    footer: 0.3
+                },
+                printTitlesRow: '6:6', // Repeat header row on every page
+                horizontalCentered: true
+            };
+            
+            // Configure header and footer for every page
+            rankingsSheet.headerFooter = {
+                oddHeader: '&C&"Arial,Bold"&16JM GARIS STORE\n&"Arial"&12Staff Performance Rankings',
+                oddFooter: '&L&"Arial"&9Generated: ' + new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                }) + '&C&"Arial,Bold"&9Page &P of &N&R&"Arial"&9JM Garis Store'
+            };
         }
         
         // Set response headers for download
