@@ -8,6 +8,10 @@
             </div>
             
             <div v-if="shareLink" class="share-link-container">
+                <div class="pending-notice">
+                    <i class="fas fa-clock"></i>
+                    <p>Link generated! Share it and wait for someone to accept.</p>
+                </div>
                 <p>Share this link with others:</p>
                 <div class="link-display">
                     <input 
@@ -23,7 +27,7 @@
                 <div v-if="copied" class="copy-success">
                     <i class="fas fa-check-circle"></i> Link copied to clipboard!
                 </div>
-                <p class="expiry-note">Link expires in 24 hours</p>
+                <p class="expiry-note">Link expires in 24 hours. Sharing will begin once someone accepts.</p>
             </div>
             <div v-else>
                 <p>Generate a link to share your cart with others:</p>
@@ -207,6 +211,30 @@ export default {
     font-size: 14px;
     color: #333;
     line-height: 1.4;
+}
+
+.pending-notice {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pending-notice i {
+    color: #ff9800;
+    font-size: 18px;
+}
+
+.pending-notice p {
+    margin: 0;
+    font-size: 14px;
+    color: #856404;
+    line-height: 1.4;
+    font-weight: 500;
 }
 </style>
 

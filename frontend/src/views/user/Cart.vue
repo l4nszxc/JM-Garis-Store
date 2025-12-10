@@ -284,6 +284,8 @@ export default {
             partnerUsername: '',
             showStopSharingModal: false,
             showLeaveSharingModal: false,
+            lastFetchTime: 0,
+            fetchDebounceTime: 500,
             notification: {
                 show: false,
                 message: '',
@@ -393,11 +395,8 @@ export default {
                     this.syncStatus = null;
                     this.partnerUsername = '';
                     this.showNotification('You have left the shared cart. The sharing has ended for both users.');
-                    // Don't show loading state for sync updates
-                    const wasLoading = this.isLoadingCart;
-                    this.isLoadingCart = false;
-                    await this.fetchCart();
-                    this.isLoadingCart = wasLoading;
+                    // Fetch cart without showing loading state
+                    await this.fetchCart(false);
                 } else {
                     const error = await response.json();
                     throw new Error(error.message || 'Failed to leave shared cart');
@@ -452,12 +451,21 @@ export default {
                 if (response.ok) {
                     const data = await response.json();
                     
-                    if (data && data.shareId) {
+                    // Only set sync status if share is accepted (has partnerId)
+                    if (data && data.shareId && data.partnerId && data.accepted) {
+                        const previousPartnerId = this.syncStatus?.partnerId;
                         this.syncStatus = data;
-                        await this.fetchPartnerUsername();
+                        
+                        // Only fetch partner username if it changed or is not set
+                        if (previousPartnerId !== data.partnerId || !this.partnerUsername) {
+                            await this.fetchPartnerUsername();
+                        }
                     } else {
-                        this.syncStatus = null;
-                        this.partnerUsername = '';
+                        // Clear sync status if no active accepted share
+                        if (this.syncStatus) {
+                            this.syncStatus = null;
+                            this.partnerUsername = '';
+                        }
                     }
                 }
             } catch (error) {
@@ -676,9 +684,20 @@ export default {
             }
         },
         
-        async fetchCart() {
+        async fetchCart(showLoading = true) {
             try {
-                this.isLoadingCart = true;
+                // Debounce to prevent rapid fetches
+                const now = Date.now();
+                if (now - this.lastFetchTime < this.fetchDebounceTime) {
+                    return;
+                }
+                this.lastFetchTime = now;
+                
+                // Only show loading state if explicitly requested (e.g., initial load)
+                if (showLoading) {
+                    this.isLoadingCart = true;
+                }
+                
                 const token = localStorage.getItem('token');
                 if (!token) {
                     this.$router.push('/login');
@@ -702,7 +721,9 @@ export default {
                 console.error('Error fetching cart:', error);
                 this.cartItems = [];
             } finally {
-                this.isLoadingCart = false;
+                if (showLoading) {
+                    this.isLoadingCart = false;
+                }
             }
         },
         
@@ -722,6 +743,11 @@ export default {
                         this.checkedItems.delete(itemId);
                     }
                     window.dispatchEvent(new CustomEvent('cart-updated'));
+                    
+                    // Refetch to ensure sync without showing loading
+                    if (this.syncStatus) {
+                        await this.fetchCart(false);
+                    }
                 }
             } catch (error) {
                 console.error('Error removing item from cart:', error);
@@ -743,11 +769,8 @@ export default {
                 });
                 
                 if (response.ok) {
-                    // Don't show loading state for quantity updates
-                    const wasLoading = this.isLoadingCart;
-                    this.isLoadingCart = false;
-                    await this.fetchCart();
-                    this.isLoadingCart = wasLoading;
+                    // Fetch cart without showing loading state for quantity updates
+                    await this.fetchCart(false);
                     window.dispatchEvent(new CustomEvent('cart-updated'));
                 }
             } catch (error) {
@@ -758,20 +781,18 @@ export default {
     
     async mounted() {
         await this.getUserData();
-        await this.fetchCart();
+        await this.fetchCart(true); // Show loading only on initial load
         await this.fetchAvailableDiscounts();
         await this.checkSyncStatus();
         
+        // Check for sync status every 3 seconds (slower to prevent rapid reloads)
         this.syncInterval = setInterval(async () => {
             await this.checkSyncStatus();
-            if (this.syncStatus) {
-                // Don't show loading state for sync updates
-                const wasLoading = this.isLoadingCart;
-                this.isLoadingCart = false;
-                await this.fetchCart();
-                this.isLoadingCart = wasLoading;
+            if (this.syncStatus && this.syncStatus.accepted) {
+                // Fetch cart without showing loading state for sync updates
+                await this.fetchCart(false);
             }
-        }, 1000);
+        }, 3000);
     },
     
     beforeDestroy() {
