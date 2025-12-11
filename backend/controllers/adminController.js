@@ -198,7 +198,7 @@ exports.getDashboardStats = async (req, res) => {
         COUNT(DISTINCT o.order_id) as orders_handled,
         COALESCE(SUM(o.total_amount), 0) as total_sales
       FROM users u
-      LEFT JOIN orders o ON u.id = o.accepted_by
+      LEFT JOIN orders o ON u.id = o.accepted_by AND (${timePeriod})
       WHERE u.role = 'staff'
       AND (o.status = 'paid' OR o.status = 'ready for pickup' OR o.status IS NULL)
       GROUP BY u.id, u.username
@@ -847,6 +847,9 @@ exports.getTopCustomers = async (req, res) => {
       case 'year':
         timeFilter = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY)';
         break;
+      case 'all':
+        timeFilter = '1=1';
+        break;
       default:
         timeFilter = 'o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)';
     }
@@ -859,7 +862,7 @@ exports.getTopCustomers = async (req, res) => {
         SUM(o.total_amount) as total_amount
       FROM orders o
       JOIN users u ON o.user_id = u.id
-      WHERE o.status = 'paid' AND ${timeFilter}
+      WHERE o.status = 'paid' AND u.role = 'user' AND ${timeFilter}
       GROUP BY o.user_id, u.username
       ORDER BY total_amount DESC
       LIMIT 5
