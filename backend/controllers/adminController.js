@@ -2136,42 +2136,28 @@ exports.downloadReports = async (req, res) => {
       inventorySheet.getRow(1).height = 25;
       inventorySheet.getRow(2).height = 20;
       
-      // Configure page setup for long coupon bond (8.5" x 13")
+      // Configure page setup for coupon bond (8.5" x 13")
       inventorySheet.pageSetup = {
         paperSize: 5, // Legal size (8.5" x 14", closest to coupon bond 8.5" x 13")
         orientation: 'portrait',
-        fitToPage: false, // Don't fit to page - use natural page breaks
+        fitToPage: true,
         fitToWidth: 1,
         fitToHeight: 0, // Allow multiple pages vertically
         margins: {
           left: 0.5,
           right: 0.5,
-          top: 0.75,
-          bottom: 0.75,
+          top: 1.0,
+          bottom: 1.0,
           header: 0.3,
           footer: 0.3
         },
         printTitlesRow: '6:6', // Repeat header row on every page
-        horizontalCentered: true,
-        verticalCentered: false,
-        rowBreaks: [] // Will be populated below
+        horizontalCentered: true
       };
-      
-      // Add page breaks every 50 rows (after header rows)
-      const invHeaderRowCount = 6; // Rows 1-6 are headers
-      const invDataStartRow = invHeaderRowCount + 1;
-      const invRecordsPerPage = 50;
-      const invTotalRecords = inventoryData.length;
-      
-      // Calculate page breaks
-      for (let i = invRecordsPerPage; i < invTotalRecords; i += invRecordsPerPage) {
-        const breakRow = invDataStartRow + i - 1;
-        inventorySheet.getRow(breakRow).addPageBreak();
-      }
       
       // Configure header and footer for every page
       inventorySheet.headerFooter = {
-        oddHeader: '&C&"Arial,Bold"&16JM GARIS STORE\n&"Arial"&12Inventory Report',
+        oddHeader: '&C&"Arial,Bold"&14JM GARIS STORE\n&"Arial"&11Inventory Report',
         oddFooter: '&L&"Arial"&9Generated: ' + new Date().toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
@@ -2184,51 +2170,28 @@ exports.downloadReports = async (req, res) => {
     if (type === 'sales' || type === 'combined') {
       const salesSheet = workbook.getWorksheet('Sales Report');
       if (salesSheet) {
-        // Configure page setup for long coupon bond (8.5" x 13")
+        // Configure page setup for coupon bond (8.5" x 13")
         salesSheet.pageSetup = {
           paperSize: 5, // Legal size (8.5" x 14", closest to coupon bond 8.5" x 13")
           orientation: 'portrait',
-          fitToPage: false, // Don't fit to page - use natural page breaks
+          fitToPage: true,
           fitToWidth: 1,
           fitToHeight: 0, // Allow multiple pages vertically
           margins: {
             left: 0.5,
             right: 0.5,
-            top: 0.75,
-            bottom: 0.75,
+            top: 1.0,
+            bottom: 1.0,
             header: 0.3,
             footer: 0.3
           },
           printTitlesRow: '6:6', // Repeat header row on every page
-          horizontalCentered: true,
-          verticalCentered: false,
-          rowBreaks: [] // Will be populated below
+          horizontalCentered: true
         };
-        
-        // Add page breaks every 50 rows (after header rows)
-        const salesHeaderRowCount = 6; // Rows 1-6 are headers
-        const salesDataStartRow = salesHeaderRowCount + 1;
-        const salesRecordsPerPage = 50;
-        
-        // Count data rows (excluding headers and summary)
-        let salesDataRowCount = 0;
-        for (let i = salesDataStartRow; i <= salesSheet.rowCount; i++) {
-          const row = salesSheet.getRow(i);
-          const firstCell = row.getCell(1).value;
-          // Stop counting at summary section
-          if (firstCell && firstCell.toString().includes('SUMMARY')) break;
-          salesDataRowCount++;
-        }
-        
-        // Calculate page breaks
-        for (let i = salesRecordsPerPage; i < salesDataRowCount; i += salesRecordsPerPage) {
-          const breakRow = salesDataStartRow + i - 1;
-          salesSheet.getRow(breakRow).addPageBreak();
-        }
         
         // Configure header and footer for every page
         salesSheet.headerFooter = {
-          oddHeader: '&C&"Arial,Bold"&16JM GARIS STORE\n&"Arial"&12Sales Report',
+          oddHeader: '&C&"Arial,Bold"&14JM GARIS STORE\n&"Arial"&11Sales Report',
           oddFooter: '&L&"Arial"&9Generated: ' + new Date().toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -2619,42 +2582,28 @@ exports.downloadLowStockReport = async (req, res) => {
         lowStockSheet.getRow(1).height = 25;
         lowStockSheet.getRow(2).height = 20;
         
-        // Configure page setup for long coupon bond (8.5" x 13")
+        // Configure page setup for coupon bond (8.5" x 13")
         lowStockSheet.pageSetup = {
             paperSize: 5, // Legal size (8.5" x 14", closest to coupon bond 8.5" x 13")
             orientation: 'portrait',
-            fitToPage: false, // Don't fit to page - use natural page breaks
+            fitToPage: true,
             fitToWidth: 1,
             fitToHeight: 0, // Allow multiple pages vertically
             margins: {
                 left: 0.5,
                 right: 0.5,
-                top: 0.75,
-                bottom: 0.75,
+                top: 1.0,
+                bottom: 1.0,
                 header: 0.3,
                 footer: 0.3
             },
             printTitlesRow: '6:6', // Repeat header row on every page
-            horizontalCentered: true,
-            verticalCentered: false,
-            rowBreaks: [] // Will be populated below
+            horizontalCentered: true
         };
-        
-        // Add page breaks every 50 rows (after header rows)
-        const headerRowCount = 6; // Rows 1-6 are headers
-        const dataStartRow = headerRowCount + 1;
-        const recordsPerPage = 50;
-        const totalRecords = filteredItems.length;
-        
-        // Calculate page breaks
-        for (let i = recordsPerPage; i < totalRecords; i += recordsPerPage) {
-            const breakRow = dataStartRow + i - 1;
-            lowStockSheet.getRow(breakRow).addPageBreak();
-        }
         
         // Configure header and footer for every page
         lowStockSheet.headerFooter = {
-            oddHeader: '&C&"Arial,Bold"&16JM GARIS STORE\n&"Arial"&12Low Stock Alert Report',
+            oddHeader: '&C&"Arial,Bold"&14JM GARIS STORE\n&"Arial"&11Low Stock Alert Report',
             oddFooter: '&L&"Arial"&9Generated: ' + new Date().toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
@@ -3026,42 +2975,28 @@ exports.downloadTransactionReport = async (req, res) => {
         transactionSheet.getRow(1).height = 25;
         transactionSheet.getRow(2).height = 20;
         
-        // Configure page setup for long coupon bond (8.5" x 13")
+        // Configure page setup for coupon bond (8.5" x 13")
         transactionSheet.pageSetup = {
             paperSize: 5, // Legal size (8.5" x 14", closest to coupon bond 8.5" x 13")
             orientation: 'landscape', // Landscape for more columns
-            fitToPage: false, // Don't fit to page - use natural page breaks
+            fitToPage: true,
             fitToWidth: 1,
             fitToHeight: 0, // Allow multiple pages vertically
             margins: {
                 left: 0.5,
                 right: 0.5,
-                top: 0.75,
-                bottom: 0.75,
+                top: 1.0,
+                bottom: 1.0,
                 header: 0.3,
                 footer: 0.3
             },
             printTitlesRow: `${currentRow + 1}:${currentRow + 1}`, // Repeat header row on every page
-            horizontalCentered: true,
-            verticalCentered: false,
-            rowBreaks: [] // Will be populated below
+            horizontalCentered: true
         };
-        
-        // Add page breaks every 50 rows (after header rows)
-        const headerRowCount = currentRow + 1; // Dynamic header rows
-        const dataStartRow = headerRowCount + 1;
-        const recordsPerPage = 50;
-        const totalRecords = filteredOrders.length;
-        
-        // Calculate page breaks
-        for (let i = recordsPerPage; i < totalRecords; i += recordsPerPage) {
-            const breakRow = dataStartRow + i - 1;
-            transactionSheet.getRow(breakRow).addPageBreak();
-        }
         
         // Configure header and footer for every page
         transactionSheet.headerFooter = {
-            oddHeader: '&C&"Arial,Bold"&16JM GARIS STORE\n&"Arial"&12Transaction Report',
+            oddHeader: '&C&"Arial,Bold"&14JM GARIS STORE\n&"Arial"&11Transaction Report',
             oddFooter: '&L&"Arial"&9Generated: ' + new Date().toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
@@ -3942,42 +3877,28 @@ exports.downloadStaffReports = async (req, res) => {
             rankingsSheet.getRow(1).height = 25;
             rankingsSheet.getRow(2).height = 20;
             
-            // Configure page setup for long coupon bond (8.5" x 13")
+            // Configure page setup for coupon bond (8.5" x 13")
             rankingsSheet.pageSetup = {
                 paperSize: 5, // Legal size (8.5" x 14", closest to coupon bond 8.5" x 13")
                 orientation: 'landscape', // Landscape for more columns
-                fitToPage: false, // Don't fit to page - use natural page breaks
+                fitToPage: true,
                 fitToWidth: 1,
                 fitToHeight: 0, // Allow multiple pages vertically
                 margins: {
                     left: 0.5,
                     right: 0.5,
-                    top: 0.75,
-                    bottom: 0.75,
+                    top: 1.0,
+                    bottom: 1.0,
                     header: 0.3,
                     footer: 0.3
                 },
                 printTitlesRow: '6:6', // Repeat header row on every page
-                horizontalCentered: true,
-                verticalCentered: false,
-                rowBreaks: [] // Will be populated below
+                horizontalCentered: true
             };
-            
-            // Add page breaks every 50 rows (after header rows)
-            const staffHeaderRowCount = 6; // Rows 1-6 are headers
-            const staffDataStartRow = staffHeaderRowCount + 1;
-            const staffRecordsPerPage = 50;
-            const staffTotalRecords = staffWithScores.length;
-            
-            // Calculate page breaks
-            for (let i = staffRecordsPerPage; i < staffTotalRecords; i += staffRecordsPerPage) {
-                const breakRow = staffDataStartRow + i - 1;
-                rankingsSheet.getRow(breakRow).addPageBreak();
-            }
             
             // Configure header and footer for every page
             rankingsSheet.headerFooter = {
-                oddHeader: '&C&"Arial,Bold"&16JM GARIS STORE\n&"Arial"&12Staff Performance Rankings',
+                oddHeader: '&C&"Arial,Bold"&14JM GARIS STORE\n&"Arial"&11Staff Performance Rankings',
                 oddFooter: '&L&"Arial"&9Generated: ' + new Date().toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
