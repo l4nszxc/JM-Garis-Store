@@ -1757,6 +1757,8 @@ exports.downloadReports = async (req, res) => {
       
       // Add table headers
       const headerRow = salesSheet.addRow(['Product Name', 'Category', 'Units Sold', 'Revenue (₱)', 'Avg. Price (₱)']);
+      const salesHeaderRowNum = headerRow.number; // Capture actual row number
+      
       headerRow.font = { name: 'Arial', size: 11, bold: true };
       headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
       headerRow.fill = {
@@ -1958,6 +1960,8 @@ exports.downloadReports = async (req, res) => {
       
       // Add table headers
       const headerRow = inventorySheet.addRow(['Product Name', 'Category', 'Current Stock', 'Unit Price (₱)', 'Total Value (₱)', 'Status']);
+      const inventoryHeaderRowNum = headerRow.number; // Capture actual row number
+      
       headerRow.font = { name: 'Arial', size: 11, bold: true };
       headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
       headerRow.fill = {
@@ -2151,7 +2155,7 @@ exports.downloadReports = async (req, res) => {
           header: 0.3,
           footer: 0.3
         },
-        printTitlesRow: '6:6', // Repeat header row on every page
+        printTitlesRow: `${inventoryHeaderRowNum}:${inventoryHeaderRowNum}`, // Repeat only the column header row
         horizontalCentered: true
       };
       
@@ -2185,7 +2189,7 @@ exports.downloadReports = async (req, res) => {
             header: 0.3,
             footer: 0.3
           },
-          printTitlesRow: '6:6', // Repeat header row on every page
+          printTitlesRow: `${salesHeaderRowNum}:${salesHeaderRowNum}`, // Repeat only the column header row
           horizontalCentered: true
         };
         
@@ -2389,6 +2393,8 @@ exports.downloadLowStockReport = async (req, res) => {
         // Add headers
         const headerRowIndex = 6 + (filter && filter !== 'all' ? 1 : 0) + (search ? 1 : 0);
         const headerRow = lowStockSheet.addRow(['Product Name', 'Type', 'Stock Left', 'Unit Price (₱)', 'Category', 'Status']);
+        const actualHeaderRowNum = headerRow.number; // Get the actual row number
+        
         headerRow.eachCell((cell, colNumber) => {
             cell.font = { name: 'Arial', size: 11, bold: true };
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -2597,7 +2603,7 @@ exports.downloadLowStockReport = async (req, res) => {
                 header: 0.3,
                 footer: 0.3
             },
-            printTitlesRow: '6:6', // Repeat header row on every page
+            printTitlesRow: `${actualHeaderRowNum}:${actualHeaderRowNum}`, // Repeat only the column header row
             horizontalCentered: true
         };
         
@@ -2736,6 +2742,8 @@ exports.downloadTransactionReport = async (req, res) => {
             'Staff', 
             'Order Type'
         ]);
+        const actualHeaderRowNum = headerRow.number; // Get the actual row number
+        
         headerRow.eachCell((cell, colNumber) => {
             cell.font = { name: 'Arial', size: 11, bold: true };
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -2990,7 +2998,7 @@ exports.downloadTransactionReport = async (req, res) => {
                 header: 0.3,
                 footer: 0.3
             },
-            printTitlesRow: `${currentRow + 1}:${currentRow + 1}`, // Repeat header row on every page
+            printTitlesRow: `${actualHeaderRowNum}:${actualHeaderRowNum}`, // Repeat only the column header row
             horizontalCentered: true
         };
         
@@ -3732,6 +3740,7 @@ exports.downloadStaffReports = async (req, res) => {
                 'Completion Rate (%)',
                 'Avg Order Value (₱)'
             ]);
+            const staffHeaderRowNum = headerRow.number; // Capture actual row number
             
             // Style headers
             headerRow.eachCell((cell) => {
@@ -3892,7 +3901,7 @@ exports.downloadStaffReports = async (req, res) => {
                     header: 0.3,
                     footer: 0.3
                 },
-                printTitlesRow: '6:6', // Repeat header row on every page
+                printTitlesRow: `${staffHeaderRowNum}:${staffHeaderRowNum}`, // Repeat only the column header row
                 horizontalCentered: true
             };
             
