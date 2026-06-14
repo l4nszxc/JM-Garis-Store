@@ -117,3 +117,22 @@ exports.leaveSharing = async (req, res) => {
         res.status(500).json({ message: 'Failed to leave shared cart' });
     }
 };
+
+exports.getUsernameById = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const [users] = await db.execute(
+            'SELECT username FROM users WHERE id = ?',
+            [userId]
+        );
+        
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        res.json({ username: users[0].username });
+    } catch (error) {
+        console.error('Error fetching username:', error);
+        res.status(500).json({ message: 'Failed to fetch username' });
+    }
+};

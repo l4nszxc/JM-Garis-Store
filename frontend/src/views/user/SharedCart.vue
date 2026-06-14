@@ -30,8 +30,7 @@
                         <h3>{{ item.name }}</h3>
                         <p v-if="item.choice_name" class="choice-info">
                             <i class="fas fa-tag"></i> Option: {{ item.choice_name }}
-                        </p>
-                        <p class="price">Price: ₱{{ (item.price || 0).toFixed(2) }}</p>
+                        </p>                        <p class="price">Price: ₱{{ (parseFloat(item.price) || 0).toFixed(2) }}</p>
                         <p class="quantity">Quantity: {{ item.quantity }}</p>
                     </div>
                 </div>
@@ -92,7 +91,7 @@ export default {
                     return;
                 }
 
-                const response = await fetch('http://localhost:7904/api/users/getUsername', {
+                const response = await this.$fetch('/api/users/getUsername', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -117,7 +116,7 @@ export default {
                     throw new Error('Invalid share link');
                 }
                 
-                const response = await fetch(`http://localhost:7904/api/shared-cart/${shareId}`, {
+                const response = await this.$fetch(`/api/shared-cart/${shareId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -144,7 +143,7 @@ export default {
                 const token = localStorage.getItem('token');
                 const shareId = this.$route.params.shareId;
                 
-                const response = await fetch(`http://localhost:7904/api/shared-cart/${shareId}/accept`, {
+                const response = await this.$fetch(`/api/shared-cart/${shareId}/accept`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -171,7 +170,7 @@ export default {
         async handleLogout() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/users/logout', {
+                const response = await this.$fetch('/api/users/logout', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -351,3 +350,4 @@ export default {
     background-color: #2980b9;
 }
 </style>
+

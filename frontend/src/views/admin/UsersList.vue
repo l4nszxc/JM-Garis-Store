@@ -1,5 +1,5 @@
 <template>
-  <div class="users-list-container">
+  <div class="admin-container users-list-container">
     <AdminNavbar 
       :username="username"
       @logout="showLogoutModal = true"
@@ -7,7 +7,26 @@
     
     <div class="users-content">
       <div class="header">
-        <h2>ALL USERS</h2>
+        <div class="header-top">
+          <h2>ALL USERS</h2>
+          <div class="user-counts">
+            <div class="count-item verified-count">
+              <i class="fas fa-user-check"></i>
+              <span class="count-label">Verified:</span>
+              <span class="count-value">{{ verifiedCount }}</span>
+            </div>
+            <div class="count-item unverified-count">
+              <i class="fas fa-user-times"></i>
+              <span class="count-label">Unverified:</span>
+              <span class="count-value">{{ unverifiedCount }}</span>
+            </div>
+            <div class="count-item total-count">
+              <i class="fas fa-users"></i>
+              <span class="count-label">Total:</span>
+              <span class="count-value">{{ users.length }}</span>
+            </div>
+          </div>
+        </div>
         <div class="filters">
           <div class="search-box">
             <input 
@@ -25,46 +44,82 @@
       </div>
 
       <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Username</th>
-          <th>Full Name</th>
-          <th>Gender</th>
-          <th>Contact Info</th>
-          <th>Address</th>
-          <th>Birthdate</th>
-          <th>Registration Date</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="user in filteredUsers" :key="user.id">
-          <td>{{ user.username }}</td>
-          <td>
-            {{ formatFullName(user.firstname, user.middlename, user.lastname) }}
-          </td>
-          <td>{{ capitalizeFirst(user.gender) }}</td>
-          <td>
-            <div class="contact-info">
-              <div>{{ user.email }}</div>
-              <div>{{ formatPhoneNumber(user.phone_number) }}</div>
+        <!-- Loading skeleton -->
+        <div v-if="isLoadingUsers" class="loading-container">
+          <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Loading users data...</span>
+          </div>
+          <!-- Skeleton table -->
+          <div class="skeleton-table">
+            <div class="skeleton-header">
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
             </div>
-          </td>
-          <td>{{ user.address }}</td>
-          <td>{{ formatDate(user.birthdate, 'short') }}</td>
-          <td>{{ formatDate(user.created_at) }}</td>
-          <td>
-            <span :class="['status-badge', getStatusClass(user)]">
-              {{ user.email_verified ? 'Verified' : 'Unverified' }}
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <div v-if="filteredUsers.length === 0" class="no-results">
-      No users found matching your search criteria
-    </div>
+            <div v-for="n in 6" :key="n" class="skeleton-row">
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
+              <div class="skeleton-cell"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Actual data table -->
+        <table v-else-if="filteredUsers.length">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Full Name</th>
+              <th>Gender</th>
+              <th>Contact Info</th>
+              <th>Address</th>
+              <th>Birthdate</th>
+              <th>Registration Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="user in filteredUsers" :key="user.id">
+              <td>{{ user.username }}</td>
+              <td>
+                {{ formatFullName(user.firstname, user.middlename, user.lastname) }}
+              </td>
+              <td>{{ capitalizeFirst(user.gender) }}</td>
+              <td>
+                <div class="contact-info">
+                  <div>{{ user.email }}</div>
+                  <div>{{ formatPhoneNumber(user.phone_number) }}</div>
+                </div>
+              </td>
+              <td>{{ user.address }}</td>
+              <td>{{ formatDate(user.birthdate, 'short') }}</td>
+              <td>{{ formatDate(user.created_at) }}</td>
+              <td>
+                <span :class="['status-badge', getStatusClass(user)]">
+                  {{ user.email_verified ? 'Verified' : 'Unverified' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <!-- No data state -->
+        <div v-else-if="!isLoadingUsers" class="no-results">
+          <i class="fas fa-users"></i>
+          <p>No users found matching your search criteria</p>
+          <span class="help-text">Try adjusting your search filters</span>
+        </div>
       </div>
     </div>
 
@@ -92,7 +147,8 @@ export default {
           users: [],
           searchQuery: '',
           statusFilter: 'all',
-          showLogoutModal: false
+          showLogoutModal: false,
+          isLoadingUsers: false
       }
   },
   computed: {
@@ -123,6 +179,12 @@ export default {
 
       return matchesSearch && matchesStatus;
     });
+  },
+  verifiedCount() {
+    return this.users.filter(user => user.email_verified).length;
+  },
+  unverifiedCount() {
+    return this.users.filter(user => !user.email_verified).length;
   }
 },
     methods: {
@@ -154,8 +216,9 @@ export default {
       },
     async fetchUsers() {
       try {
+        this.isLoadingUsers = true;
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:7904/api/admin/users', {
+        const response = await this.$fetch('/api/admin/users', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -170,12 +233,14 @@ export default {
         }
       } catch (error) {
         console.error('Error fetching users:', error);
+      } finally {
+        this.isLoadingUsers = false;
       }
     },
     async handleLogout() {
       try {
           const token = localStorage.getItem('token');
-          const response = await fetch('http://localhost:7904/api/users/logout', {
+          const response = await this.$fetch('/api/users/logout', {
               method: 'POST',
               headers: {
                   'Authorization': `Bearer ${token}`,
@@ -213,7 +278,7 @@ export default {
   font-family: Arial, sans-serif;
   min-height: 100vh;
   background-color: #f5f5f5;
-  padding-left: 250px;
+  /* padding-left removed - now handled by admin-container global class */
 }
 
 .users-content {
@@ -230,10 +295,75 @@ export default {
   margin-bottom: 2rem;
 }
 
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
 .header h2 {
   color: #2c3e50;
-  margin: 0 0 1rem 0;
+  margin: 0;
   font-size: 1.5rem;
+}
+
+.user-counts {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.count-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.count-item i {
+  font-size: 1.1rem;
+}
+
+.count-label {
+  font-weight: 500;
+  color: #64748b;
+}
+
+.count-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.verified-count {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.verified-count .count-value {
+  color: #166534;
+}
+
+.unverified-count {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.unverified-count .count-value {
+  color: #dc2626;
+}
+
+.total-count {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.total-count .count-value {
+  color: #0369a1;
 }
 
 .filters {
@@ -327,6 +457,105 @@ td {
   color: #dc2626;
 }
 
+/* Loading styles */
+.loading-container {
+  text-align: center;
+  padding: 2rem;
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  color: #3b82f6;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.loading-spinner i {
+  font-size: 1.5rem;
+}
+
+.skeleton-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.skeleton-header {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px 8px 0 0;
+}
+
+.skeleton-row {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.skeleton-cell {
+  height: 1rem;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+.skeleton-header .skeleton-cell {
+  height: 1.25rem;
+  background: linear-gradient(90deg, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+}
+
+/* Skeleton cells for different columns */
+.skeleton-cell:nth-child(1) { flex: 1; } /* Username */
+.skeleton-cell:nth-child(2) { flex: 1.5; } /* Full Name */
+.skeleton-cell:nth-child(3) { flex: 0.8; } /* Gender */
+.skeleton-cell:nth-child(4) { flex: 1.7; } /* Contact Info */
+.skeleton-cell:nth-child(5) { flex: 2; } /* Address */
+.skeleton-cell:nth-child(6) { flex: 1; } /* Birthdate */
+.skeleton-cell:nth-child(7) { flex: 1.2; } /* Registration Date */
+.skeleton-cell:nth-child(8) { flex: 0.8; } /* Status */
+
+.no-results {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.no-results i {
+  font-size: 3rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.no-results p {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.help-text {
+  display: block;
+  margin-top: 0.5rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 /* Table Column Widths for Desktop */
 @media (min-width: 1024px) {
   table th:nth-child(1), table td:nth-child(1) { width: 10%; }
@@ -370,12 +599,33 @@ td {
 }
 
 @media (max-width: 768px) {
-  .users-list-container {
-    padding-left: 60px;
-  }
+  /* padding-left removed - now handled by admin-container global class */
 
   .header {
     padding: 1rem;
+  }
+
+  .header-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .user-counts {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .count-item {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .count-item i {
+    font-size: 1rem;
+  }
+
+  .count-value {
+    font-size: 1rem;
   }
 
   .header h2 {
@@ -433,3 +683,4 @@ tbody tr:hover {
   font-size: 1rem;
 }
 </style>
+

@@ -62,3 +62,18 @@ exports.getAvailableDiscounts = async (req, res) => {
         res.status(500).json({ message: 'Error getting available discounts' });
     }
 };
+exports.getUserLoyaltyStatus = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const loyaltyStatus = await Reward.getUserLoyaltyStatus(userId);
+        res.json(loyaltyStatus || {
+            tier_name: null,
+            bonus_percentage: 0,
+            current_month_spend: 0,
+            has_free_product: false
+        });
+    } catch (error) {
+        console.error('Error getting user loyalty status:', error);
+        res.status(500).json({ message: 'Error getting user loyalty status' });
+    }
+};

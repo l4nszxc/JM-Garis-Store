@@ -36,7 +36,8 @@ router.use(authenticate);
 router.get('/profile', userController.getProfile);
 router.put('/profile', userController.updateProfile);
 router.get('/getUsername', userController.getUsername);
-router.get('/getUsernameById/:id', userController.getUsernameById); 
+router.get('/getUsernameById/:userId', userController.getUsernameById); 
+router.put('/change-password', userController.changePassword);
 
 // Profile picture routes
 router.post('/upload-profile-picture', 
@@ -47,5 +48,6 @@ router.delete('/remove-profile-picture', userController.removeProfilePicture);
 
 // Logout route (requires authentication)
 router.post('/logout', userController.logout);
+router.get('/username/:userId', userController.getUsernameById);
 
 module.exports = router;

@@ -12,10 +12,11 @@
                             type="text" 
                             v-model="searchQuery" 
                             placeholder="Search by product name..."
+                            :disabled="isLoadingProducts"
                         >
                         </div>
                         <div class="sort-controls">
-                        <select v-model="sortBy" class="sort-select">
+                        <select v-model="sortBy" class="sort-select" :disabled="isLoadingProducts">
                             <option value="name">Name</option>
                             <option value="updated_at">Date Updated</option>
                             <option value="price">Price</option>
@@ -26,11 +27,12 @@
                             class="sort-direction-btn" 
                             @click="toggleSortDirection"
                             :title="sortDirection === 'asc' ? 'Ascending' : 'Descending'"
+                            :disabled="isLoadingProducts"
                         >
                             <i :class="['fas', sortDirection === 'asc' ? 'fa-sort-up' : 'fa-sort-down']"></i>
                         </button>
                         </div>
-                        <button @click="resetSearch" class="reset-btn">
+                        <button @click="resetSearch" class="reset-btn" :disabled="isLoadingProducts">
                         <i class="fas fa-undo"></i> Reset Search
                         </button>
                     </div>
@@ -44,135 +46,157 @@
                         :key="category.value"
                         :class="['category-btn', { active: selectedCategory === category.value }]"
                         @click="selectedCategory = category.value"
+                        :disabled="isLoadingProducts"
                     >
                         {{ category.label }}
                     </button>
                 </div>
             </div>
             <div class="table-container">
-                <table v-if="filteredProducts.length">
-                    <thead>
-                        <tr>
-                            <th>Image</th>
-                            <th>Name</th>
-                            <th>Category</th>
-                            <th>Price</th>
-                            <th>Options</th>
-                            <th>Stock</th>
-                            <th>Total Sold</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template v-for="product in filteredProducts" :key="product.products_id">
-                            <!-- Main product row -->
-                            <tr :class="{'product-row': true}">
-                                <td>
-                                    <img 
-                                        :src="product.image || '/img/placeholder.jpg'"
-                                        :alt="product.name"
-                                        class="product-image"
-                                        @error="handleImageError"
-                                    >
-                                </td>
-                                <td>{{ product.name }}</td>
-                                <td>{{ product.category }}</td>
-                                <td>{{ formatPrice(product.price) }}</td>
-                                <td>
-                                    <div class="options-count">
-                                        <span v-if="product.choices && product.choices.length">
-                                            {{ product.choices.length }} options
-                                            <button @click="toggleChoices(product)" class="toggle-choices-btn">
-                                                <i :class="['fas', expandedProducts.has(product.products_id) ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
-                                            </button>
-                                        </span>
-                                        <span v-else>No options</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span 
-                                        :class="getStockStatusClass(product.choices && product.choices.length > 0 ? 
-                                            product.choices.reduce((total, choice) => total + (parseInt(choice.stock) || 0), 0) : 
-                                            product.stock_quantity)" 
-                                        class="stock-badge"
-                                    >
-                                        {{ product.choices && product.choices.length > 0 ? 
-                                            product.choices.reduce((total, choice) => total + (parseInt(choice.stock) || 0), 0) : 
-                                            product.stock_quantity }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="sales-badge" :class="getSalesStatusClass(product.total_sold)">
-                                        {{ product.total_sold || 0 }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <button @click="showEditModal(product)" class="edit-btn">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                    <button @click="showDeleteConfirmation(product)" class="delete-btn">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </td>
-                            </tr>
-                            
-                            <!-- Product choices row (conditionally rendered) -->
-                            <tr v-if="expandedProducts.has(product.products_id) && product.choices && product.choices.length > 0"
-                                :key="`choices-${product.products_id}`" 
-                                class="choices-row">
-                                <td colspan="8">
-                                    <div class="choices-container">
-                                        <h4>Product Options for {{ product.name }}</h4>
-                                        <table class="choices-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Image</th>
-                                                    <th>Option Name</th>
-                                                    <th>Price</th>
-                                                    <th>Stock</th>
-                                                    <th>Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr v-for="choice in product.choices" :key="choice.choice_id">
-                                                    <td>
-                                                        <img 
-                                                            :src="choice.image || product.image || '/img/placeholder.jpg'"
-                                                            :alt="choice.name"
-                                                            class="choice-image"
-                                                            @error="handleImageError"
-                                                        >
-                                                    </td>
-                                                    <td>{{ choice.name }}</td>
-                                                    <td>{{ formatPrice(choice.price) }}</td>
-                                                    <td>
-                                                        <span 
-                                                            :class="getStockStatusClass(choice.stock)" 
-                                                            class="stock-badge">
-                                                            {{ choice.stock }}
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <button @click="showEditChoiceModal(choice, product)" class="edit-choice-btn">
-                                                            <i class="fas fa-edit"></i> Edit
-                                                        </button>
-                                                        <button @click="showDeleteChoiceConfirmation(choice, product)" class="delete-choice-btn">
-                                                            <i class="fas fa-trash"></i> Delete
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-                <div v-else class="no-results">
-                    <i class="fas fa-box-open"></i>
-                    No products found
+                <!-- Loading State -->
+                <div v-if="isLoadingProducts" class="loading-products">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <p>Loading products...</p>
                 </div>
+                
+                <!-- Products Table -->
+                <template v-else>
+                    <table v-if="filteredProducts.length">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Options</th>
+                                <th>Stock</th>
+                                <th>Total Sold</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template v-for="product in filteredProducts" :key="product.products_id">
+                                <!-- Main product row -->
+                                <tr :class="{'product-row': true}">
+                                    <td>
+                                        <img 
+                                            :src="product.image || '/img/placeholder.jpg'"
+                                            :alt="product.name"
+                                            class="product-image"
+                                            @error="handleImageError"
+                                        >
+                                    </td>
+                                    <td>{{ product.name }}</td>
+                                    <td>{{ product.category }}</td>
+                                    <td>
+                                        <template v-if="product.choices && product.choices.length > 0 && getPriceRange(product).min !== getPriceRange(product).max">
+                                            {{ formatPrice(getPriceRange(product).min) }} - {{ formatPrice(getPriceRange(product).max) }}
+                                        </template>
+                                        <template v-else-if="product.choices && product.choices.length > 0">
+                                            {{ formatPrice(getPriceRange(product).min) }}
+                                        </template>
+                                        <template v-else>
+                                            {{ formatPrice(product.price) }}
+                                        </template>
+                                    </td>
+                                    <td>
+                                        <div class="options-count">
+                                            <span v-if="product.choices && product.choices.length">
+                                                {{ product.choices.length }} options
+                                                <button @click="toggleChoices(product)" class="toggle-choices-btn">
+                                                    <i :class="['fas', expandedProducts.has(product.products_id) ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
+                                                </button>
+                                            </span>
+                                            <span v-else>No options</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span 
+                                            :class="getStockStatusClass(product.choices && product.choices.length > 0 ? 
+                                                product.choices.reduce((total, choice) => total + (parseInt(choice.stock) || 0), 0) : 
+                                                product.stock_quantity)" 
+                                            class="stock-badge"
+                                        >
+                                            {{ product.choices && product.choices.length > 0 ? 
+                                                product.choices.reduce((total, choice) => total + (parseInt(choice.stock) || 0), 0) : 
+                                                product.stock_quantity }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="sales-badge" :class="getSalesStatusClass(product.total_sold)">
+                                            {{ product.total_sold || 0 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button @click="showEditModal(product)" class="edit-btn">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button @click="showDeleteConfirmation(product)" class="delete-btn">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Product choices row (conditionally rendered) -->
+                                <tr v-if="expandedProducts.has(product.products_id) && product.choices && product.choices.length > 0"
+                                    :key="`choices-${product.products_id}`" 
+                                    class="choices-row">
+                                    <td colspan="8">
+                                        <div class="choices-container">
+                                            <h4>Product Options for {{ product.name }}</h4>
+                                            <table class="choices-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Image</th>
+                                                        <th>Option Name</th>
+                                                        <th>Price</th>
+                                                        <th>Stock</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr v-for="choice in product.choices" :key="choice.choice_id">
+                                                        <td>
+                                                            <img 
+                                                                :src="choice.image || product.image || '/img/placeholder.jpg'"
+                                                                :alt="choice.name"
+                                                                class="choice-image"
+                                                                @error="handleImageError"
+                                                            >
+                                                        </td>
+                                                        <td>{{ choice.name }}</td>
+                                                        <td>{{ formatPrice(choice.price) }}</td>
+                                                        <td>
+                                                            <span 
+                                                                :class="getStockStatusClass(choice.stock)" 
+                                                                class="stock-badge">
+                                                                {{ choice.stock }}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <button @click="showEditChoiceModal(choice, product)" class="edit-choice-btn">
+                                                                <i class="fas fa-edit"></i> Edit
+                                                            </button>
+                                                            <button @click="showDeleteChoiceConfirmation(choice, product)" class="delete-choice-btn">
+                                                                <i class="fas fa-trash"></i> Delete
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                    <div v-if="!isLoadingProducts && !filteredProducts.length" class="no-results">
+                        <i class="fas fa-box-open"></i>
+                        No products found
+                    </div>
+                </template>
             </div>
         </div>
 
@@ -190,10 +214,20 @@
                         <label for="description">Description</label>
                         <textarea id="description" v-model="editingProduct.description" required></textarea>
                     </div>
-                    
-                    <div class="form-group">
+                      <div class="form-group">
                         <label for="price">Price</label>
-                        <input type="number" id="price" v-model="editingProduct.price" step="0.01" required>
+                        <input 
+                            type="number" 
+                            id="price" 
+                            v-model="editingProduct.price" 
+                            step="0.01" 
+                            required
+                            :disabled="editingChoices.length > 0"
+                            :title="editingChoices.length > 0 ? 'Base price is disabled when using product options' : ''"
+                        >
+                        <small v-if="editingChoices.length > 0" class="help-text">
+                            <i class="fas fa-info-circle"></i> Base price is disabled when using product options
+                        </small>
                     </div>
                     
                     <div class="form-group">
@@ -221,6 +255,7 @@
                             <option value="Canned Goods">Canned Goods</option>
                             <option value="Biscuits">Biscuits</option>
                             <option value="Candies and Snacks">Candies and Snacks</option>
+                            <option value="Bar and Soap">Bar and Soap</option>
                         </select>
                     </div>
                     <div class="product-choices-section">
@@ -406,6 +441,7 @@ export default {
             choiceProductName: '',
             editingChoices: [],
             newChoiceImages: [],
+            isLoadingProducts: false,
             categories: [
                 { label: 'All', value: '' },
                 { label: 'Beverages', value: 'Beverages' },
@@ -414,7 +450,8 @@ export default {
                 { label: 'Condiments', value: 'Condiments' },
                 { label: 'Canned Goods', value: 'Canned Goods' },
                 { label: 'Biscuits', value: 'Biscuits' },
-                { label: 'Candies & Snacks', value: 'Candies and Snacks' }
+                { label: 'Candies & Snacks', value: 'Candies and Snacks' },
+                { label: 'Bar and Soap', value: 'Bar and Soap' }
             ],
             sortBy: 'updated_at',
             sortDirection: 'desc',
@@ -477,21 +514,52 @@ export default {
         }
     },
     methods: {
+        getPriceRange(product) {
+            if (!product.choices || !product.choices.length) {
+                return { min: product.price, max: product.price };
+            }
+            
+            let min = Infinity;
+            let max = 0;
+            
+            product.choices.forEach(choice => {
+                if (choice.price && parseFloat(choice.price) > 0) {
+                    min = Math.min(min, parseFloat(choice.price));
+                    max = Math.max(max, parseFloat(choice.price));
+                }
+            });
+            
+            if (min === Infinity) min = parseFloat(product.price) || 0;
+            if (max === 0) max = parseFloat(product.price) || 0;
+            
+            return { min, max };
+        },
         toggleSortDirection() {
             this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-        },
-        addChoice() {
+        },        addChoice() {
             this.editingChoices.push({
                 name: '',
                 price: null,
                 stock: null
             });
             this.newChoiceImages.push(null);
+            
+            // Set base price to 0 when adding the first choice
+            if (this.editingChoices.length === 1) {
+                this.editingProduct.price = 0;
+            }
         },
-        
-        removeChoice(index) {
+          removeChoice(index) {
             this.editingChoices.splice(index, 1);
             this.newChoiceImages.splice(index, 1);
+            
+            // Re-enable base price if all choices are removed
+            if (this.editingChoices.length === 0) {
+                // Only reset if it was previously 0
+                if (parseFloat(this.editingProduct.price) === 0) {
+                    this.editingProduct.price = '';  // Reset to empty so user can enter a valid price
+                }
+            }
         },
         
         handleNewChoiceImageUpload(event, index) {
@@ -519,7 +587,7 @@ export default {
                     return;
                 }
                 
-                const response = await fetch(`http://localhost:7904/api/products/choices/${this.choiceToDelete.choice_id}`, {
+                const response = await this.$fetch(`/api/products/choices/${this.choiceToDelete.choice_id}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -531,7 +599,8 @@ export default {
                     throw new Error(error.message || 'Failed to delete product option');
                 }
                 
-                // Refresh products to get updated data
+                // Clear cache and refresh products to get updated data
+                this.clearProductsCache();
                 await this.fetchProducts();
                 this.closeDeleteChoiceModal();
             } catch (error) {
@@ -585,7 +654,7 @@ export default {
         async confirmDelete() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/products/${this.productToDelete.products_id}`, {
+                const response = await this.$fetch(`/api/products/${this.productToDelete.products_id}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -598,6 +667,9 @@ export default {
 
                 // Remove product from local array
                 this.products = this.products.filter(p => p.products_id !== this.productToDelete.products_id);
+                
+                // Clear cache since data has changed
+                this.clearProductsCache();
                 
                 // Close modal and clear selection
                 this.closeDeleteModal();
@@ -612,7 +684,32 @@ export default {
             this.searchQuery = '';
         },
         
+        clearProductsCache() {
+            sessionStorage.removeItem('admin_products_cache');
+            sessionStorage.removeItem('admin_products_cache_timestamp');
+        },
+        
+        refreshProducts() {
+            this.clearProductsCache();
+            this.fetchProducts();
+        },
+        
         async fetchProducts() {
+            // Check if products are already cached in sessionStorage
+            const cachedProducts = sessionStorage.getItem('admin_products_cache');
+            const cacheTimestamp = sessionStorage.getItem('admin_products_cache_timestamp');
+            const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+            
+            if (cachedProducts && cacheTimestamp) {
+                const age = Date.now() - parseInt(cacheTimestamp);
+                if (age < CACHE_DURATION) {
+                    // Use cached data
+                    this.products = JSON.parse(cachedProducts);
+                    return;
+                }
+            }
+            
+            this.isLoadingProducts = true;
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
@@ -620,7 +717,7 @@ export default {
                     return;
                 }
                 
-                const response = await fetch('http://localhost:7904/api/products', {
+                const response = await this.$fetch('/api/products', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -634,13 +731,17 @@ export default {
                         total_sold: parseInt(product.total_sold) || 0,
                         choices: Array.isArray(product.choices) ? product.choices : []
                     }));
-                    // Debug log to verify data
-                    console.log("Fetched products:", this.products);
+                    
+                    // Cache the products data
+                    sessionStorage.setItem('admin_products_cache', JSON.stringify(this.products));
+                    sessionStorage.setItem('admin_products_cache_timestamp', Date.now().toString());
                 } else {
                     console.error('Failed to fetch products:', response.status);
                 }
             } catch (error) {
                 console.error('Error fetching products:', error);
+            } finally {
+                this.isLoadingProducts = false;
             }
         },
         
@@ -656,11 +757,16 @@ export default {
         handleImageError(e) {
             e.target.src = '/img/placeholder.jpg';
         },
-        
-        showEditModal(product) {
+          showEditModal(product) {
             this.editingProduct = { ...product };
             // Load existing choices
             this.editingChoices = product.choices ? [...product.choices] : [];
+            
+            // If there are choices, set base price to 0
+            if (this.editingChoices.length > 0) {
+                this.editingProduct.price = 0;
+            }
+            
             this.newChoiceImages = new Array(this.editingChoices.length).fill(null);
             this.showModal = true;
         },
@@ -712,11 +818,11 @@ export default {
                 
                 // Store current category for later
                 const currentCategory = this.selectedCategory;
-                
-                // Add existing form data
+                  // Add existing form data
                 formData.append('name', this.editingProduct.name);
                 formData.append('description', this.editingProduct.description);
-                formData.append('price', parseFloat(this.editingProduct.price));
+                // Set price to 0 when there are choices
+                formData.append('price', this.editingChoices.length > 0 ? 0 : parseFloat(this.editingProduct.price));
                 formData.append('stock_quantity', parseInt(this.editingProduct.stock_quantity));
                 formData.append('category', this.editingProduct.category);
 
@@ -746,7 +852,7 @@ export default {
                     });
                 }
 
-                const response = await fetch(`http://localhost:7904/api/products/${this.editingProduct.products_id}`, {
+                const response = await fetch(`${this.API_BASE_URL}/api/products/${this.editingProduct.products_id}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -754,15 +860,21 @@ export default {
                     body: formData
                 });
 
-                const data = await response.json();
+                let data;
+                let responseText = await response.text();
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    data = { message: responseText };
+                }
 
                 if (!response.ok) {
                     throw new Error(data.message || 'Failed to update product');
                 }
 
                 this.closeModal();
+                this.clearProductsCache();
                 await this.fetchProducts();
-                
                 // Restore the selected category
                 this.selectedCategory = currentCategory;
 
@@ -790,7 +902,7 @@ export default {
                     console.log('Adding choice image to form:', this.newChoiceImage.name);
                 }
 
-                const response = await fetch(`http://localhost:7904/api/products/choices/${this.editingChoice.choice_id}`, {
+                const response = await fetch(`${this.API_BASE_URL}/api/products/choices/${this.editingChoice.choice_id}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -798,20 +910,21 @@ export default {
                     body: formData
                 });
 
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.message || 'Failed to update product choice');
+                let data;
+                let responseText = await response.text();
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    data = { message: responseText };
                 }
 
-                // Close modal first
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to update product option');
+                }
+
                 this.closeChoiceModal();
-                
-                // Fetch fresh data
+                this.clearProductsCache();
                 await this.fetchProducts();
-                
-                // Force refresh the page
-                window.location.reload();
 
             } catch (error) {
                 console.error('Error updating product choice:', error);
@@ -822,7 +935,7 @@ export default {
         async handleLogout() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/users/logout', {
+                const response = await this.$fetch('/api/users/logout', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1265,6 +1378,37 @@ tbody tr:hover {
     font-size: 1rem;
 }
 
+.loading-products {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: #64748b;
+    text-align: center;
+}
+
+.loading-spinner {
+    margin-bottom: 1.5rem;
+}
+
+.loading-spinner i {
+    font-size: 3rem;
+    color: #3b82f6;
+    animation: spin 1s linear infinite;
+}
+
+.loading-products p {
+    font-size: 1.1rem;
+    margin: 0;
+    font-weight: 500;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 .delete-btn {
     padding: 0.5rem 1rem;
     background-color: #ef4444;
@@ -1628,3 +1772,4 @@ input:disabled {
     font-size: 1.1rem;
 }
 </style>
+

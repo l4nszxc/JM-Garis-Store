@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+.env
+.git
+.gitignore
+forecast_env
+__pycache__
+*.pyc
+test
+.vscode
+model_cache
+services/model_cache
+services/__pycache__

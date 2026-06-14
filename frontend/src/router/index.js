@@ -13,11 +13,21 @@ import Products from '../views/user/Products.vue'
 import InsertProducts from '../views/admin/InsertProducts.vue'
 import Cart from '../views/user/Cart.vue'
 import OrderHistory from '../views/user/OrderHistory.vue'
-import ViewOrder from '../views/user/ViewOrder.vue'
+import TrackOrder from '../views/user/TrackOrder.vue'
 import Rewards from '../views/user/Rewards.vue'
 import SharedCart from '../views/user/SharedCart.vue'
 import RewardsManagement from '../views/admin/RewardsManagement.vue'
 import CreateOrder from '../views/staff/CreateOrder.vue'
+import Notifications from '../views/user/Notifications.vue'
+import SalesForecast from '../views/admin/SalesForecast.vue'
+import AdminReceiptSettings from '../views/admin/ReceiptSettings.vue'
+import PaymentSettings from '../views/admin/PaymentSettings.vue'
+import ProductDetail from '../views/user/ProductDetail.vue';
+import AdminReports from '../views/admin/AdminReports.vue'
+import DigitalReceipt from '../views/user/DigitalReceipt.vue'
+import PaymentSuccess from '../views/user/PaymentSuccess.vue'
+import PaymentFailed from '../views/user/PaymentFailed.vue'
+import QRCode from '../views/user/QRCode.vue'
 
 const routes = [
   {
@@ -67,6 +77,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/qr-code',
+    name: 'QRCode',
+    component: QRCode,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/cart',
     name: 'Cart',
     component: Cart,
@@ -79,9 +95,9 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/view-orders',
-    name: 'ViewOrder',
-    component: ViewOrder,
+    path: '/track-orders',
+    name: 'TrackOrder',
+    component: TrackOrder,
     meta: { requiresAuth: true }
   },
   {
@@ -98,6 +114,44 @@ const routes = [
       requiresAuth: true,
       redirectParams: true
     }
+  },
+  {
+    path: '/notifications',
+    name: 'Notifications',
+    component: Notifications,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/order-details/:id',
+    name: 'OrderDetails',
+    component: () => import('../views/user/OrderDetails.vue'),
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/product/:id',
+    name: 'ProductDetail',
+    component: ProductDetail,
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/receipt/:orderId',
+    name: 'DigitalReceipt',
+    component: DigitalReceipt,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/payment-success',
+    name: 'PaymentSuccess',
+    component: PaymentSuccess
+  },
+  {
+    path: '/payment-failed',
+    name: 'PaymentFailed',
+    component: PaymentFailed
   },
   // Admin Routes
   {
@@ -148,6 +202,60 @@ const routes = [
     component: RewardsManagement,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
+  {
+    path: '/admin/forecast',
+    name: 'AdminForecast',
+    component: SalesForecast,
+    meta: { requiresAuth: true, adminOnly: true }
+  },
+  {
+    path: '/admin/low-stock',
+    name: 'LowStock',
+    component: () => import('../views/admin/LowStock.vue'),
+    meta: { requiresAuth: true, requiredRole: 'admin' }
+  },
+  {
+    path: '/admin/receipt-settings',
+    name: 'AdminReceiptSettings',
+    component: AdminReceiptSettings,
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  {
+    path: '/admin/reports',
+    name: 'AdminReports',
+    component: AdminReports,
+    meta: { requiresAuth: true, requiredRole: 'admin' }
+  },
+  {
+    path: '/admin/analytics',
+    name: 'AdminAnalytics',
+    component: () => import('../views/admin/AdminAnalytics.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  {
+    path: '/admin/staff-analytics',
+    name: 'AdminStaffAnalytics',
+    component: () => import('../views/admin/AdminStaffAnalytics.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/settings',
+    name: 'AdminSettings',
+    component: () => import('../views/admin/AdminSettings.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/payment-settings',
+    name: 'PaymentSettings',
+    component: PaymentSettings,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/sales-inventory-reports',
+    name: 'AdminSalesInventoryReports',
+    component: () => import('../views/admin/AdminSalesInventoryReports.vue'),
+    meta: { requiresAuth: true, roles: ['admin'] }
+  },
   // Staff Routes
   {
     path: '/staff',
@@ -165,6 +273,18 @@ const routes = [
     path: '/staff/orders/create',
     name: 'StaffCreateOrder',
     component: CreateOrder,
+    meta: { requiresAuth: true, role: 'staff' }
+  },
+  {
+    path: '/staff/profile',
+    name: 'StaffProfile',
+    component: () => import('../views/staff/StaffProfile.vue'),
+    meta: { requiresAuth: true, role: 'staff' }
+  },
+  {
+    path: '/staff/analytics',
+    name: 'StaffAnalytics',
+    component: () => import('../views/staff/StaffAnalytics.vue'),
     meta: { requiresAuth: true, role: 'staff' }
   },
 ]

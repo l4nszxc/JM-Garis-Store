@@ -29,7 +29,7 @@ exports.register = async (req, res) => {
             middlename, 
             lastname, 
             gender, 
-            civilStatus, // Add this line
+            civilStatus, 
             phoneNumber, 
             address, 
             birthdate,
@@ -37,9 +37,9 @@ exports.register = async (req, res) => {
             password 
         } = req.body;
 
-        // Validation
-        if (!username || !firstname || !lastname || !gender || !civilStatus || 
-            !phoneNumber || !address || !birthdate || !email || !password) {
+        // Validation - only check required fields
+        if (!username || !firstname || !lastname || 
+            !phoneNumber || !address || !email || !password) {
             return res.status(400).json({ message: 'All required fields must be filled' });
         }
 
@@ -53,13 +53,13 @@ exports.register = async (req, res) => {
         await User.create(
             username, 
             firstname, 
-            middlename, 
+            middlename || null, 
             lastname, 
-            gender,
-            civilStatus, // Add this line
+            gender || null,     // Use null if gender is not provided
+            civilStatus || null, // Use null if civilStatus is not provided
             phoneNumber, 
             address, 
-            birthdate,
+            birthdate || null,  // Use null if birthdate is not provided
             email, 
             password
         );
@@ -432,15 +432,18 @@ exports.removeProfilePicture = async (req, res) => {
 };
 exports.getUsernameById = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { userId } = req.params;
+        console.log('getUsernameById called with userId:', userId);
         
-        // Validate id
-        if (!id || isNaN(parseInt(id))) {
+        // Validate userId
+        if (!userId || isNaN(parseInt(userId))) {
+            console.log('Invalid user ID:', userId);
             return res.status(400).json({ message: 'Invalid user ID' });
         }
         
         // Find user by ID
-        const user = await User.findById(id);
+        const user = await User.findById(userId);
+        console.log('User found:', user ? 'Yes' : 'No', user ? user.username : 'N/A');
         
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -453,5 +456,51 @@ exports.getUsernameById = async (req, res) => {
     } catch (error) {
         console.error('Error getting username by ID:', error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+exports.changePassword = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ message: 'No token provided' });
+        }
+
+        const decoded = jwt.verify(token, 'your-secret-key');
+        const userId = decoded.userId;
+
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: 'Current password and new password are required' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'New password must be at least 6 characters long' });
+        }
+
+        // Get current user
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Verify current password
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isCurrentPasswordValid) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+
+        // Update password
+        await User.changePassword(userId, newPassword);
+
+        res.status(200).json({ 
+            message: 'Password updated successfully'
+        });
+    } catch (error) {
+        console.error('Change password error:', error);
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ message: 'Invalid token' });
+        }
+        res.status(500).json({ message: 'Error changing password' });
     }
 };

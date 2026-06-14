@@ -3,13 +3,14 @@
         <Navbar :username="username" @logout="showLogoutModal = true"/>
         
         <div class="cart-content">
+            <!-- Cart Header -->
             <div class="cart-header">
-                <h1><i class="fas fa-shopping-cart"></i> Shopping Cart</h1>
-                <!-- Add console debugging to check values -->
-                <div class="debug-info" style="display: none;">
-                    syncStatus: {{ JSON.stringify(syncStatus) }}, 
-                    partnerUsername: {{ partnerUsername }}
-                </div>
+                <h1>
+                    <i class="fas fa-shopping-cart"></i>
+                    Shopping Cart
+                </h1>
+                
+                <!-- Notifications -->
                 <div v-if="notification.show" class="notification" :class="notification.type">
                     <div class="notification-content">
                         <i :class="notification.icon"></i>
@@ -19,121 +20,176 @@
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <!-- Cart sharing info with action buttons -->
+                
+                <!-- Cart Sharing Info -->
                 <div v-if="syncStatus" class="cart-sharing-info">
-                    <div v-if="syncStatus.role === 'owner'" class="owner-sharing">
-                        <i class="fas fa-share-alt"></i> You are currently sharing your cart with: <strong>{{ partnerUsername || 'another user' }}</strong>
-                        <button @click="stopSharing" class="stop-sharing-btn">
-                            <i class="fas fa-times-circle"></i> Stop Sharing
+                    <div v-if="syncStatus.role === 'owner'" class="sharing-badge owner-badge">
+                        <i class="fas fa-share-alt"></i>
+                        <span>Sharing with: <strong>{{ partnerUsername }}</strong></span>
+                        <button @click="stopSharing" class="action-btn stop-btn">
+                            <i class="fas fa-times"></i>
+                            Stop Sharing
                         </button>
                     </div>
-                    <div v-else class="receiver-sharing">
-                        <i class="fas fa-user-friends"></i> You are currently using: <strong>{{ partnerUsername || 'another user' }}'s</strong> cart
-                        <button @click="leaveSharing" class="leave-sharing-btn">
-                            <i class="fas fa-sign-out-alt"></i> Leave Cart
+                    <div v-else class="sharing-badge receiver-badge">
+                        <i class="fas fa-user-friends"></i>
+                        <span>Using: <strong>{{ partnerUsername }}'s</strong> cart</span>
+                        <button @click="leaveSharing" class="action-btn leave-btn">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Leave Cart
                         </button>
                     </div>
                 </div>
             </div>
-            <div v-if="syncStatus" class="sync-status">
-                <div class="sync-badge" :class="{'sync-owner': syncStatus.role === 'owner', 'sync-receiver': syncStatus.role === 'receiver'}">
-                    <i class="fas fa-sync-alt"></i> 
-                    {{ syncStatus.role === 'owner' ? 'Your cart is being shared' : 'Viewing a shared cart' }}
+
+            <!-- Loading State -->
+            <div v-if="isLoadingCart" class="loading-container">
+                <div class="loading-content">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <p class="loading-text">Loading your cart...</p>
                 </div>
             </div>
-            
-            <div v-if="cartItems.length > 0" class="select-all-container">
-                <div class="select-all-checkbox">
-                    <label>
+
+            <div v-else-if="cartItems.length > 0" class="cart-main">
+                <!-- Select All Section -->
+                <div class="select-all-section">
+                    <label class="select-all-checkbox">
                         <input 
                             type="checkbox" 
                             :checked="allItemsSelected"
                             @change="toggleSelectAll"
-                            id="select-all"
                         >
-                        <span class="checkbox-label">Select All</span>
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-label">Select All Items</span>
                     </label>
                 </div>
-            </div>
 
-            <div v-if="cartItems.length > 0" class="cart-items">
-                <div v-for="item in cartItems" :key="item.id" class="cart-item">
-                    <div class="cart-item-checkbox">
-                        <input 
-                            type="checkbox" 
-                            :checked="checkedItems.has(item.id)"
-                            @change="toggleItemCheck(item.id)"
-                        >
-                    </div>
-                    <img 
-                        :src="item.image || '/img/placeholder.jpg'"
-                        :alt="item.name"
-                        class="cart-item-image"
-                        @error="handleImageError"
-                    >
-                    <div class="cart-item-details">
-                        <h3><i class="fas fa-box"></i> {{ item.name }}</h3>
-                        <p v-if="item.choice_name" class="choice-info">
-                            <i class="fas fa-tag"></i> Option: {{ item.choice_name }}
-                        </p>
-                        <p class="price">
-                            <i class="fas fa-tag"></i> Price: {{ formatPrice(item.price || 0) }}
-                        </p>                        <div class="quantity-controls">
-                            <span class="quantity-label"><i class="fas fa-cubes"></i> Quantity:</span>
-                            <button @click="updateQuantity(item.id, item.quantity - 1)" 
-                                    :disabled="item.quantity <= 1"
-                                    class="quantity-btn">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                            <span class="quantity-value">{{ item.quantity }}</span>
-                            <button @click="updateQuantity(item.id, item.quantity + 1)"
-                                    class="quantity-btn">
-                                <i class="fas fa-plus"></i>
+                <!-- Cart Items -->
+                <div class="cart-items-container">
+                    <div v-for="item in cartItems" :key="item.id" class="cart-item">
+                        <div class="item-checkbox">
+                            <input 
+                                type="checkbox" 
+                                :checked="checkedItems.has(item.id)"
+                                @change="toggleItemCheck(item.id)"
+                                :id="`item-${item.id}`"
+                            >
+                            <label :for="`item-${item.id}`" class="checkbox-custom"></label>
+                        </div>
+                        
+                        <div class="item-image-container">
+                            <img 
+                                :src="item.image || '/img/placeholder.jpg'"
+                                :alt="item.name"
+                                class="item-image"
+                                @error="handleImageError"
+                            >
+                        </div>
+                        
+                        <div class="item-details">
+                            <h4 class="item-name">{{ item.name }}</h4>
+                            
+                            <div v-if="item.choice_name" class="choice-info">
+                                <i class="fas fa-tag"></i>
+                                {{ item.choice_name }}
+                            </div>
+                            
+                            <div class="item-price">
+                                <i class="fas fa-peso-sign"></i>
+                                {{ formatPrice(item.price) }}
+                            </div>
+                            
+                            <div class="quantity-section">
+                                <span class="quantity-label">Quantity:</span>
+                                <div class="quantity-controls">
+                                    <button 
+                                        @click="updateQuantity(item.id, item.quantity - 1)"
+                                        :disabled="item.quantity <= 1"
+                                        class="quantity-btn"
+                                    >
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <div class="quantity-display">
+                                        {{ item.quantity }}
+                                    </div>
+                                    <button 
+                                        @click="updateQuantity(item.id, item.quantity + 1)"
+                                        class="quantity-btn"
+                                    >
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="item-subtotal">
+                                Subtotal: {{ formatPrice(item.price * item.quantity) }}
+                            </div>
+                            
+                            <button class="remove-btn" @click="removeFromCart(item.id)">
+                                <i class="fas fa-trash"></i>
+                                Remove
                             </button>
                         </div>
-                        <p class="subtotal">
-                            <i class="fas fa-calculator"></i> Subtotal: {{ formatPrice((item.price || 0) * item.quantity) }}
-                        </p>                        <button class="remove-btn" @click="removeFromCart(item.id)">
-                            <i class="fas fa-trash"></i> Remove
-                        </button>
                     </div>
                 </div>
+
+                <!-- Cart Summary -->
                 <div class="cart-summary">
-                    <h3><i class="fas fa-receipt"></i> Cart Summary</h3>
-                    <div class="summary-details">
-                        <p class="total-items">
-                            <i class="fas fa-shopping-basket"></i> Selected Items: {{ checkedItemsCount }}
-                        </p>
-                        <p class="total-amount">
-                            <i class="fas fa-dollar-sign"></i> Total Amount: {{ formatPrice(cartTotal) }}
-                        </p>
+                    <div class="summary-header">
+                        <h3>
+                            <i class="fas fa-receipt"></i>
+                            Cart Summary
+                        </h3>
                     </div>
+                    
+                    <div class="summary-content">
+                        <div class="summary-row">
+                            <span>Selected Items:</span>
+                            <span>{{ checkedItemsCount }}</span>
+                        </div>
+                        <div class="summary-divider"></div>
+                        <div class="summary-row total-row">
+                            <span>Total Amount:</span>
+                            <span class="total-price">{{ formatPrice(cartTotal) }}</span>
+                        </div>
+                    </div>
+                    
                     <div class="cart-actions">
                         <button 
                             class="share-btn" 
                             @click="showShareModal = true"
                             :disabled="cartItems.length === 0"
                         >
-                            <i class="fas fa-share-alt"></i> Share Cart
+                            <i class="fas fa-share-alt"></i>
+                            Share Cart
                         </button>
                         <button 
                             class="checkout-btn" 
                             @click="showOrdersModal = true" 
                             :disabled="checkedItemsCount === 0"
                         >
-                            <i class="fas fa-credit-card"></i> Place Order
+                            <i class="fas fa-check"></i>
+                            Place Order
                         </button>
                     </div>
                 </div>
             </div>
-            <div v-else class="empty-cart">
-                <i class="fas fa-shopping-cart empty-cart-icon"></i>
-                <p>Your cart is empty</p>
-                <button class="continue-shopping" @click="$router.push('/products')">
-                    <i class="fas fa-store"></i> Continue Shopping
-                </button>
+
+            <!-- Empty Cart State -->
+            <div v-else-if="!isLoadingCart && cartItems.length === 0" class="empty-cart">
+                <div class="empty-state">
+                    <h3>Your cart is empty</h3>
+                    <p>Add some products to get started</p>
+                    <button class="continue-shopping" @click="$router.push('/products')">
+                        Continue Shopping
+                    </button>
+                </div>
             </div>
         </div>
+
+        <!-- Modals -->
         <ShareCartModal 
             :show="showShareModal"
             @close="showShareModal = false"
@@ -145,13 +201,18 @@
             @cancel="showLogoutModal = false" 
         />
 
-        <ViewOrdersModal 
+       <ViewOrdersModal 
             :show="showOrdersModal"
             :selectedItems="selectedItems"
             :availableDiscounts="availableDiscounts"
+            :userAddress="userAddress"
+            :userProfile="userProfile"
             @close="showOrdersModal = false"
             @place-order="handlePlaceOrder"
+            @payment-error="handlePaymentError"
+            @payment-success="handlePaymentSuccess"
         />
+
         <ConfirmationModal
             :show="showStopSharingModal"
             title="Stop Sharing Cart"
@@ -164,7 +225,6 @@
             @cancel="showStopSharingModal = false"
         />
         
-        <!-- Add leave sharing confirmation modal -->
         <ConfirmationModal
             :show="showLeaveSharingModal"
             title="Leave Shared Cart"
@@ -176,6 +236,14 @@
             @confirm="confirmLeaveSharing"
             @cancel="showLeaveSharingModal = false"
         />
+
+        <!-- Sync Status Badge -->
+        <div v-if="syncStatus" class="sync-status">
+            <div class="sync-badge" :class="{'sync-owner': syncStatus.role === 'owner', 'sync-receiver': syncStatus.role === 'receiver'}">
+                <i class="fas fa-sync-alt"></i>
+                {{ syncStatus.role === 'owner' ? 'Cart Shared' : 'Shared Cart' }}
+            </div>
+        </div>
     </div>
 </template>
 
@@ -185,6 +253,8 @@ import LogoutModal from '../../components/LogoutModal.vue';
 import ViewOrdersModal from '../../components/ViewOrdersModal.vue';
 import ShareCartModal from '../../components/ShareCartModal.vue'
 import ConfirmationModal from '../../components/ConfirmationModal.vue';
+
+import { apiPost, apiGet, apiDelete, apiPut, replaceLocalhostUrl } from '@/config/api'
 
 export default {
     name: 'Cart',
@@ -198,19 +268,24 @@ export default {
     data() {
         return {
             username: '',
+            userAddress: '',
+            userProfile: {},
             showLogoutModal: false,
             showOrdersModal: false,
             cartItems: [],
             checkedItems: new Set(),
             loading: false,
+            isLoadingCart: true,
             error: null,
             availableDiscounts: [],
             showShareModal: false,
             syncStatus: null,
             syncInterval: null,
             partnerUsername: '',
-            showStopSharingModal: false, // Add this line
+            showStopSharingModal: false,
             showLeaveSharingModal: false,
+            lastFetchTime: 0,
+            fetchDebounceTime: 500,
             notification: {
                 show: false,
                 message: '',
@@ -241,12 +316,10 @@ export default {
     },
     methods: {
         showNotification(message, type = 'success') {
-            // Clear any existing timeout
             if (this.notification.timeout) {
                 clearTimeout(this.notification.timeout);
             }
             
-            // Set icon based on type
             let icon = 'fas fa-check-circle';
             if (type === 'error') {
                 icon = 'fas fa-exclamation-circle';
@@ -254,7 +327,6 @@ export default {
                 icon = 'fas fa-info-circle';
             }
             
-            // Show notification
             this.notification = {
                 show: true,
                 message,
@@ -262,7 +334,7 @@ export default {
                 icon,
                 timeout: setTimeout(() => {
                     this.hideNotification();
-                }, 5000) // Auto-hide after 5 seconds
+                }, 5000)
             };
         },
         
@@ -272,6 +344,7 @@ export default {
                 clearTimeout(this.notification.timeout);
             }
         },
+        
         stopSharing() {
             this.showStopSharingModal = true;
         },
@@ -279,10 +352,11 @@ export default {
         leaveSharing() {
             this.showLeaveSharingModal = true;
         },
+        
         async confirmStopSharing() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/shared-cart/stop-sharing', {
+                const response = await this.$fetch('/api/shared-cart/stop-sharing', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -306,11 +380,10 @@ export default {
             }
         },
         
-        // Update confirmLeaveSharing method
         async confirmLeaveSharing() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/shared-cart/leave-sharing', {
+                const response = await this.$fetch('/api/shared-cart/leave-sharing', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -322,9 +395,8 @@ export default {
                     this.syncStatus = null;
                     this.partnerUsername = '';
                     this.showNotification('You have left the shared cart. The sharing has ended for both users.');
-                    
-                    // Refresh cart after leaving
-                    await this.fetchCart();
+                    // Fetch cart without showing loading state
+                    await this.fetchCart(false);
                 } else {
                     const error = await response.json();
                     throw new Error(error.message || 'Failed to leave shared cart');
@@ -336,23 +408,27 @@ export default {
                 this.showLeaveSharingModal = false;
             }
         },
+        
         async fetchPartnerUsername() {
-            if (!this.syncStatus || !this.syncStatus.partnerId) return;
-            
+            if (!this.syncStatus || !this.syncStatus.partnerId) {
+                this.partnerUsername = 'another user';
+                return;
+            }
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/users/getUsernameById/${this.syncStatus.partnerId}`, {
+                const response = await this.$fetch(`/api/users/username/${this.syncStatus.partnerId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-                
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('Partner username data:', data);
-                    this.partnerUsername = data.username || 'another user';
+                    if (data && typeof data.username === 'string' && data.username.trim() !== '') {
+                        this.partnerUsername = data.username;
+                    } else {
+                        this.partnerUsername = 'another user';
+                    }
                 } else {
-                    console.error('Error response when fetching username:', await response.text());
                     this.partnerUsername = 'another user';
                 }
             } catch (error) {
@@ -360,12 +436,13 @@ export default {
                 this.partnerUsername = 'another user';
             }
         },
+        
         async checkSyncStatus() {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) return;
                 
-                const response = await fetch('http://localhost:7904/api/shared-cart/active/status', {
+                const response = await this.$fetch('/api/shared-cart/active/status', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -373,23 +450,29 @@ export default {
                 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('Sync status data:', data);
                     
-                    if (data && data.shareId) {
+                    // Only set sync status if share is accepted (has partnerId)
+                    if (data && data.shareId && data.partnerId && data.accepted) {
+                        const previousPartnerId = this.syncStatus?.partnerId;
                         this.syncStatus = data;
-                        // Make sure we fetch the username immediately after setting sync status
-                        await this.fetchPartnerUsername();
+                        
+                        // Only fetch partner username if it changed or is not set
+                        if (previousPartnerId !== data.partnerId || !this.partnerUsername) {
+                            await this.fetchPartnerUsername();
+                        }
                     } else {
-                        this.syncStatus = null;
-                        this.partnerUsername = '';
+                        // Clear sync status if no active accepted share
+                        if (this.syncStatus) {
+                            this.syncStatus = null;
+                            this.partnerUsername = '';
+                        }
                     }
-                } else {
-                    console.error('Error response when checking sync status:', await response.text());
                 }
             } catch (error) {
                 console.error('Error checking sync status:', error);
             }
         },
+        
         formatPrice(price) {
             return new Intl.NumberFormat('en-PH', {
                 style: 'currency',
@@ -398,6 +481,7 @@ export default {
                 maximumFractionDigits: 2
             }).format(price).replace('PHP', '₱');
         },
+        
         async fetchAvailableDiscounts() {
             try {
                 const token = localStorage.getItem('token');
@@ -406,7 +490,7 @@ export default {
                     return;
                 }
 
-                const response = await fetch('http://localhost:7904/api/rewards/available-discounts', {
+                const response = await this.$fetch('/api/rewards/available-discounts', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -424,6 +508,7 @@ export default {
                 this.availableDiscounts = [];
             }
         },
+        
         toggleSelectAll() {
             if (this.allItemsSelected) {
                 this.checkedItems.clear();
@@ -433,9 +518,7 @@ export default {
                 });
             }
         },
-        handleCartUpdate() {
-            this.fetchCart(); // Refresh cart when updated
-        },
+        
         toggleItemCheck(itemId) {
             if (this.checkedItems.has(itemId)) {
                 this.checkedItems.delete(itemId);
@@ -443,11 +526,16 @@ export default {
                 this.checkedItems.add(itemId);
             }
         },
-        async handlePlaceOrder({ items, discountId }) {
+        
+        async handlePlaceOrder({ items, discountId, packagingPreference, paymentMethod }) {
             try {
+                if (paymentMethod === 'gcash') {
+                    // GCash payment is handled in the modal
+                    return;
+                }
+                
                 const token = localStorage.getItem('token');
                 
-                // Ensure items have all required properties
                 const formattedItems = items.map(item => ({
                     id: item.id,
                     product_id: item.product_id,
@@ -461,12 +549,14 @@ export default {
                     totalAmount: formattedItems.reduce((sum, item) => 
                         sum + (parseFloat(item.price) * item.quantity), 0
                     ),
-                    discountId: discountId
+                    discountId: discountId,
+                    packagingPreference: packagingPreference
                 };
 
-                console.log('Sending order with data:', requestBody);
+                console.log('Cart handlePlaceOrder - Request body:', requestBody);
+                console.log('Cart handlePlaceOrder - Packaging preference:', packagingPreference);
 
-                const response = await fetch('http://localhost:7904/api/orders', {
+                const response = await this.$fetch('/api/orders', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -482,16 +572,13 @@ export default {
 
                 const { orderId, finalAmount, appliedDiscount, pointsEarned } = await response.json();
 
-                // Clear selected items
-                for (const item of items) {
-                    await this.removeFromCart(item.id);
-                }
-
+                this.cartItems = this.cartItems.filter(cartItem => 
+                    !items.some(item => item.id === cartItem.id)
+                );
+                
                 this.checkedItems.clear();
-                await this.fetchCart();
                 await this.fetchAvailableDiscounts();
 
-                // Check if cart was being shared and notify user
                 if (this.syncStatus) {
                     this.showNotification('Your order has been placed. Cart sharing has been automatically ended.', 'info');
                     this.syncStatus = null;
@@ -499,21 +586,46 @@ export default {
                 }
 
                 this.showOrdersModal = false;
-                this.$router.push('/view-orders');
+                this.$router.push('/track-orders');
 
             } catch (error) {
                 console.error('Error placing order:', error);
-                this.showNotification('Failed to place order: ' + (error.message || 'Unknown error'), 'error');
+                this.showNotification('Failed to place order: ' + error.message, 'error');
             }
         },
-        
-        handleImageError(e) {
-            e.target.src = 'placeholder-image.jpg'; // Fallback image
+        handlePaymentError(message) {
+            this.showNotification(message, 'error');
+            // Do NOT remove items from cart on payment error
         },
+        handlePaymentSuccess(data) {
+            // Remove items from cart only after confirmed payment success
+            this.cartItems = this.cartItems.filter(cartItem => 
+                !this.selectedItems.some(item => item.id === cartItem.id)
+            );
+            
+            this.checkedItems.clear();
+            this.showOrdersModal = false;
+            
+            // Show success notification
+            this.showNotification(data.message, 'success');
+            
+            // Update cart count
+            window.dispatchEvent(new CustomEvent('cart-updated'));
+            
+            // If sharing was active, end it
+            if (this.syncStatus) {
+                this.syncStatus = null;
+                this.partnerUsername = '';
+            }
+        },
+        handleImageError(e) {
+            e.target.src = '/img/placeholder.jpg';
+        },
+        
         async handleLogout() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:7904/api/users/logout', {
+                const response = await this.$fetch('/api/users/logout', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -534,6 +646,7 @@ export default {
                 this.showLogoutModal = false;
             }
         },
+        
         async getUserData() {
             try {
                 const token = localStorage.getItem('token');
@@ -542,30 +655,56 @@ export default {
                     return;
                 }
 
-                const response = await fetch('http://localhost:7904/api/users/getUsername', {
+                // Fetch username
+                const usernameResponse = await this.$fetch('/api/users/getUsername', {
                     headers: {
                         'Authorization': `Bearer ${token}`
-                    },
-                    credentials: 'include'
+                    }
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
+                if (usernameResponse.ok) {
+                    const data = await usernameResponse.json();
                     this.username = data.username;
                 }
+
+                // Fetch user profile for address
+                const profileResponse = await this.$fetch('/api/users/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (profileResponse.ok) {
+                    const profileData = await profileResponse.json();
+                    this.userAddress = profileData.address || '';
+                    this.userProfile = profileData;
+                }
             } catch (error) {
-                console.error('Error fetching username:', error);
+                console.error('Error fetching user data:', error);
             }
         },
-        async fetchCart() {
+        
+        async fetchCart(showLoading = true) {
             try {
+                // Debounce to prevent rapid fetches
+                const now = Date.now();
+                if (now - this.lastFetchTime < this.fetchDebounceTime) {
+                    return;
+                }
+                this.lastFetchTime = now;
+                
+                // Only show loading state if explicitly requested (e.g., initial load)
+                if (showLoading) {
+                    this.isLoadingCart = true;
+                }
+                
                 const token = localStorage.getItem('token');
                 if (!token) {
                     this.$router.push('/login');
                     return;
                 }
 
-                const response = await fetch('http://localhost:7904/api/cart', {
+                const response = await this.$fetch('/api/cart', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -581,22 +720,34 @@ export default {
             } catch (error) {
                 console.error('Error fetching cart:', error);
                 this.cartItems = [];
+            } finally {
+                if (showLoading) {
+                    this.isLoadingCart = false;
+                }
             }
         },
+        
         async removeFromCart(itemId) {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/cart/${itemId}`, {
+                const response = await this.$fetch(`/api/cart/${itemId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-
+                
                 if (response.ok) {
                     this.cartItems = this.cartItems.filter(item => item.id !== itemId);
-                    this.checkedItems.delete(itemId);
+                    if (this.checkedItems.has(itemId)) {
+                        this.checkedItems.delete(itemId);
+                    }
                     window.dispatchEvent(new CustomEvent('cart-updated'));
+                    
+                    // Refetch to ensure sync without showing loading
+                    if (this.syncStatus) {
+                        await this.fetchCart(false);
+                    }
                 }
             } catch (error) {
                 console.error('Error removing item from cart:', error);
@@ -608,7 +759,7 @@ export default {
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:7904/api/cart/${itemId}`, {
+                const response = await this.$fetch(`/api/cart/${itemId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -618,7 +769,8 @@ export default {
                 });
                 
                 if (response.ok) {
-                    await this.fetchCart(); // Refresh cart after update
+                    // Fetch cart without showing loading state for quantity updates
+                    await this.fetchCart(false);
                     window.dispatchEvent(new CustomEvent('cart-updated'));
                 }
             } catch (error) {
@@ -626,20 +778,23 @@ export default {
             }
         }
     },
+    
     async mounted() {
         await this.getUserData();
-        await this.fetchCart();
+        await this.fetchCart(true); // Show loading only on initial load
         await this.fetchAvailableDiscounts();
         await this.checkSyncStatus();
         
-        // Check for sync status periodically
+        // Check for sync status every 3 seconds (slower to prevent rapid reloads)
         this.syncInterval = setInterval(async () => {
             await this.checkSyncStatus();
-            if (this.syncStatus) {
-                await this.fetchCart(); // Refresh cart to see changes
+            if (this.syncStatus && this.syncStatus.accepted) {
+                // Fetch cart without showing loading state for sync updates
+                await this.fetchCart(false);
             }
-        }, 1000); // Check every 5 seconds
+        }, 3000);
     },
+    
     beforeDestroy() {
         if (this.syncInterval) {
             clearInterval(this.syncInterval);
@@ -649,202 +804,547 @@ export default {
 </script>
 
 <style scoped>
+/* Main Container */
 .cart-container {
     font-family: Arial, sans-serif;
     min-height: 100vh;
-    background-color: #f5f5f5;
+    background-color: #f8fafb;
 }
 
 .cart-content {
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 1.5rem;
 }
 
+/* Header Section */
 .cart-header {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+    position: relative;
 }
 
 .cart-header h1 {
-    color: #2c3e50;
-    font-size: 2rem;
+    color: #2a3f2a;
+    font-size: 1.875rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Cart Sharing Info */
+.cart-sharing-info {
+    margin-top: 1rem;
+}
+
+.sharing-badge {
     display: flex;
     align-items: center;
     gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    border-left: 4px solid;
+    font-size: 0.95rem;
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.cart-items {
+.owner-badge {
+    border-left-color: #4CAF50;
+    background-color: #f8fff8;
+}
+
+.receiver-badge {
+    border-left-color: #2196F3;
+    background-color: #f5f9ff;
+}
+
+.action-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.stop-btn {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.stop-btn:hover {
+    background-color: #dc2626;
+    color: white;
+}
+
+.leave-btn {
+    background-color: #e5e7eb;
+    color: #6b7280;
+}
+
+.leave-btn:hover {
+    background-color: #6b7280;
+    color: white;
+}
+
+/* Loading State */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-top: 1.5rem;
+}
+
+.loading-content {
+    text-align: center;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 3rem 2rem;
+}
+
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-spinner i {
+    font-size: 3rem;
+    color: #4CAF50;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    margin: 0;
+    color: #64748b;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+/* Main Cart Section */
+.cart-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Select All Section */
+.select-all-section {
+    background: white;
+    padding: 1.25rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-left: 3px solid #4CAF50;
+}
+
+.select-all-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.select-all-checkbox input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-custom {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #e2e8f0;
+    border-radius: 4px;
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.select-all-checkbox input:checked + .checkbox-custom {
+    background-color: #4CAF50;
+    border-color: #4CAF50;
+}
+
+.select-all-checkbox input:checked + .checkbox-custom::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.checkbox-label {
+    color: #2a3f2a;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* Cart Items Container */
+.cart-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .cart-item {
     display: flex;
+    gap: 1rem;
+    padding: 1.25rem;
     background: white;
-    padding: 1.5rem;
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-left: 3px solid #f1f9f1;
+    transition: all 0.2s ease;
 }
 
 .cart-item:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.1);
+    border-left-color: #4CAF50;
 }
 
-.cart-item-image {
-    width: 150px;
-    height: 150px;
-    object-fit: cover;
+.item-checkbox {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 0.5rem;
+}
+
+.item-checkbox input[type="checkbox"] {
+    display: none;
+}
+
+.item-checkbox .checkbox-custom {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.item-checkbox input:checked + .checkbox-custom {
+    background-color: #4CAF50;
+    border-color: #4CAF50;
+}
+
+.item-checkbox input:checked + .checkbox-custom::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 9px;
+    font-weight: bold;
+}
+
+.item-image-container {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
     border-radius: 8px;
-    margin-right: 2rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    background-color: #f8f9fa;
+    border: 1px solid #e2e8f0;
 }
 
-.cart-item-details {
-    flex-grow: 1;
+.item-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
-.cart-item-details h3 {
-    font-size: 1.25rem;
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
+.item-details {
+    flex: 1;
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 0.5rem;
 }
 
-.price, .subtotal {
-    font-size: 1.1rem;
-    color: #2c3e50;
-    margin: 0.5rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.item-name {
+    margin: 0;
+    color: #2a3f2a;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
 }
 
-.quantity-controls {
+.choice-info {
+    background-color: #f1f9f1;
+    color: #4CAF50;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 500;
+    width: fit-content;
+}
+
+.item-price {
+    color: #4CAF50;
+    font-size: 1rem;
+    font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin: 1rem 0;
+    gap: 0.25rem;
+}
+
+.quantity-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .quantity-label {
-    color: #666;
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.quantity-controls {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
 .quantity-btn {
-    padding: 0.5rem 1rem;
-    border: 1px solid #ddd;
-    background: white;
-    cursor: pointer;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 2px solid #4CAF50;
+    background-color: white;
+    color: #4CAF50;
     border-radius: 4px;
-    transition: all 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
 }
 
 .quantity-btn:hover:not(:disabled) {
-    background-color: #f8f9fa;
-    border-color: #4CAF50;
-    color: #4CAF50;
+    background-color: #4CAF50;
+    color: white;
+    transform: scale(1.05);
 }
 
-.quantity-value {
-    font-size: 1.1rem;
-    min-width: 2rem;
+.quantity-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.quantity-display {
+    min-width: 1.75rem;
     text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #2a3f2a;
+    background-color: #f8f9fa;
+    padding: 0.375rem;
+    border-radius: 4px;
+    border: 2px solid #e2e8f0;
+}
+
+.item-subtotal {
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 500;
 }
 
 .remove-btn {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
+    background-color: #fee2e2;
+    color: #dc2626;
+    border: 2px solid #fecaca;
+    padding: 0.375rem 0.75rem;
     border-radius: 6px;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
+    gap: 0.375rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    width: fit-content;
 }
 
 .remove-btn:hover {
-    background-color: #c82333;
+    background-color: #dc2626;
+    color: white;
+    border-color: #dc2626;
     transform: translateY(-1px);
 }
 
+/* Cart Summary */
 .cart-summary {
-    margin-top: 2rem;
-    padding: 2rem;
     background: white;
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border-left: 3px solid #4CAF50;
 }
 
-.cart-summary h3 {
-    color: #2c3e50;
-    margin-bottom: 1.5rem;
+.summary-header {
+    padding: 1.25rem 1.5rem 0.75rem;
+    border-bottom: 1px solid #f1f9f1;
+}
+
+.summary-header h3 {
+    margin: 0;
+    color: #2a3f2a;
+    font-size: 1.2rem;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-.summary-details {
-    margin-bottom: 1.5rem;
+.summary-content {
+    padding: 1.25rem 1.5rem;
+    background-color: #fafffe;
 }
 
-.summary-details p {
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.summary-row:last-child {
+    margin-bottom: 0;
+}
+
+.summary-divider {
+    height: 1px;
+    background-color: #e2e8f0;
+    margin: 0.75rem 0;
+}
+
+.total-row {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2a3f2a;
+}
+
+.total-price {
+    color: #4CAF50;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.cart-actions {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.share-btn, .checkout-btn {
+    flex: 1;
+    padding: 0.875rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    margin: 0.5rem 0;
-    font-size: 1.1rem;
-    color: #2c3e50;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.share-btn {
+    background-color: white;
+    color: #2196F3;
+    border-color: #2196F3;
+}
+
+.share-btn:hover:not(:disabled) {
+    background-color: #2196F3;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
 }
 
 .checkout-btn {
     background-color: #4CAF50;
     color: white;
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: 8px;
-    cursor: pointer;
-    width: 100%;
-    font-size: 1.1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
+    border-color: #4CAF50;
 }
 
-.checkout-btn:hover {
+.checkout-btn:hover:not(:disabled) {
     background-color: #45a049;
+    border-color: #45a049;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.2);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
+.share-btn:disabled, .checkout-btn:disabled {
+    background-color: #e5e7eb;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Empty Cart State */
 .empty-cart {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+}
+
+.empty-state {
     text-align: center;
-    padding: 3rem;
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 3rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    max-width: 400px;
 }
 
-.empty-cart-icon {
+.empty-state i {
     font-size: 4rem;
-    color: #cbd5e0;
-    margin-bottom: 1rem;
+    color: #cbd5e1;
+    margin-bottom: 1.5rem;
 }
 
-.empty-cart p {
-    color: #2c3e50;
-    font-size: 1.25rem;
-    margin-bottom: 1.5rem;
+.empty-state h3 {
+    color: #2a3f2a;
+    font-size: 1.5rem;
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+}
+
+.empty-state p {
+    color: #64748b;
+    font-size: 1rem;
+    margin: 0 0 2rem 0;
 }
 
 .continue-shopping {
@@ -852,168 +1352,26 @@ export default {
     color: white;
     border: 2px solid transparent;
     padding: 1rem 2rem;
-    border-radius: 25px;
+    border-radius: 12px;
     cursor: pointer;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     display: inline-flex;
     align-items: center;
-    gap: 0.75rem;
-    margin: 0 auto;
-    box-shadow: 0 4px 6px rgba(76, 175, 80, 0.2);
+    gap: 0.5rem;
     transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
 }
 
 .continue-shopping:hover {
     background-color: white;
     color: #4CAF50;
-    border: 2px solid #4CAF50;
+    border-color: #4CAF50;
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(76, 175, 80, 0.3);
-}
-.cart-item-checkbox {
-    display: flex;
-    align-items: center;
-    margin-right: 1rem;
-}
-.cart-item-checkbox input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-}
-.checkout-btn:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-.checkout-btn:disabled:hover {
-    background-color: #cccccc;
-    transform: none;
-    box-shadow: none;
-}
-.cart-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
+    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.3);
 }
 
-.view-orders-btn {
-    background-color: #3498db;
-    color: white;
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: 8px;
-    cursor: pointer;
-    width: 100%;
-    font-size: 1.1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-}
-
-.view-orders-btn:hover:not(:disabled) {
-    background-color: #2980b9;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
-}
-
-.view-orders-btn:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-.cart-actions button:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-.select-all-container {
-    background: white;
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1rem;
-}
-
-.select-all-checkbox {
-    display: flex;
-    align-items: center;
-}
-
-.select-all-checkbox label {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    cursor: pointer;
-    color: #2c3e50;
-    font-size: 1rem;
-}
-
-.select-all-checkbox input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-}
-
-.checkbox-label {
-    user-select: none;
-}
-@media (max-width: 768px) {
-    .cart-item {
-        flex-direction: column;
-    }
-
-    .cart-item-image {
-        width: 100%;
-        margin-right: 0;
-        margin-bottom: 1rem;
-    }
-
-    .quantity-controls {
-        justify-content: center;
-    }
-}
-.choice-info {
-    font-size: 0.95rem;
-    color: #3498db;
-    margin: 0.5rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: #eef6fd;
-    padding: 0.5rem;
-    border-radius: 4px;
-    width: fit-content;
-}
-.share-btn {
-    background-color: #3498db;
-    color: white;
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1.1rem;
-    transition: all 0.3s ease;
-}
-
-.share-btn:hover:not(:disabled) {
-    background-color: #2980b9;
-    transform: translateY(-2px);
-}
-
-.share-btn:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
+/* Sync Status Badge */
 .sync-status {
     position: fixed;
     bottom: 20px;
@@ -1022,22 +1380,23 @@ export default {
 }
 
 .sync-badge {
-    padding: 10px 15px;
-    border-radius: 20px;
-    font-size: 14px;
+    padding: 0.75rem 1rem;
+    border-radius: 25px;
+    font-size: 0.85rem;
+    font-weight: 600;
     color: white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
 }
 
 .sync-owner {
-    background-color: #4CAF50;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
 }
 
 .sync-receiver {
-    background-color: #3498db;
+    background: linear-gradient(135deg, #2196F3, #1976d2);
 }
 
 .sync-badge i {
@@ -1048,73 +1407,14 @@ export default {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-.cart-sharing-info {
-    margin-top: 0.5rem;
-    padding: 10px 15px;
-    border-radius: 8px;
-    font-size: 1rem;
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-}
 
-.owner-sharing, .receiver-sharing {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.owner-sharing {
-    color: #4CAF50;
-}
-
-.owner-sharing i {
-    color: #4CAF50;
-}
-
-.receiver-sharing {
-    color: #3498db;
-}
-
-.receiver-sharing i {
-    color: #3498db;
-}
-.stop-sharing-btn, .leave-sharing-btn {
-    margin-left: 15px;
-    padding: 6px 12px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    font-size: 0.9rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-}
-
-.stop-sharing-btn {
-    background-color: #dc3545;
-    color: white;
-}
-
-.stop-sharing-btn:hover {
-    background-color: #c82333;
-}
-
-.leave-sharing-btn {
-    background-color: #6c757d;
-    color: white;
-}
-
-.leave-sharing-btn:hover {
-    background-color: #5a6268;
-}
+/* Notifications */
 .notification {
     position: fixed;
-    bottom: 20px;
-    left: 20px;
-    padding: 15px 20px;
-    border-radius: 8px;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
     color: white;
     display: flex;
     align-items: center;
@@ -1122,13 +1422,13 @@ export default {
     min-width: 300px;
     max-width: 400px;
     z-index: 2000;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    animation: slide-in 0.3s ease-out forwards;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    animation: slideInRight 0.3s ease-out forwards;
 }
 
-@keyframes slide-in {
+@keyframes slideInRight {
     from {
-        transform: translateX(-100%);
+        transform: translateX(100%);
         opacity: 0;
     }
     to {
@@ -1138,21 +1438,21 @@ export default {
 }
 
 .notification.success {
-    background-color: #4CAF50;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
 }
 
 .notification.error {
-    background-color: #f44336;
+    background: linear-gradient(135deg, #f44336, #d32f2f);
 }
 
 .notification.info {
-    background-color: #2196F3;
+    background: linear-gradient(135deg, #2196F3, #1976d2);
 }
 
 .notification-content {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 0.75rem;
 }
 
 .notification-close {
@@ -1160,9 +1460,189 @@ export default {
     border: none;
     color: white;
     cursor: pointer;
-    font-size: 16px;
-    padding: 0;
-    display: flex;
-    align-items: center;
+    font-size: 1.1rem;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.notification-close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .cart-content {
+        padding: 1rem;
+    }
+    
+    .cart-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .cart-item {
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+    
+    .item-checkbox {
+        order: -1;
+        align-self: flex-start;
+        padding-top: 0;
+    }
+    
+    .item-image-container {
+        width: 100%;
+        height: 150px;
+        align-self: center;
+        max-width: 200px;
+    }
+    
+    .item-details {
+        gap: 0.75rem;
+    }
+    
+    .item-name {
+        font-size: 1.1rem;
+    }
+    
+    .quantity-controls {
+        justify-content: center;
+        gap: 0.75rem;
+    }
+    
+    .quantity-btn {
+        width: 2rem;
+        height: 2rem;
+        font-size: 0.8rem;
+    }
+    
+    .quantity-display {
+        min-width: 2rem;
+        padding: 0.5rem;
+        font-size: 1rem;
+    }
+    
+    .cart-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .sharing-badge {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+    
+    .action-btn {
+        align-self: flex-start;
+        font-size: 0.8rem;
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .cart-content {
+        padding: 0.75rem;
+    }
+    
+    .cart-header h1 {
+        font-size: 1.25rem;
+    }
+    
+    .select-all-section,
+    .cart-item,
+    .cart-summary {
+        padding: 0.875rem;
+        border-radius: 8px;
+    }
+    
+    .cart-item {
+        gap: 0.5rem;
+    }
+    
+    .item-image-container {
+        height: 120px;
+        max-width: 150px;
+    }
+    
+    .item-name {
+        font-size: 1rem;
+    }
+    
+    .choice-info {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .item-price {
+        font-size: 0.95rem;
+    }
+    
+    .quantity-btn {
+        width: 1.75rem;
+        height: 1.75rem;
+        font-size: 0.75rem;
+    }
+    
+    .quantity-display {
+        min-width: 1.75rem;
+        padding: 0.375rem;
+        font-size: 0.9rem;
+    }
+    
+    .remove-btn {
+        font-size: 0.75rem;
+        padding: 0.375rem 0.5rem;
+    }
+    
+    .sharing-badge {
+        padding: 0.875rem;
+        font-size: 0.85rem;
+    }
+    
+    .action-btn {
+        font-size: 0.75rem;
+        padding: 0.375rem 0.5rem;
+    }
+    
+    .loading-container {
+        min-height: 300px;
+        margin-top: 1rem;
+    }
+    
+    .loading-content {
+        padding: 2rem 1rem;
+    }
+    
+    .loading-spinner i {
+        font-size: 2.5rem;
+    }
+    
+    .loading-text {
+        font-size: 1rem;
+    }
+}
+
+/* Scrollbar Styling */
+.cart-items-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cart-items-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.cart-items-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+.cart-items-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 </style>
+

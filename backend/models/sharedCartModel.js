@@ -47,10 +47,15 @@ class SharedCart {
 
         if (!share[0]) {
             throw new Error('Shared cart not found or expired');
-        }
-
-        const [cartItems] = await db.execute(
-            `SELECT c.*, p.name, p.image, pc.name as choice_name, pc.image as choice_image
+        }        const [cartItems] = await db.execute(
+            `SELECT 
+                c.*, 
+                p.name, 
+                p.image, 
+                CAST(p.price AS DECIMAL(10,2)) as price, 
+                pc.name as choice_name, 
+                pc.image as choice_image,
+                CAST(COALESCE(pc.price, p.price) AS DECIMAL(10,2)) as actual_price
              FROM cart c
              JOIN products p ON c.product_id = p.products_id
              LEFT JOIN product_choices pc ON c.choice_id = pc.choice_id
@@ -60,7 +65,10 @@ class SharedCart {
 
         return {
             share: share[0],
-            items: cartItems
+            items: cartItems.map(item => ({
+                ...item,
+                price: parseFloat(item.actual_price || item.price)
+            }))
         };
     }
 
@@ -109,9 +117,9 @@ class SharedCart {
     }
 
     static async getActiveSharedCart(userId) {
-        // Find carts where user is owner
+        // Find carts where user is owner AND someone has accepted (shared_with is not NULL)
         const [ownerCarts] = await db.execute(
-            'SELECT * FROM shared_carts WHERE owner_id = ? AND status = "active" AND expires_at > NOW()',
+            'SELECT * FROM shared_carts WHERE owner_id = ? AND status = "active" AND expires_at > NOW() AND shared_with IS NOT NULL',
             [userId]
         );
         
@@ -125,7 +133,8 @@ class SharedCart {
             return { 
                 role: 'owner', 
                 shareId: ownerCarts[0].share_id,
-                partnerId: ownerCarts[0].shared_with 
+                partnerId: ownerCarts[0].shared_with,
+                accepted: true
             };
         }
         
@@ -133,7 +142,8 @@ class SharedCart {
             return { 
                 role: 'receiver', 
                 shareId: receiverCarts[0].share_id,
-                partnerId: receiverCarts[0].owner_id 
+                partnerId: receiverCarts[0].owner_id,
+                accepted: true
             };
         }
         

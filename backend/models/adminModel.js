@@ -294,10 +294,16 @@ class Admin {
                     o.accepted_by,
                     o.accepted_at,
                     o.is_physical_order,
+                    o.payment_method,
+                    o.payment_intent_id,
+                    pi.gcash_reference,
+                    pi.status as payment_status,
+                    pi.verified_at,
                     s.username as staff_name
                 FROM orders o
                 LEFT JOIN users u ON o.user_id = u.id
                 LEFT JOIN users s ON o.accepted_by = s.id
+                LEFT JOIN payment_intents pi ON o.payment_intent_id = pi.reference_number
                 ORDER BY o.created_at DESC
             `);
             
@@ -427,6 +433,142 @@ class Admin {
             throw error;
         } finally {
             connection.release();
+        }
+    }
+    static async getLowStockItems() {
+        try {
+            // Get products with stock <= 30
+            const [lowStockProducts] = await db.execute(`
+                SELECT 
+                    products_id as id,
+                    'product' as type,
+                    name,
+                    description,
+                    stock_quantity as stock,
+                    price,
+                    category,
+                    image,
+                    NULL as choice_id,
+                    NULL as product_name,
+                    NULL as choice_name
+                FROM products
+                WHERE stock_quantity <= 30
+            `);
+            
+            // Get choices/variants with stock <= 30
+            const [lowStockChoices] = await db.execute(`
+                SELECT 
+                    pc.product_id as id,
+                    'choice' as type,
+                    p.name as product_name,
+                    p.description,
+                    pc.stock as stock,
+                    pc.price,
+                    p.category,
+                    COALESCE(pc.image, p.image) as image,
+                    pc.choice_id,
+                    p.name as product_name,
+                    pc.name as choice_name
+                FROM product_choices pc
+                JOIN products p ON pc.product_id = p.products_id
+                WHERE pc.stock <= 30
+            `);
+            
+            // Combine both results and sort by stock level (lowest first)
+            return [...lowStockProducts, ...lowStockChoices].sort((a, b) => a.stock - b.stock);
+        } catch (error) {
+            console.error('Error in getLowStockItems:', error);
+            throw error;
+        }
+    }
+    static async getSalesChartData(period) {
+        try {
+            let query = '';
+            let dateFormat = '';
+            
+            switch(period) {
+            case 'week':
+                // Last 7 days, daily data
+                dateFormat = '%a'; // Day abbreviation
+                query = `
+                SELECT 
+                    DATE_FORMAT(o.created_at, '${dateFormat}') as label,
+                    DATE(o.created_at) as date_group,
+                    SUM(o.total_amount) as sales,
+                    COUNT(o.order_id) as orders
+                FROM orders o
+                WHERE o.status IN ('paid', 'ready for pickup') 
+                AND o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+                GROUP BY date_group, DATE_FORMAT(o.created_at, '${dateFormat}')
+                ORDER BY date_group
+                `;
+                break;
+                
+            case 'month':
+                // Last 30 days, grouped data
+                dateFormat = '%b %d';
+                query = `
+                SELECT 
+                    DATE_FORMAT(o.created_at, '${dateFormat}') as label,
+                    FLOOR(DATEDIFF(CURRENT_DATE(), DATE(o.created_at)) / 3) as date_group,
+                    SUM(o.total_amount) as sales,
+                    COUNT(o.order_id) as orders
+                FROM orders o
+                WHERE o.status IN ('paid', 'ready for pickup') 
+                AND o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
+                GROUP BY date_group, DATE_FORMAT(o.created_at, '${dateFormat}')
+                ORDER BY date_group DESC
+                `;
+                break;
+                
+            case 'quarter':
+                // Last 3 months, monthly data
+                dateFormat = '%b';
+                query = `
+                SELECT 
+                    DATE_FORMAT(o.created_at, '${dateFormat}') as label,
+                    MONTH(o.created_at) as month_group,
+                    YEAR(o.created_at) as year_group,
+                    SUM(o.total_amount) as sales,
+                    COUNT(o.order_id) as orders
+                FROM orders o
+                WHERE o.status IN ('paid', 'ready for pickup') 
+                AND o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 MONTH)
+                GROUP BY month_group, year_group, label
+                ORDER BY year_group, month_group
+                `;
+                break;
+                
+            case 'year':
+                // Last 12 months, monthly data
+                dateFormat = '%b';
+                query = `
+                SELECT 
+                    DATE_FORMAT(o.created_at, '${dateFormat}') as label,
+                    MONTH(o.created_at) as month_group,
+                    YEAR(o.created_at) as year_group,
+                    SUM(o.total_amount) as sales,
+                    COUNT(o.order_id) as orders
+                FROM orders o
+                WHERE o.status IN ('paid', 'ready for pickup', 'paid using gcash') 
+                AND o.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 12 MONTH)
+                GROUP BY month_group, year_group, label
+                ORDER BY year_group, month_group
+                `;
+                break;
+            }
+            
+            const [results] = await db.query(query);
+            
+            // Format the data for the chart
+            const labels = results.map(r => r.label);
+            const sales = results.map(r => parseFloat(r.sales || 0));
+            const orders = results.map(r => parseInt(r.orders || 0));
+            
+            return { labels, sales, orders };
+        } catch (error) {
+            console.error('Error in getSalesChartData:', error);
+            throw error;
         }
     }
 }
